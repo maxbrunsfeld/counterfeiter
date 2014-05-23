@@ -5,11 +5,11 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/locator"
 )
 
-func Generate(packageName, interfaceName string, fakePackageName string) (string, error) {
-	interfaceNode, err := locator.GetInterface(interfaceName, packageName)
+func Generate(sourceDir, interfaceName, fakePackageName, fakeName string) (string, error) {
+	interfaceNode, err := locator.GetInterface(interfaceName, sourceDir)
 	if err != nil {
 		return "", err
 	}
 
-	return generator.GenerateFake("Fake"+interfaceName, fakePackageName, interfaceNode)
+	return generator.GenerateFake(fakeName, fakePackageName, interfaceNode)
 }

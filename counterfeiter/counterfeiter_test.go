@@ -3,74 +3,40 @@ package counterfeiter_test
 import (
 	. "github.com/maxbrunsfeld/counterfeiter/counterfeiter"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"os"
-  "regexp"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Counterfeiter", func() {
 	Describe("Generate", func() {
-    table := [][]string{
-      {
-        "handles full package paths",
+		It("generates a fake implementation of a struct", func() {
+			dir, err := os.Getwd()
+			Expect(err).NotTo(HaveOccurred())
 
-				"github.com/maxbrunsfeld/counterfeiter/fixtures/interfaces",
+			code, err := Generate(
+				filepath.Join(dir, "../fixtures/interfaces"),
 				"SomeInterface",
-        "fakes",
-        "fake_some_interface.go",
-      },
-      {
-        "handles relative package paths",
+				"fakes",
+				"FakeSomeInterface",
+			)
+			Expect(err).NotTo(HaveOccurred())
 
-				"./fixtures/interfaces",
-				"SomeInterface",
-        "fakes",
-        "fake_some_interface.go",
-      },
-    }
+			expectedCode, err := ioutil.ReadFile(filepath.Join(dir, "../fixtures/fakes/fake_some_interface.go"))
+			Expect(err).NotTo(HaveOccurred())
 
-    for _, row := range table {
-      description := row[0]
-      packagePath := row[1]
-      interfaceName := row[2]
-      fakePackageName := row[3]
-      expectedOutputPath := row[4]
-
-      It(description, func() {
-        code, err := Generate(packagePath, interfaceName, fakePackageName)
-        Expect(err).NotTo(HaveOccurred())
-
-        fakeFile, err := os.Open(fixturePath(expectedOutputPath))
-        Expect(err).NotTo(HaveOccurred())
-
-        expectedCode, err := ioutil.ReadAll(fakeFile)
-        Expect(err).NotTo(HaveOccurred())
-
-        Expect(normalizeWhitespace(code)).To(Equal(normalizeWhitespace(string(expectedCode))))
-      })
-    }
+			Expect(normalizeWhitespace(code)).To(Equal(normalizeWhitespace(string(expectedCode))))
+		})
 	})
 })
 
-func fixturePath(basename string) string {
-	gopath := os.Getenv("GOPATH")
-	firstGopath := strings.Split(gopath, ":")[0]
-	return filepath.Join(
-		firstGopath,
-		"src/github.com/maxbrunsfeld/counterfeiter/fixtures/fakes",
-		basename,
-	)
-}
-
-var tabRegexp = regexp.MustCompile("\t+")
-var spaceRegexp = regexp.MustCompile(" +")
-
 func normalizeWhitespace(input string) string {
-  input = tabRegexp.ReplaceAllString(input, " ")
-  input = spaceRegexp.ReplaceAllString(input, " ")
-  return strings.TrimSpace(input)
+	var spaceRegexp = regexp.MustCompile("([^\t \n])[\t ]+")
+	input = spaceRegexp.ReplaceAllString(input, "$1 ")
+	return strings.TrimSpace(input)
 }
