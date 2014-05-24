@@ -101,11 +101,20 @@ func (gen *generator) constructorDecl() ast.Decl {
 func (gen *generator) methodDecls() []ast.Decl {
 	result := []ast.Decl{}
 	for _, method := range gen.interfaceNode.Methods.List {
+		methodType := method.Type.(*ast.FuncType)
+
 		result = append(
 			result,
 			gen.methodImplementation(method),
 			gen.callsListGetter(method),
 		)
+
+		if methodType.Results != nil {
+			result = append(
+				result,
+				gen.returnsMethod(method),
+			)
+		}
 	}
 	return result
 }
@@ -121,6 +130,8 @@ func (gen *generator) structFields() []*ast.Field {
 	}
 
 	for _, method := range gen.interfaceNode.Methods.List {
+		methodType := method.Type.(*ast.FuncType)
+
 		result = append(
 			result,
 
@@ -132,17 +143,23 @@ func (gen *generator) structFields() []*ast.Field {
 			&ast.Field{
 				Names: []*ast.Ident{callsListFieldIdent(method)},
 				Type: &ast.ArrayType{
-					Elt: gen.argsStructTypeForMethod(method),
+					Elt: gen.argsStructTypeForMethod(methodType),
 				},
+			},
+		)
+
+		if methodType.Results != nil {
+			result = append(result, &ast.Field{
+				Names: []*ast.Ident{returnStructIdent(method)},
+				Type:  gen.returnStructTypeForMethod(methodType),
 			})
+		}
 	}
 
 	return result
 }
 
-func (gen *generator) argsStructTypeForMethod(method *ast.Field) *ast.StructType {
-	methodType := method.Type.(*ast.FuncType)
-
+func (gen *generator) argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	paramFields := []*ast.Field{}
 	for _, field := range methodType.Params.List {
 		paramFields = append(paramFields, &ast.Field{
@@ -156,16 +173,27 @@ func (gen *generator) argsStructTypeForMethod(method *ast.Field) *ast.StructType
 	}
 }
 
-func nameForMethodParam(param *ast.Field) string {
-	if len(param.Names) > 0 {
-		return param.Names[0].Name
-	} else {
-		panic("Don't handle anonymous args yet!")
+func (gen *generator) returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
+	resultFields := []*ast.Field{}
+	for _, field := range methodType.Results.List {
+		resultFields = append(resultFields, &ast.Field{
+			Type:  field.Type,
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(field))},
+		})
+	}
+
+	return &ast.StructType{
+		Fields: &ast.FieldList{List: resultFields},
 	}
 }
 
 func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 	methodType := method.Type.(*ast.FuncType)
+
+	stubMethod := &ast.SelectorExpr{
+		X:   receiverIdent(),
+		Sel: methodImplFuncIdent(method),
+	}
 
 	forwardArgs := []ast.Expr{}
 	for _, field := range methodType.Params.List {
@@ -173,21 +201,64 @@ func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 	}
 
 	forwardCall := &ast.CallExpr{
-		Fun: &ast.SelectorExpr{
-			X:   receiverIdent(),
-			Sel: methodImplFuncIdent(method),
-		},
+		Fun:  stubMethod,
 		Args: forwardArgs,
 	}
 
 	var callStatement ast.Stmt
 	if methodType.Results != nil {
-		callStatement = &ast.ReturnStmt{
-			Results: []ast.Expr{forwardCall},
+		returnFields := []ast.Expr{}
+		for _, field := range methodType.Results.List {
+			returnFields = append(returnFields, &ast.SelectorExpr{
+				X: &ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: returnStructIdent(method),
+				},
+				Sel: ast.NewIdent(nameForMethodResult(field)),
+			})
+		}
+
+		callStatement = &ast.IfStmt{
+			Cond: &ast.BinaryExpr{
+				X:  stubMethod,
+				Op: token.NEQ,
+				Y: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: "nil",
+				},
+			},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.ReturnStmt{
+						Results: []ast.Expr{forwardCall},
+					},
+				},
+			},
+			Else: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.ReturnStmt{
+						Results: returnFields,
+					},
+				},
+			},
 		}
 	} else {
-		callStatement = &ast.ExprStmt{
-			X: forwardCall,
+		callStatement = &ast.IfStmt{
+			Cond: &ast.BinaryExpr{
+				X:  stubMethod,
+				Op: token.NEQ,
+				Y: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: "nil",
+				},
+			},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.ExprStmt{
+						X: forwardCall,
+					},
+				},
+			},
 		}
 	}
 
@@ -234,7 +305,7 @@ func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 								Sel: callsListFieldIdent(method),
 							},
 							&ast.CompositeLit{
-								Type: gen.argsStructTypeForMethod(method),
+								Type: gen.argsStructTypeForMethod(methodType),
 								Elts: forwardArgs,
 							},
 						},
@@ -253,7 +324,7 @@ func (gen *generator) callsListGetter(method *ast.Field) *ast.FuncDecl {
 			Results: &ast.FieldList{List: []*ast.Field{
 				&ast.Field{
 					Type: &ast.ArrayType{
-						Elt: gen.argsStructTypeForMethod(method),
+						Elt: gen.argsStructTypeForMethod(method.Type.(*ast.FuncType)),
 					},
 				},
 			}},
@@ -297,8 +368,75 @@ func (gen *generator) callsListGetter(method *ast.Field) *ast.FuncDecl {
 	}
 }
 
-func receiverIdent() *ast.Ident {
-	return ast.NewIdent("fake")
+func (gen *generator) returnsMethod(method *ast.Field) *ast.FuncDecl {
+	params := []*ast.Field{}
+	structFields := []ast.Expr{}
+	for _, result := range method.Type.(*ast.FuncType).Results.List {
+		params = append(params, &ast.Field{
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(result))},
+			Type:  result.Type,
+		})
+
+		structFields = append(structFields, &ast.KeyValueExpr{
+			Key:   ast.NewIdent(nameForMethodResult(result)),
+			Value: ast.NewIdent(nameForMethodResult(result)),
+		})
+	}
+
+	return &ast.FuncDecl{
+		Name: returnMethodIdent(method),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{List: params},
+		},
+		Recv: &ast.FieldList{
+			List: []*ast.Field{
+				{
+					Names: []*ast.Ident{receiverIdent()},
+					Type:  &ast.StarExpr{X: ast.NewIdent(gen.structName)},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{
+				&ast.AssignStmt{
+					Tok: token.ASSIGN,
+					Lhs: []ast.Expr{
+						&ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: returnStructIdent(method),
+						},
+					},
+					Rhs: []ast.Expr{
+						&ast.CompositeLit{
+							Type: gen.returnStructTypeForMethod(method.Type.(*ast.FuncType)),
+							Elts: structFields,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func nameForMethodResult(field *ast.Field) string {
+	if len(field.Names) > 0 {
+		return field.Names[0].Name
+	} else {
+		switch fieldType := field.Type.(type) {
+		case *ast.Ident:
+			return "_" + fieldType.Name
+		default:
+			panic("Don't handle anonymous args yet!")
+		}
+	}
+}
+
+func nameForMethodParam(param *ast.Field) string {
+	if len(param.Names) > 0 {
+		return param.Names[0].Name
+	} else {
+		panic("Don't handle anonymous args yet!")
+	}
 }
 
 func callsListMethodIdent(method *ast.Field) *ast.Ident {
@@ -311,6 +449,18 @@ func callsListFieldIdent(method *ast.Field) *ast.Ident {
 
 func methodImplFuncIdent(method *ast.Field) *ast.Ident {
 	return ast.NewIdent(method.Names[0].Name + "Stub")
+}
+
+func returnMethodIdent(method *ast.Field) *ast.Ident {
+	return ast.NewIdent(method.Names[0].Name + "Returns")
+}
+
+func returnStructIdent(method *ast.Field) *ast.Ident {
+	return ast.NewIdent(privatize(returnMethodIdent(method).Name))
+}
+
+func receiverIdent() *ast.Ident {
+	return ast.NewIdent("fake")
 }
 
 func publicize(input string) string {

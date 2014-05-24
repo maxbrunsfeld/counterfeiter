@@ -34,6 +34,16 @@ var _ = Describe("Generated fakes", func() {
 		Expect(ret).To(Equal(errors.New("hi")))
 	})
 
+	It("can have its return values configured", func() {
+		fake.Method1Returns(errors.New("the-error"))
+		Expect(fake.Method1("stuff", 5)).To(Equal(errors.New("the-error")))
+	})
+
+	It("doesn't mind when no stub is provided", func() {
+		fake.Method1("stuff", 5)
+		fake.Method2()
+	})
+
 	It("records the arguments it was called with", func() {
 		Expect(fake.Method1Calls()).To(HaveLen(0))
 

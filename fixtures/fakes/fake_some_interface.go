@@ -9,6 +9,9 @@ type FakeSomeInterface struct {
 		Arg1	string
 		Arg2	uint64
 	}
+	method1Returns	struct {
+		_error error
+	}
 	Method2Stub	func()
 	method2Calls	[]struct {
 	}
@@ -24,7 +27,11 @@ func (fake *FakeSomeInterface) Method1(arg1 string, arg2 uint64) error {
 		Arg1	string
 		Arg2	uint64
 	}{arg1, arg2})
-	return fake.Method1Stub(arg1, arg2)
+	if fake.Method1Stub != nil {
+		return fake.Method1Stub(arg1, arg2)
+	} else {
+		return fake.method1Returns._error
+	}
 }
 func (fake *FakeSomeInterface) Method1Calls() []struct {
 	Arg1	string
@@ -34,12 +41,19 @@ func (fake *FakeSomeInterface) Method1Calls() []struct {
 	defer fake.RUnlock()
 	return fake.method1Calls
 }
+func (fake *FakeSomeInterface) Method1Returns(_error error) {
+	fake.method1Returns = struct {
+		_error error
+	}{_error: _error}
+}
 func (fake *FakeSomeInterface) Method2() {
 	fake.Lock()
 	defer fake.Unlock()
 	fake.method2Calls = append(fake.method2Calls, struct {
 	}{})
-	fake.Method2Stub()
+	if fake.Method2Stub != nil {
+		fake.Method2Stub()
+	}
 }
 func (fake *FakeSomeInterface) Method2Calls() []struct {
 } {
