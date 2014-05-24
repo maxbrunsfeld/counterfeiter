@@ -4,60 +4,60 @@ import "sync"
 
 type FakeSomeInterface struct {
 	sync.RWMutex
-	Method1Stub	func(arg1 string, arg2 uint64) error
-	method1Calls	[]struct {
-		Arg1	string
-		Arg2	uint64
+	DoThingsStub	func(string, uint64) error
+	doThingsCalls	[]struct {
+		Arg0	string
+		Arg1	uint64
 	}
-	method1Returns	struct {
-		_error error
+	doThingsReturns	struct {
+		result0 error
 	}
-	Method2Stub	func()
-	method2Calls	[]struct {
+	DoNothingStub	func()
+	doNothingCalls	[]struct {
 	}
 }
 
 func NewFakeSomeInterface() *FakeSomeInterface {
 	return &FakeSomeInterface{}
 }
-func (fake *FakeSomeInterface) Method1(arg1 string, arg2 uint64) error {
+func (fake *FakeSomeInterface) DoThings(arg0 string, arg1 uint64) error {
 	fake.Lock()
 	defer fake.Unlock()
-	fake.method1Calls = append(fake.method1Calls, struct {
-		Arg1	string
-		Arg2	uint64
-	}{arg1, arg2})
-	if fake.Method1Stub != nil {
-		return fake.Method1Stub(arg1, arg2)
+	fake.doThingsCalls = append(fake.doThingsCalls, struct {
+		Arg0	string
+		Arg1	uint64
+	}{arg0, arg1})
+	if fake.DoThingsStub != nil {
+		return fake.DoThingsStub(arg0, arg1)
 	} else {
-		return fake.method1Returns._error
+		return fake.doThingsReturns.result0
 	}
 }
-func (fake *FakeSomeInterface) Method1Calls() []struct {
-	Arg1	string
-	Arg2	uint64
+func (fake *FakeSomeInterface) DoThingsCalls() []struct {
+	Arg0	string
+	Arg1	uint64
 } {
 	fake.RLock()
 	defer fake.RUnlock()
-	return fake.method1Calls
+	return fake.doThingsCalls
 }
-func (fake *FakeSomeInterface) Method1Returns(_error error) {
-	fake.method1Returns = struct {
-		_error error
-	}{_error: _error}
+func (fake *FakeSomeInterface) DoThingsReturns(result0 error) {
+	fake.doThingsReturns = struct {
+		result0 error
+	}{result0: result0}
 }
-func (fake *FakeSomeInterface) Method2() {
+func (fake *FakeSomeInterface) DoNothing() {
 	fake.Lock()
 	defer fake.Unlock()
-	fake.method2Calls = append(fake.method2Calls, struct {
+	fake.doNothingCalls = append(fake.doNothingCalls, struct {
 	}{})
-	if fake.Method2Stub != nil {
-		fake.Method2Stub()
+	if fake.DoNothingStub != nil {
+		fake.DoNothingStub()
 	}
 }
-func (fake *FakeSomeInterface) Method2Calls() []struct {
+func (fake *FakeSomeInterface) DoNothingCalls() []struct {
 } {
 	fake.RLock()
 	defer fake.RUnlock()
-	return fake.method2Calls
+	return fake.doNothingCalls
 }

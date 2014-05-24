@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/printer"
 	"go/token"
@@ -161,10 +162,10 @@ func (gen *generator) structFields() []*ast.Field {
 
 func (gen *generator) argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	paramFields := []*ast.Field{}
-	for _, field := range methodType.Params.List {
+	for i, field := range methodType.Params.List {
 		paramFields = append(paramFields, &ast.Field{
 			Type:  field.Type,
-			Names: []*ast.Ident{ast.NewIdent(publicize(nameForMethodParam(field)))},
+			Names: []*ast.Ident{ast.NewIdent(publicize(nameForMethodParam(i)))},
 		})
 	}
 
@@ -175,10 +176,10 @@ func (gen *generator) argsStructTypeForMethod(methodType *ast.FuncType) *ast.Str
 
 func (gen *generator) returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	resultFields := []*ast.Field{}
-	for _, field := range methodType.Results.List {
+	for i, field := range methodType.Results.List {
 		resultFields = append(resultFields, &ast.Field{
 			Type:  field.Type,
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(field))},
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(i))},
 		})
 	}
 
@@ -196,8 +197,13 @@ func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 	}
 
 	forwardArgs := []ast.Expr{}
-	for _, field := range methodType.Params.List {
-		forwardArgs = append(forwardArgs, ast.NewIdent(nameForMethodParam(field)))
+	methodParams := []*ast.Field{}
+	for i, field := range methodType.Params.List {
+		forwardArgs = append(forwardArgs, ast.NewIdent(nameForMethodParam(i)))
+		methodParams = append(methodParams, &ast.Field{
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
+			Type:  field.Type,
+		})
 	}
 
 	forwardCall := &ast.CallExpr{
@@ -208,13 +214,13 @@ func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 	var callStatement ast.Stmt
 	if methodType.Results != nil {
 		returnFields := []ast.Expr{}
-		for _, field := range methodType.Results.List {
+		for i, _ := range methodType.Results.List {
 			returnFields = append(returnFields, &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
 					Sel: returnStructIdent(method),
 				},
-				Sel: ast.NewIdent(nameForMethodResult(field)),
+				Sel: ast.NewIdent(nameForMethodResult(i)),
 			})
 		}
 
@@ -264,7 +270,10 @@ func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 
 	return &ast.FuncDecl{
 		Name: method.Names[0],
-		Type: methodType,
+		Type: &ast.FuncType{
+			Params:  &ast.FieldList{List: methodParams},
+			Results: methodType.Results,
+		},
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
 				{
@@ -371,15 +380,15 @@ func (gen *generator) callsListGetter(method *ast.Field) *ast.FuncDecl {
 func (gen *generator) returnsMethod(method *ast.Field) *ast.FuncDecl {
 	params := []*ast.Field{}
 	structFields := []ast.Expr{}
-	for _, result := range method.Type.(*ast.FuncType).Results.List {
+	for i, result := range method.Type.(*ast.FuncType).Results.List {
 		params = append(params, &ast.Field{
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(result))},
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(i))},
 			Type:  result.Type,
 		})
 
 		structFields = append(structFields, &ast.KeyValueExpr{
-			Key:   ast.NewIdent(nameForMethodResult(result)),
-			Value: ast.NewIdent(nameForMethodResult(result)),
+			Key:   ast.NewIdent(nameForMethodResult(i)),
+			Value: ast.NewIdent(nameForMethodResult(i)),
 		})
 	}
 
@@ -418,25 +427,12 @@ func (gen *generator) returnsMethod(method *ast.Field) *ast.FuncDecl {
 	}
 }
 
-func nameForMethodResult(field *ast.Field) string {
-	if len(field.Names) > 0 {
-		return field.Names[0].Name
-	} else {
-		switch fieldType := field.Type.(type) {
-		case *ast.Ident:
-			return "_" + fieldType.Name
-		default:
-			panic("Don't handle anonymous args yet!")
-		}
-	}
+func nameForMethodResult(i int) string {
+	return fmt.Sprintf("result%d", i)
 }
 
-func nameForMethodParam(param *ast.Field) string {
-	if len(param.Names) > 0 {
-		return param.Names[0].Name
-	} else {
-		panic("Don't handle anonymous args yet!")
-	}
+func nameForMethodParam(i int) string {
+	return fmt.Sprintf("arg%d", i)
 }
 
 func callsListMethodIdent(method *ast.Field) *ast.Ident {
