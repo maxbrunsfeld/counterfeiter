@@ -1,6 +1,6 @@
 package fixtures
 
-type SomeInterface interface {
+type Something interface {
 	DoThings(string, uint64) (int, error)
 	DoNothing()
 }

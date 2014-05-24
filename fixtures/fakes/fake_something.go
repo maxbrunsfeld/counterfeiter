@@ -2,7 +2,7 @@ package fakes
 
 import "sync"
 
-type FakeSomeInterface struct {
+type FakeSomething struct {
 	sync.RWMutex
 	DoThingsStub	func(string, uint64) (int, error)
 	doThingsCalls	[]struct {
@@ -19,7 +19,7 @@ type FakeSomeInterface struct {
 }
 
 
-func (fake *FakeSomeInterface) DoThings(arg1 string, arg2 uint64) (int, error) {
+func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.Lock()
 	defer fake.Unlock()
 	fake.doThingsCalls = append(fake.doThingsCalls, struct {
@@ -33,7 +33,7 @@ func (fake *FakeSomeInterface) DoThings(arg1 string, arg2 uint64) (int, error) {
 	}
 }
 
-func (fake *FakeSomeInterface) DoThingsCalls() []struct {
+func (fake *FakeSomething) DoThingsCalls() []struct {
 	Arg1	string
 	Arg2	uint64
 } {
@@ -42,14 +42,14 @@ func (fake *FakeSomeInterface) DoThingsCalls() []struct {
 	return fake.doThingsCalls
 }
 
-func (fake *FakeSomeInterface) DoThingsReturns(result1 int, result2 error) {
+func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 	fake.doThingsReturns = struct {
 		result1	int
 		result2	error
 	}{result1: result1, result2: result2}
 }
 
-func (fake *FakeSomeInterface) DoNothing() {
+func (fake *FakeSomething) DoNothing() {
 	fake.Lock()
 	defer fake.Unlock()
 	fake.doNothingCalls = append(fake.doNothingCalls, struct {
@@ -59,7 +59,7 @@ func (fake *FakeSomeInterface) DoNothing() {
 	}
 }
 
-func (fake *FakeSomeInterface) DoNothingCalls() []struct {
+func (fake *FakeSomething) DoNothingCalls() []struct {
 } {
 	fake.RLock()
 	defer fake.RUnlock()

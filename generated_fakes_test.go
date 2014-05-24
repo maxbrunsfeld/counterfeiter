@@ -10,14 +10,14 @@ import (
 )
 
 var _ = Describe("Generated fakes", func() {
-	var fake *fakes.FakeSomeInterface
+	var fake *fakes.FakeSomething
 
 	BeforeEach(func() {
-		fake = new(fakes.FakeSomeInterface)
+		fake = new(fakes.FakeSomething)
 	})
 
 	It("implements the interface", func() {
-		var someInterface fixtures.SomeInterface = fake
+		var someInterface fixtures.Something = fake
 		Expect(someInterface).NotTo(BeNil())
 	})
 
