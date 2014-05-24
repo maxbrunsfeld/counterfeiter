@@ -56,8 +56,7 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 	if len(args) < 2 {
-		fmt.Println(usage)
-		os.Exit(1)
+		fail("%s", usage)
 	}
 
 	sourceDir := getSourceDir(args[0])
@@ -66,6 +65,7 @@ func main() {
 	outputPath := getOutputPath(sourceDir, fakeName, *outputPathFlag)
 	outputDir := filepath.Dir(outputPath)
 	fakePackageName := filepath.Base(outputDir)
+	shouldPrintToStdout := len(args) >= 3 && args[2] == "-"
 
 	interfaceNode, err := locator.GetInterface(interfaceName, sourceDir)
 	if err != nil {
@@ -77,7 +77,7 @@ func main() {
 		fail("%v", err)
 	}
 
-	if len(args) >= 3 && args[2] == "-" {
+	if shouldPrintToStdout {
 		fmt.Println(code)
 	} else {
 		os.MkdirAll(outputDir, 0777)
@@ -96,7 +96,7 @@ func main() {
 			fail("%v", err)
 		}
 
-		fmt.Printf("Wrote `%s` to %s\n", fakeName, rel)
+		fmt.Printf("Wrote `%s` to `%s`\n", fakeName, rel)
 	}
 }
 
@@ -115,14 +115,6 @@ func getSourceDir(arg string) string {
 	} else {
 		return arg
 	}
-}
-
-func cwd() string {
-	dir, err := os.Getwd()
-	if err != nil {
-		fail("Error - couldn't determine current working directory")
-	}
-	return dir
 }
 
 func getOutputPath(sourceDir, fakeName, arg string) string {
@@ -147,6 +139,14 @@ func getFakeName(interfaceName, arg string) string {
 func snakeCase(input string) string {
 	camelRegexp := regexp.MustCompile("([a-z])([A-Z])")
 	return strings.ToLower(camelRegexp.ReplaceAllString(input, "${1}_${2}"))
+}
+
+func cwd() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		fail("Error - couldn't determine current working directory")
+	}
+	return dir
 }
 
 func fail(s string, args ...interface{}) {
