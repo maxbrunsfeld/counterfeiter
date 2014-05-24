@@ -1,6 +1,8 @@
 Counterfeiter
 =============
 
+[![Build Status](https://travis-ci.org/maxbrunsfeld/counterfeiter.svg?branch=master)](https://travis-ci.org/maxbrunsfeld/counterfeiter)
+
 When writing unit-tests for an object, it is often useful to have fake implementations
 of the object's collaborators. In go, such fake implementations cannot be generated
 automatically at runtime. This tool allows you to generate them before compiling your code.
