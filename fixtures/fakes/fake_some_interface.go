@@ -18,10 +18,6 @@ type FakeSomeInterface struct {
 }
 
 
-func NewFakeSomeInterface() *FakeSomeInterface {
-	return &FakeSomeInterface{}
-}
-
 func (fake *FakeSomeInterface) DoThings(arg1 string, arg2 uint64) error {
 	fake.Lock()
 	defer fake.Unlock()

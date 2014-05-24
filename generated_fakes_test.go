@@ -13,13 +13,12 @@ var _ = Describe("Generated fakes", func() {
 	var fake *fakes.FakeSomeInterface
 
 	BeforeEach(func() {
-		fake = fakes.NewFakeSomeInterface()
+		fake = new(fakes.FakeSomeInterface)
 	})
 
 	It("implements the interface", func() {
-		var fake fixtures.SomeInterface
-		fake = fakes.NewFakeSomeInterface()
-		Expect(fake).NotTo(BeNil())
+		var someInterface fixtures.SomeInterface = fake
+		Expect(someInterface).NotTo(BeNil())
 	})
 
 	It("can have its behavior configured using stub functions", func() {

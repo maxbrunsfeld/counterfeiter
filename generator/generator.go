@@ -36,7 +36,6 @@ func (gen *generator) SourceFile() ast.Node {
 		Decls: append([]ast.Decl{
 			gen.imports(),
 			gen.typeDecl(),
-			gen.constructorDecl(),
 		}, gen.methodDecls()...),
 	}
 }
@@ -62,37 +61,6 @@ func (gen *generator) typeDecl() ast.Decl {
 				Type: &ast.StructType{
 					Fields: &ast.FieldList{
 						List: gen.structFields(),
-					},
-				},
-			},
-		},
-	}
-}
-
-func (gen *generator) constructorDecl() ast.Decl {
-	name := ast.NewIdent("New" + gen.structName)
-	return &ast.FuncDecl{
-		Name: name,
-		Type: &ast.FuncType{
-			Results: &ast.FieldList{
-				List: []*ast.Field{
-					{
-						Type: &ast.StarExpr{X: ast.NewIdent(gen.structName)},
-					},
-				},
-			},
-		},
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.ReturnStmt{
-					Results: []ast.Expr{
-						&ast.UnaryExpr{
-							Op: token.AND,
-							X: &ast.CompositeLit{
-								Type: ast.NewIdent(gen.structName),
-								Elts: []ast.Expr{},
-							},
-						},
 					},
 				},
 			},
