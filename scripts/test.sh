@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 
-go run main.go fixtures Something && ginkgo -r
+set -e
+
+go run main.go fixtures Something
+ginkgo -race -r
