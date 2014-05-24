@@ -53,6 +53,45 @@ func (gen *generator) imports() ast.Decl {
 }
 
 func (gen *generator) typeDecl() ast.Decl {
+	structFields := []*ast.Field{
+		{
+			Type: &ast.SelectorExpr{
+				X:   ast.NewIdent("sync"),
+				Sel: ast.NewIdent("RWMutex"),
+			},
+		},
+	}
+
+	for _, method := range gen.interfaceNode.Methods.List {
+		methodType := method.Type.(*ast.FuncType)
+
+		structFields = append(
+			structFields,
+
+			&ast.Field{
+				Names: []*ast.Ident{methodImplFuncIdent(method)},
+				Type:  method.Type,
+			},
+
+			&ast.Field{
+				Names: []*ast.Ident{callsListFieldIdent(method)},
+				Type: &ast.ArrayType{
+					Elt: argsStructTypeForMethod(methodType),
+				},
+			},
+		)
+
+		if methodType.Results != nil {
+			structFields = append(
+				structFields,
+				&ast.Field{
+					Names: []*ast.Ident{returnStructIdent(method)},
+					Type:  returnStructTypeForMethod(methodType),
+				},
+			)
+		}
+	}
+
 	return &ast.GenDecl{
 		Tok: token.TYPE,
 		Specs: []ast.Spec{
@@ -60,7 +99,7 @@ func (gen *generator) typeDecl() ast.Decl {
 				Name: &ast.Ident{Name: gen.structName},
 				Type: &ast.StructType{
 					Fields: &ast.FieldList{
-						List: gen.structFields(),
+						List: structFields,
 					},
 				},
 			},
@@ -75,89 +114,21 @@ func (gen *generator) methodDecls() []ast.Decl {
 
 		result = append(
 			result,
-			gen.methodImplementation(method),
-			gen.callsListGetter(method),
+			gen.methodImplementationDecl(method),
+			gen.methodCallsGetterDecl(method),
 		)
 
 		if methodType.Results != nil {
 			result = append(
 				result,
-				gen.returnsMethod(method),
+				gen.methodReturnsSetterDecl(method),
 			)
 		}
 	}
 	return result
 }
 
-func (gen *generator) structFields() []*ast.Field {
-	result := []*ast.Field{
-		{
-			Type: &ast.SelectorExpr{
-				X:   ast.NewIdent("sync"),
-				Sel: ast.NewIdent("RWMutex"),
-			},
-		},
-	}
-
-	for _, method := range gen.interfaceNode.Methods.List {
-		methodType := method.Type.(*ast.FuncType)
-
-		result = append(
-			result,
-
-			&ast.Field{
-				Names: []*ast.Ident{methodImplFuncIdent(method)},
-				Type:  method.Type,
-			},
-
-			&ast.Field{
-				Names: []*ast.Ident{callsListFieldIdent(method)},
-				Type: &ast.ArrayType{
-					Elt: gen.argsStructTypeForMethod(methodType),
-				},
-			},
-		)
-
-		if methodType.Results != nil {
-			result = append(result, &ast.Field{
-				Names: []*ast.Ident{returnStructIdent(method)},
-				Type:  gen.returnStructTypeForMethod(methodType),
-			})
-		}
-	}
-
-	return result
-}
-
-func (gen *generator) argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
-	paramFields := []*ast.Field{}
-	for i, field := range methodType.Params.List {
-		paramFields = append(paramFields, &ast.Field{
-			Type:  field.Type,
-			Names: []*ast.Ident{ast.NewIdent(publicize(nameForMethodParam(i)))},
-		})
-	}
-
-	return &ast.StructType{
-		Fields: &ast.FieldList{List: paramFields},
-	}
-}
-
-func (gen *generator) returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
-	resultFields := []*ast.Field{}
-	for i, field := range methodType.Results.List {
-		resultFields = append(resultFields, &ast.Field{
-			Type:  field.Type,
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(i))},
-		})
-	}
-
-	return &ast.StructType{
-		Fields: &ast.FieldList{List: resultFields},
-	}
-}
-
-func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
+func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl {
 	methodType := method.Type.(*ast.FuncType)
 
 	stubMethod := &ast.SelectorExpr{
@@ -283,7 +254,7 @@ func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 								Sel: callsListFieldIdent(method),
 							},
 							&ast.CompositeLit{
-								Type: gen.argsStructTypeForMethod(methodType),
+								Type: argsStructTypeForMethod(methodType),
 								Elts: forwardArgs,
 							},
 						},
@@ -295,14 +266,14 @@ func (gen *generator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 	}
 }
 
-func (gen *generator) callsListGetter(method *ast.Field) *ast.FuncDecl {
+func (gen *generator) methodCallsGetterDecl(method *ast.Field) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Name: callsListMethodIdent(method),
 		Type: &ast.FuncType{
 			Results: &ast.FieldList{List: []*ast.Field{
 				&ast.Field{
 					Type: &ast.ArrayType{
-						Elt: gen.argsStructTypeForMethod(method.Type.(*ast.FuncType)),
+						Elt: argsStructTypeForMethod(method.Type.(*ast.FuncType)),
 					},
 				},
 			}},
@@ -346,7 +317,7 @@ func (gen *generator) callsListGetter(method *ast.Field) *ast.FuncDecl {
 	}
 }
 
-func (gen *generator) returnsMethod(method *ast.Field) *ast.FuncDecl {
+func (gen *generator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
 	params := []*ast.Field{}
 	structFields := []ast.Expr{}
 	for i, result := range method.Type.(*ast.FuncType).Results.List {
@@ -383,13 +354,41 @@ func (gen *generator) returnsMethod(method *ast.Field) *ast.FuncDecl {
 					},
 					Rhs: []ast.Expr{
 						&ast.CompositeLit{
-							Type: gen.returnStructTypeForMethod(method.Type.(*ast.FuncType)),
+							Type: returnStructTypeForMethod(method.Type.(*ast.FuncType)),
 							Elts: structFields,
 						},
 					},
 				},
 			},
 		},
+	}
+}
+
+func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
+	paramFields := []*ast.Field{}
+	for i, field := range methodType.Params.List {
+		paramFields = append(paramFields, &ast.Field{
+			Type:  field.Type,
+			Names: []*ast.Ident{ast.NewIdent(publicize(nameForMethodParam(i)))},
+		})
+	}
+
+	return &ast.StructType{
+		Fields: &ast.FieldList{List: paramFields},
+	}
+}
+
+func returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
+	resultFields := []*ast.Field{}
+	for i, field := range methodType.Results.List {
+		resultFields = append(resultFields, &ast.Field{
+			Type:  field.Type,
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(i))},
+		})
+	}
+
+	return &ast.StructType{
+		Fields: &ast.FieldList{List: resultFields},
 	}
 }
 
