@@ -10,13 +10,13 @@ automatically at runtime. This tool allows you to generate them before compiling
 Choose an interface for which you would like a fake implementation:
 
 ```shell
-$ cat path/to/some_package/some_interface.go
+$ cat path/to/some_package/something.go
 ```
 
 ```go
 package some_package
 
-type SomeInterface interface {
+type Something interface {
 	DoThings(string, uint64) error
 	DoNothing()
 }
@@ -25,8 +25,8 @@ type SomeInterface interface {
 Run counterfeiter like this:
 
 ```
-$ counterfeiter path/to/some_package SomeInterface
-Wrote `FakeSomeInterface` to `path/to/some_package/fakes/fake_some_interface.go`
+$ counterfeiter path/to/some_package Something
+Wrote `FakeSomething` to `path/to/some_package/fakes/fake_something.go`
 ```
 
 You can customize the location of the ouptut using the `-o` flag, or write the code to standard out by providing `-` as a third argument.
@@ -40,7 +40,7 @@ import "my-repo/path/to/some_package/fakes"
 
 // ...
 
-fake := new(fakes.FakeSomeInterface)
+fake := new(fakes.FakeSomething)
 
 fake.DoThings("stuff", 5)
 
