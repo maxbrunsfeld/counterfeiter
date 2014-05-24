@@ -36,6 +36,10 @@ You can customize the location of the ouptut using the `-o` flag, or write the c
 Fake objects record their calls:
 
 ```go
+import "my-repo/path/to/some_package/fakes"
+
+// ...
+
 fake := new(fakes.FakeSomeInterface)
 
 fake.DoThings("stuff", 5)
