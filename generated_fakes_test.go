@@ -55,8 +55,6 @@ var _ = Describe("Generated fakes", func() {
 	})
 
 	It("records its calls without race conditions", func() {
-		fake.DoNothingStub = func() {}
-
 		go fake.DoNothing()
 
 		Eventually(fake.DoNothingCalls, 1.0).Should(HaveLen(1))
