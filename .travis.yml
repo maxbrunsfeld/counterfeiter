@@ -1,6 +1,6 @@
 language: go
 go:
   - 1.2
-install: 
-  - go get github.com/onsi/ginkgo/ginkgo
+install:
+  - go get -v -t ./...
 script: scripts/test.sh

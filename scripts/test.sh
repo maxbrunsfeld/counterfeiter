@@ -3,4 +3,4 @@
 set -e
 
 go run main.go fixtures Something
-ginkgo -race -r
+go test -v .
