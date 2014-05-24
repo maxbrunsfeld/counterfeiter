@@ -17,9 +17,11 @@ type FakeSomeInterface struct {
 	}
 }
 
+
 func NewFakeSomeInterface() *FakeSomeInterface {
 	return &FakeSomeInterface{}
 }
+
 func (fake *FakeSomeInterface) DoThings(arg0 string, arg1 uint64) error {
 	fake.Lock()
 	defer fake.Unlock()
@@ -33,6 +35,7 @@ func (fake *FakeSomeInterface) DoThings(arg0 string, arg1 uint64) error {
 		return fake.doThingsReturns.result0
 	}
 }
+
 func (fake *FakeSomeInterface) DoThingsCalls() []struct {
 	Arg0	string
 	Arg1	uint64
@@ -41,11 +44,13 @@ func (fake *FakeSomeInterface) DoThingsCalls() []struct {
 	defer fake.RUnlock()
 	return fake.doThingsCalls
 }
+
 func (fake *FakeSomeInterface) DoThingsReturns(result0 error) {
 	fake.doThingsReturns = struct {
 		result0 error
 	}{result0: result0}
 }
+
 func (fake *FakeSomeInterface) DoNothing() {
 	fake.Lock()
 	defer fake.Unlock()
@@ -55,6 +60,7 @@ func (fake *FakeSomeInterface) DoNothing() {
 		fake.DoNothingStub()
 	}
 }
+
 func (fake *FakeSomeInterface) DoNothingCalls() []struct {
 } {
 	fake.RLock()

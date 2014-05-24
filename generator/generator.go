@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
+	"regexp"
 	"strings"
 )
 
@@ -20,7 +21,7 @@ func GenerateFake(
 
 	buf := new(bytes.Buffer)
 	err := printer.Fprint(buf, token.NewFileSet(), gen.SourceFile())
-	return buf.String(), err
+	return prettifyCode(buf.String()), err
 }
 
 type generator struct {
@@ -465,4 +466,10 @@ func publicize(input string) string {
 
 func privatize(input string) string {
 	return strings.ToLower(input[0:1]) + input[1:]
+}
+
+var funcRegexp = regexp.MustCompile("\n(func)")
+
+func prettifyCode(code string) string {
+	return funcRegexp.ReplaceAllString(code, "\n\n$1")
 }
