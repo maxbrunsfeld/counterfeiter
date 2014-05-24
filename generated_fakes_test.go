@@ -22,20 +22,24 @@ var _ = Describe("Generated fakes", func() {
 	})
 
 	It("can have its behavior configured using stub functions", func() {
-		fake.DoThingsStub = func(arg1 string, arg2 uint64) error {
+		fake.DoThingsStub = func(arg1 string, arg2 uint64) (int, error) {
 			Expect(arg1).To(Equal("stuff"))
 			Expect(arg2).To(Equal(uint64(5)))
-			return errors.New("hi")
+			return 3, errors.New("the-error")
 		}
 
-		ret := fake.DoThings("stuff", 5)
+		num, err := fake.DoThings("stuff", 5)
 
-		Expect(ret).To(Equal(errors.New("hi")))
+		Expect(num).To(Equal(3))
+		Expect(err).To(Equal(errors.New("the-error")))
 	})
 
 	It("can have its return values configured", func() {
-		fake.DoThingsReturns(errors.New("the-error"))
-		Expect(fake.DoThings("stuff", 5)).To(Equal(errors.New("the-error")))
+		fake.DoThingsReturns(3, errors.New("the-error"))
+
+		num, err := fake.DoThings("stuff", 5)
+		Expect(num).To(Equal(3))
+		Expect(err).To(Equal(errors.New("the-error")))
 	})
 
 	It("doesn't mind when no stub is provided", func() {

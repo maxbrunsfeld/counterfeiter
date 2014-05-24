@@ -17,7 +17,7 @@ $ cat path/to/some_package/something.go
 package some_package
 
 type Something interface {
-	DoThings(string, uint64) error
+	DoThings(string, uint64) (int, error)
 	DoNothing()
 }
 ```
@@ -52,20 +52,25 @@ Expect(fake.DoThingsCalls()[0].Arg2).To(Equal(uint64(5)))
 You can set their return values:
 
 ```go
-fake.DoThingsReturns(errors.New("the-error"))
+fake.DoThingsReturns(3, errors.New("the-error"))
 
-Expect(fake.DoThings("stuff", 5)).To(Equal(errors.New("the-error")))
+num, err := fake.DoThings("stuff", 5)
+Expect(num).To(Equal(3))
+Expect(err).To(Equal(errors.New("the-error")))
 ```
 
 You can also supply them with stub functions:
 
 ```go
-fake.DoThingsStub = func(arg1 string, arg2 uint64) error {
+fake.DoThingsStub = func(arg1 string, arg2 uint64) (int, error) {
 	Expect(arg1).To(Equal("stuff"))
 	Expect(arg2).To(Equal(uint64(5)))
-	return errors.New("the-error")
+	return 3, errors.New("the-error")
 }
 
-Expect(fake.DoThings("stuff", 5)).To(Equal(errors.New("the-error")))
+num, err := fake.DoThings("stuff", 5)
+
+Expect(num).To(Equal(3))
+Expect(err).To(Equal(errors.New("the-error")))
 ```
 
