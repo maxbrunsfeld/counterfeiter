@@ -355,10 +355,7 @@ func (gen *generator) returnsMethod(method *ast.Field) *ast.FuncDecl {
 			Type:  result.Type,
 		})
 
-		structFields = append(structFields, &ast.KeyValueExpr{
-			Key:   ast.NewIdent(nameForMethodResult(i)),
-			Value: ast.NewIdent(nameForMethodResult(i)),
-		})
+		structFields = append(structFields, ast.NewIdent(nameForMethodResult(i)))
 	}
 
 	return &ast.FuncDecl{

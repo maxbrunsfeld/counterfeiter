@@ -46,7 +46,7 @@ func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 	fake.doThingsReturns = struct {
 		result1	int
 		result2	error
-	}{result1: result1, result2: result2}
+	}{result1, result2}
 }
 
 func (fake *FakeSomething) DoNothing() {
