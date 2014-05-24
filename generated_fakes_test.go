@@ -50,8 +50,8 @@ var _ = Describe("Generated fakes", func() {
 		fake.DoThings("stuff", 5)
 
 		Expect(fake.DoThingsCalls()).To(HaveLen(1))
-		Expect(fake.DoThingsCalls()[0].Arg0).To(Equal("stuff"))
-		Expect(fake.DoThingsCalls()[0].Arg1).To(Equal(uint64(5)))
+		Expect(fake.DoThingsCalls()[0].Arg1).To(Equal("stuff"))
+		Expect(fake.DoThingsCalls()[0].Arg2).To(Equal(uint64(5)))
 	})
 
 	It("records its calls without race conditions", func() {

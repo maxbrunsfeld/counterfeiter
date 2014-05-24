@@ -429,11 +429,11 @@ func (gen *generator) returnsMethod(method *ast.Field) *ast.FuncDecl {
 }
 
 func nameForMethodResult(i int) string {
-	return fmt.Sprintf("result%d", i)
+	return fmt.Sprintf("result%d", i+1)
 }
 
 func nameForMethodParam(i int) string {
-	return fmt.Sprintf("arg%d", i)
+	return fmt.Sprintf("arg%d", i+1)
 }
 
 func callsListMethodIdent(method *ast.Field) *ast.Ident {
