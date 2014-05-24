@@ -1,10 +1,10 @@
-package counterfeiter_test
+package main_test
 
 import (
 	"errors"
 
+	"github.com/maxbrunsfeld/counterfeiter/fixtures"
 	"github.com/maxbrunsfeld/counterfeiter/fixtures/fakes"
-	"github.com/maxbrunsfeld/counterfeiter/fixtures/interfaces"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -17,12 +17,12 @@ var _ = Describe("Generated fakes", func() {
 	})
 
 	It("implements the interface", func() {
-		var fake interfaces.SomeInterface
+		var fake fixtures.SomeInterface
 		fake = fakes.NewFakeSomeInterface()
 		Expect(fake).NotTo(BeNil())
 	})
 
-	It("can have its behavior configured", func() {
+	It("can have its behavior configured using stub functions", func() {
 		fake.Method1Stub = func(arg1 string, arg2 uint64) error {
 			Expect(arg1).To(Equal("stuff"))
 			Expect(arg2).To(Equal(uint64(5)))

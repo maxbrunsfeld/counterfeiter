@@ -1,4 +1,4 @@
-package counterfeiter_test
+package main_test
 
 import (
 	. "github.com/onsi/ginkgo"

@@ -1,4 +1,4 @@
-package interfaces
+package fixtures
 
 type SomeInterface interface {
 	Method1(arg1 string, arg2 uint64) error

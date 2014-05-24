@@ -4,13 +4,13 @@ import "sync"
 
 type FakeSomeInterface struct {
 	sync.RWMutex
-	Method1Stub  func(arg1 string, arg2 uint64) error
-	method1Calls []struct {
-		Arg1 string
-		Arg2 uint64
+	Method1Stub	func(arg1 string, arg2 uint64) error
+	method1Calls	[]struct {
+		Arg1	string
+		Arg2	uint64
 	}
-	Method2Stub  func()
-	method2Calls []struct {
+	Method2Stub	func()
+	method2Calls	[]struct {
 	}
 }
 
@@ -21,14 +21,14 @@ func (fake *FakeSomeInterface) Method1(arg1 string, arg2 uint64) error {
 	fake.Lock()
 	defer fake.Unlock()
 	fake.method1Calls = append(fake.method1Calls, struct {
-		Arg1 string
-		Arg2 uint64
+		Arg1	string
+		Arg2	uint64
 	}{arg1, arg2})
 	return fake.Method1Stub(arg1, arg2)
 }
 func (fake *FakeSomeInterface) Method1Calls() []struct {
-	Arg1 string
-	Arg2 uint64
+	Arg1	string
+	Arg2	uint64
 } {
 	fake.RLock()
 	defer fake.RUnlock()

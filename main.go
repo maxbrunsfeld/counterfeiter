@@ -8,7 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/maxbrunsfeld/counterfeiter/counterfeiter"
+	"github.com/maxbrunsfeld/counterfeiter/generator"
+	"github.com/maxbrunsfeld/counterfeiter/locator"
 )
 
 var usage = `
@@ -66,7 +67,12 @@ func main() {
 	outputDir := filepath.Dir(outputPath)
 	fakePackageName := filepath.Base(outputDir)
 
-	code, err := counterfeiter.Generate(sourceDir, interfaceName, fakePackageName, fakeName)
+	interfaceNode, err := locator.GetInterface(interfaceName, sourceDir)
+	if err != nil {
+		fail("%v", err)
+	}
+
+	code, err := generator.GenerateFake(fakeName, fakePackageName, interfaceNode)
 	if err != nil {
 		fail("%v", err)
 	}
