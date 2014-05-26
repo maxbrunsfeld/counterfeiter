@@ -76,3 +76,6 @@ Expect(num).To(Equal(3))
 Expect(err).To(Equal(errors.New("the-error")))
 ```
 
+### License
+
+Counterfeiter is MIT-licensed.
