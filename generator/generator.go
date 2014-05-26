@@ -511,5 +511,7 @@ func privatize(input string) string {
 var funcRegexp = regexp.MustCompile("\n(func)")
 
 func prettifyCode(code string) string {
-	return funcRegexp.ReplaceAllString(code, "\n\n$1")
+	code = funcRegexp.ReplaceAllString(code, "\n\n$1")
+	code = strings.Replace(code, "\n\n\n", "\n\n", -1)
+	return code
 }

@@ -18,7 +18,6 @@ type FakeSomething struct {
 	}
 }
 
-
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.Lock()
 	defer fake.Unlock()
