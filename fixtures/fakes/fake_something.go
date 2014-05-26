@@ -4,17 +4,17 @@ import "sync"
 
 type FakeSomething struct {
 	sync.RWMutex
-	DoThingsStub	func(string, uint64) (int, error)
-	doThingsCalls	[]struct {
-		Arg1	string
-		Arg2	uint64
+	DoThingsStub		func(string, uint64) (int, error)
+	doThingsArgsForCall	[]struct {
+		arg1	string
+		arg2	uint64
 	}
 	doThingsReturns	struct {
 		result1	int
 		result2	error
 	}
-	DoNothingStub	func()
-	doNothingCalls	[]struct {
+	DoNothingStub		func()
+	doNothingArgsForCall	[]struct {
 	}
 }
 
@@ -22,9 +22,9 @@ type FakeSomething struct {
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.Lock()
 	defer fake.Unlock()
-	fake.doThingsCalls = append(fake.doThingsCalls, struct {
-		Arg1	string
-		Arg2	uint64
+	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
+		arg1	string
+		arg2	uint64
 	}{arg1, arg2})
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
@@ -33,13 +33,16 @@ func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	}
 }
 
-func (fake *FakeSomething) DoThingsCalls() []struct {
-	Arg1	string
-	Arg2	uint64
-} {
+func (fake *FakeSomething) DoThingsCallCount() int {
 	fake.RLock()
 	defer fake.RUnlock()
-	return fake.doThingsCalls
+	return len(fake.doThingsArgsForCall)
+}
+
+func (fake *FakeSomething) DoThingsArgsForCall(i int) (string, uint64) {
+	fake.RLock()
+	defer fake.RUnlock()
+	return fake.doThingsArgsForCall[i].arg1, fake.doThingsArgsForCall[i].arg2
 }
 
 func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
@@ -52,16 +55,21 @@ func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 func (fake *FakeSomething) DoNothing() {
 	fake.Lock()
 	defer fake.Unlock()
-	fake.doNothingCalls = append(fake.doNothingCalls, struct {
+	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct {
 	}{})
 	if fake.DoNothingStub != nil {
 		fake.DoNothingStub()
 	}
 }
 
-func (fake *FakeSomething) DoNothingCalls() []struct {
-} {
+func (fake *FakeSomething) DoNothingCallCount() int {
 	fake.RLock()
 	defer fake.RUnlock()
-	return fake.doNothingCalls
+	return len(fake.doNothingArgsForCall)
+}
+
+func (fake *FakeSomething) DoNothingArgsForCall(i int) {
+	fake.RLock()
+	defer fake.RUnlock()
+	return
 }

@@ -74,7 +74,7 @@ func (gen *generator) typeDecl() ast.Decl {
 			},
 
 			&ast.Field{
-				Names: []*ast.Ident{callsListFieldIdent(method)},
+				Names: []*ast.Ident{callArgsFieldIdent(method)},
 				Type: &ast.ArrayType{
 					Elt: argsStructTypeForMethod(methodType),
 				},
@@ -115,7 +115,8 @@ func (gen *generator) methodDecls() []ast.Decl {
 		result = append(
 			result,
 			gen.methodImplementationDecl(method),
-			gen.methodCallsGetterDecl(method),
+			gen.methodCallCountGetterDecl(method),
+			gen.methodCallArgsGetterDecl(method),
 		)
 
 		if methodType.Results != nil {
@@ -244,14 +245,14 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 					Tok: token.ASSIGN,
 					Lhs: []ast.Expr{&ast.SelectorExpr{
 						X:   receiverIdent(),
-						Sel: callsListFieldIdent(method),
+						Sel: callArgsFieldIdent(method),
 					}},
 					Rhs: []ast.Expr{&ast.CallExpr{
 						Fun: ast.NewIdent("append"),
 						Args: []ast.Expr{
 							&ast.SelectorExpr{
 								X:   receiverIdent(),
-								Sel: callsListFieldIdent(method),
+								Sel: callArgsFieldIdent(method),
 							},
 							&ast.CompositeLit{
 								Type: argsStructTypeForMethod(methodType),
@@ -266,15 +267,13 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 	}
 }
 
-func (gen *generator) methodCallsGetterDecl(method *ast.Field) *ast.FuncDecl {
+func (gen *generator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl {
 	return &ast.FuncDecl{
-		Name: callsListMethodIdent(method),
+		Name: callCountMethodIdent(method),
 		Type: &ast.FuncType{
 			Results: &ast.FieldList{List: []*ast.Field{
 				&ast.Field{
-					Type: &ast.ArrayType{
-						Elt: argsStructTypeForMethod(method.Type.(*ast.FuncType)),
-					},
+					Type: ast.NewIdent("int"),
 				},
 			}},
 		},
@@ -306,11 +305,84 @@ func (gen *generator) methodCallsGetterDecl(method *ast.Field) *ast.FuncDecl {
 				},
 				&ast.ReturnStmt{
 					Results: []ast.Expr{
-						&ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: callsListFieldIdent(method),
+						&ast.CallExpr{
+							Fun: ast.NewIdent("len"),
+							Args: []ast.Expr{
+								&ast.SelectorExpr{
+									X:   receiverIdent(),
+									Sel: callArgsFieldIdent(method),
+								},
+							},
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl {
+	indexIdent := ast.NewIdent("i")
+
+	results := []ast.Expr{}
+	resultTypes := []*ast.Field{}
+
+	for i, field := range method.Type.(*ast.FuncType).Params.List {
+		results = append(results, &ast.SelectorExpr{
+			X: &ast.IndexExpr{
+				X: &ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: callArgsFieldIdent(method),
+				},
+				Index: indexIdent,
+			},
+			Sel: ast.NewIdent(nameForMethodParam(i)),
+		})
+
+		resultTypes = append(resultTypes, &ast.Field{
+			Type: field.Type,
+		})
+	}
+
+	return &ast.FuncDecl{
+		Name: callArgsMethodIdent(method),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{List: []*ast.Field{
+				&ast.Field{
+					Names: []*ast.Ident{indexIdent},
+					Type:  ast.NewIdent("int"),
+				},
+			}},
+			Results: &ast.FieldList{List: resultTypes},
+		},
+		Recv: &ast.FieldList{
+			List: []*ast.Field{
+				{
+					Names: []*ast.Ident{receiverIdent()},
+					Type:  &ast.StarExpr{X: ast.NewIdent(gen.structName)},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{
+				&ast.ExprStmt{
+					X: &ast.CallExpr{
+						Fun: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent("RLock"),
+						},
+					},
+				},
+				&ast.DeferStmt{
+					Call: &ast.CallExpr{
+						Fun: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent("RUnlock"),
+						},
+					},
+				},
+				&ast.ReturnStmt{
+					Results: results,
 				},
 			},
 		},
@@ -369,7 +441,7 @@ func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	for i, field := range methodType.Params.List {
 		paramFields = append(paramFields, &ast.Field{
 			Type:  field.Type,
-			Names: []*ast.Ident{ast.NewIdent(publicize(nameForMethodParam(i)))},
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
 		})
 	}
 
@@ -400,12 +472,16 @@ func nameForMethodParam(i int) string {
 	return fmt.Sprintf("arg%d", i+1)
 }
 
-func callsListMethodIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(method.Names[0].Name + "Calls")
+func callCountMethodIdent(method *ast.Field) *ast.Ident {
+	return ast.NewIdent(method.Names[0].Name + "CallCount")
 }
 
-func callsListFieldIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(privatize(callsListMethodIdent(method).Name))
+func callArgsMethodIdent(method *ast.Field) *ast.Ident {
+	return ast.NewIdent(method.Names[0].Name + "ArgsForCall")
+}
+
+func callArgsFieldIdent(method *ast.Field) *ast.Ident {
+	return ast.NewIdent(privatize(callArgsMethodIdent(method).Name))
 }
 
 func methodImplFuncIdent(method *ast.Field) *ast.Ident {

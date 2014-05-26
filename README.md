@@ -43,12 +43,12 @@ import "my-repo/path/to/some_package/fakes"
 // ...
 
 fake := new(fakes.FakeSomething)
-
 fake.DoThings("stuff", 5)
 
-Expect(fake.DoThingsCalls()).To(HaveLen(1))
-Expect(fake.DoThingsCalls()[0].Arg1).To(Equal("stuff"))
-Expect(fake.DoThingsCalls()[0].Arg2).To(Equal(uint64(5)))
+Expect(fake.DoThingsCallCount()).To(Equal(1))
+str, num := fake.DoThingsArgsForCall(0)
+Expect(str).To(Equal("stuff"))
+Expect(num).To(Equal(uint64(5)))
 ```
 
 You can set their return values:
