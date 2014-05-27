@@ -108,9 +108,7 @@ func typeDecl(structName string, iface *ast.InterfaceType) ast.Decl {
 			&ast.TypeSpec{
 				Name: &ast.Ident{Name: structName},
 				Type: &ast.StructType{
-					Fields: &ast.FieldList{
-						List: structFields,
-					},
+					Fields: &ast.FieldList{List: structFields},
 				},
 			},
 		},
@@ -186,47 +184,45 @@ func methodImplementationDecl(structName string, method *ast.Field) *ast.FuncDec
 			Results: methodType.Results,
 		},
 		Recv: receiverFieldList(structName),
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.ExprStmt{
-					X: &ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("Lock"),
-						},
-					},
-				},
-				&ast.DeferStmt{
-					Call: &ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("Unlock"),
-						},
-					},
-				},
-				&ast.AssignStmt{
-					Tok: token.ASSIGN,
-					Lhs: []ast.Expr{&ast.SelectorExpr{
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ExprStmt{
+				X: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
 						X:   receiverIdent(),
-						Sel: ast.NewIdent(callArgsFieldName(method)),
-					}},
-					Rhs: []ast.Expr{&ast.CallExpr{
-						Fun: ast.NewIdent("append"),
-						Args: []ast.Expr{
-							&ast.SelectorExpr{
-								X:   receiverIdent(),
-								Sel: ast.NewIdent(callArgsFieldName(method)),
-							},
-							&ast.CompositeLit{
-								Type: argsStructTypeForMethod(methodType),
-								Elts: paramValues,
-							},
-						},
-					}},
+						Sel: ast.NewIdent("Lock"),
+					},
 				},
-				lastStatement,
 			},
-		},
+			&ast.DeferStmt{
+				Call: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("Unlock"),
+					},
+				},
+			},
+			&ast.AssignStmt{
+				Tok: token.ASSIGN,
+				Lhs: []ast.Expr{&ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: ast.NewIdent(callArgsFieldName(method)),
+				}},
+				Rhs: []ast.Expr{&ast.CallExpr{
+					Fun: ast.NewIdent("append"),
+					Args: []ast.Expr{
+						&ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent(callArgsFieldName(method)),
+						},
+						&ast.CompositeLit{
+							Type: argsStructTypeForMethod(methodType),
+							Elts: paramValues,
+						},
+					},
+				}},
+			},
+			lastStatement,
+		}},
 	}
 }
 
@@ -241,39 +237,37 @@ func methodCallCountGetterDecl(structName string, method *ast.Field) *ast.FuncDe
 			}},
 		},
 		Recv: receiverFieldList(structName),
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.ExprStmt{
-					X: &ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("RLock"),
-						},
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ExprStmt{
+				X: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("RLock"),
 					},
 				},
-				&ast.DeferStmt{
-					Call: &ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("RUnlock"),
-						},
+			},
+			&ast.DeferStmt{
+				Call: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("RUnlock"),
 					},
 				},
-				&ast.ReturnStmt{
-					Results: []ast.Expr{
-						&ast.CallExpr{
-							Fun: ast.NewIdent("len"),
-							Args: []ast.Expr{
-								&ast.SelectorExpr{
-									X:   receiverIdent(),
-									Sel: ast.NewIdent(callArgsFieldName(method)),
-								},
+			},
+			&ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Fun: ast.NewIdent("len"),
+						Args: []ast.Expr{
+							&ast.SelectorExpr{
+								X:   receiverIdent(),
+								Sel: ast.NewIdent(callArgsFieldName(method)),
 							},
 						},
 					},
 				},
 			},
-		},
+		}},
 	}
 }
 
@@ -312,29 +306,27 @@ func methodCallArgsGetterDecl(structName string, method *ast.Field) *ast.FuncDec
 			Results: &ast.FieldList{List: resultTypes},
 		},
 		Recv: receiverFieldList(structName),
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.ExprStmt{
-					X: &ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("RLock"),
-						},
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ExprStmt{
+				X: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("RLock"),
 					},
-				},
-				&ast.DeferStmt{
-					Call: &ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("RUnlock"),
-						},
-					},
-				},
-				&ast.ReturnStmt{
-					Results: resultValues,
 				},
 			},
-		},
+			&ast.DeferStmt{
+				Call: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("RUnlock"),
+					},
+				},
+			},
+			&ast.ReturnStmt{
+				Results: resultValues,
+			},
+		}},
 	}
 }
 
@@ -358,25 +350,23 @@ func methodReturnsSetterDecl(structName string, method *ast.Field) *ast.FuncDecl
 			Params: &ast.FieldList{List: params},
 		},
 		Recv: receiverFieldList(structName),
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.AssignStmt{
-					Tok: token.ASSIGN,
-					Lhs: []ast.Expr{
-						&ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent(returnStructFieldName(method)),
-						},
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.AssignStmt{
+				Tok: token.ASSIGN,
+				Lhs: []ast.Expr{
+					&ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent(returnStructFieldName(method)),
 					},
-					Rhs: []ast.Expr{
-						&ast.CompositeLit{
-							Type: returnStructTypeForMethod(methodType),
-							Elts: structFields,
-						},
+				},
+				Rhs: []ast.Expr{
+					&ast.CompositeLit{
+						Type: returnStructTypeForMethod(methodType),
+						Elts: structFields,
 					},
 				},
 			},
-		},
+		}},
 	}
 }
 
