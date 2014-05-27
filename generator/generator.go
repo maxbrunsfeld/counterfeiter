@@ -139,8 +139,15 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 
 	forwardArgs := []ast.Expr{}
 	methodParams := []*ast.Field{}
+	var ellipsisPos token.Pos
+
 	for i, field := range methodType.Params.List {
 		forwardArgs = append(forwardArgs, ast.NewIdent(nameForMethodParam(i)))
+
+		if _, ok := field.Type.(*ast.Ellipsis); ok {
+			ellipsisPos = token.Pos(i)
+		}
+
 		methodParams = append(methodParams, &ast.Field{
 			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
 			Type:  field.Type,
@@ -148,8 +155,9 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 	}
 
 	forwardCall := &ast.CallExpr{
-		Fun:  stubMethod,
-		Args: forwardArgs,
+		Fun:      stubMethod,
+		Args:     forwardArgs,
+		Ellipsis: ellipsisPos,
 	}
 
 	var callStatement ast.Stmt
@@ -324,11 +332,11 @@ func (gen *generator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl
 func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl {
 	indexIdent := ast.NewIdent("i")
 
-	results := []ast.Expr{}
+	resultValues := []ast.Expr{}
 	resultTypes := []*ast.Field{}
 
 	for i, field := range method.Type.(*ast.FuncType).Params.List {
-		results = append(results, &ast.SelectorExpr{
+		resultValues = append(resultValues, &ast.SelectorExpr{
 			X: &ast.IndexExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
@@ -340,7 +348,7 @@ func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl 
 		})
 
 		resultTypes = append(resultTypes, &ast.Field{
-			Type: field.Type,
+			Type: storedTypeForType(field.Type),
 		})
 	}
 
@@ -382,7 +390,7 @@ func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl 
 					},
 				},
 				&ast.ReturnStmt{
-					Results: results,
+					Results: resultValues,
 				},
 			},
 		},
@@ -440,7 +448,7 @@ func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	paramFields := []*ast.Field{}
 	for i, field := range methodType.Params.List {
 		paramFields = append(paramFields, &ast.Field{
-			Type:  field.Type,
+			Type:  storedTypeForType(field.Type),
 			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
 		})
 	}
@@ -506,6 +514,14 @@ func publicize(input string) string {
 
 func privatize(input string) string {
 	return strings.ToLower(input[0:1]) + input[1:]
+}
+
+func storedTypeForType(t ast.Expr) ast.Expr {
+	if ellipsis, ok := t.(*ast.Ellipsis); ok {
+		return &ast.ArrayType{Elt: ellipsis.Elt}
+	} else {
+		return t
+	}
 }
 
 var funcRegexp = regexp.MustCompile("\n(func)")
