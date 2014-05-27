@@ -69,12 +69,12 @@ func (gen *generator) typeDecl() ast.Decl {
 			structFields,
 
 			&ast.Field{
-				Names: []*ast.Ident{methodImplFuncIdent(method)},
+				Names: []*ast.Ident{ast.NewIdent(methodStubFuncName(method))},
 				Type:  method.Type,
 			},
 
 			&ast.Field{
-				Names: []*ast.Ident{callArgsFieldIdent(method)},
+				Names: []*ast.Ident{ast.NewIdent(callArgsFieldName(method))},
 				Type: &ast.ArrayType{
 					Elt: argsStructTypeForMethod(methodType),
 				},
@@ -85,7 +85,7 @@ func (gen *generator) typeDecl() ast.Decl {
 			structFields = append(
 				structFields,
 				&ast.Field{
-					Names: []*ast.Ident{returnStructIdent(method)},
+					Names: []*ast.Ident{ast.NewIdent(returnStructFieldName(method))},
 					Type:  returnStructTypeForMethod(methodType),
 				},
 			)
@@ -134,7 +134,7 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 
 	stubMethod := &ast.SelectorExpr{
 		X:   receiverIdent(),
-		Sel: methodImplFuncIdent(method),
+		Sel: ast.NewIdent(methodStubFuncName(method)),
 	}
 
 	forwardArgs := []ast.Expr{}
@@ -167,7 +167,7 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 			returnFields = append(returnFields, &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: returnStructIdent(method),
+					Sel: ast.NewIdent(returnStructFieldName(method)),
 				},
 				Sel: ast.NewIdent(nameForMethodResult(i)),
 			})
@@ -253,14 +253,14 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 					Tok: token.ASSIGN,
 					Lhs: []ast.Expr{&ast.SelectorExpr{
 						X:   receiverIdent(),
-						Sel: callArgsFieldIdent(method),
+						Sel: ast.NewIdent(callArgsFieldName(method)),
 					}},
 					Rhs: []ast.Expr{&ast.CallExpr{
 						Fun: ast.NewIdent("append"),
 						Args: []ast.Expr{
 							&ast.SelectorExpr{
 								X:   receiverIdent(),
-								Sel: callArgsFieldIdent(method),
+								Sel: ast.NewIdent(callArgsFieldName(method)),
 							},
 							&ast.CompositeLit{
 								Type: argsStructTypeForMethod(methodType),
@@ -277,7 +277,7 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 
 func (gen *generator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl {
 	return &ast.FuncDecl{
-		Name: callCountMethodIdent(method),
+		Name: ast.NewIdent(callCountMethodName(method)),
 		Type: &ast.FuncType{
 			Results: &ast.FieldList{List: []*ast.Field{
 				&ast.Field{
@@ -318,7 +318,7 @@ func (gen *generator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl
 							Args: []ast.Expr{
 								&ast.SelectorExpr{
 									X:   receiverIdent(),
-									Sel: callArgsFieldIdent(method),
+									Sel: ast.NewIdent(callArgsFieldName(method)),
 								},
 							},
 						},
@@ -340,7 +340,7 @@ func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl 
 			X: &ast.IndexExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: callArgsFieldIdent(method),
+					Sel: ast.NewIdent(callArgsFieldName(method)),
 				},
 				Index: indexIdent,
 			},
@@ -353,7 +353,7 @@ func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl 
 	}
 
 	return &ast.FuncDecl{
-		Name: callArgsMethodIdent(method),
+		Name: ast.NewIdent(callArgsMethodName(method)),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{List: []*ast.Field{
 				&ast.Field{
@@ -410,7 +410,7 @@ func (gen *generator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
 	}
 
 	return &ast.FuncDecl{
-		Name: returnMethodIdent(method),
+		Name: ast.NewIdent(returnSetterMethodName(method)),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{List: params},
 		},
@@ -429,7 +429,7 @@ func (gen *generator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
 					Lhs: []ast.Expr{
 						&ast.SelectorExpr{
 							X:   receiverIdent(),
-							Sel: returnStructIdent(method),
+							Sel: ast.NewIdent(returnStructFieldName(method)),
 						},
 					},
 					Rhs: []ast.Expr{
@@ -472,6 +472,14 @@ func returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	}
 }
 
+func storedTypeForType(t ast.Expr) ast.Expr {
+	if ellipsis, ok := t.(*ast.Ellipsis); ok {
+		return &ast.ArrayType{Elt: ellipsis.Elt}
+	} else {
+		return t
+	}
+}
+
 func nameForMethodResult(i int) string {
 	return fmt.Sprintf("result%d", i+1)
 }
@@ -480,28 +488,28 @@ func nameForMethodParam(i int) string {
 	return fmt.Sprintf("arg%d", i+1)
 }
 
-func callCountMethodIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(method.Names[0].Name + "CallCount")
+func callCountMethodName(method *ast.Field) string {
+	return method.Names[0].Name + "CallCount"
 }
 
-func callArgsMethodIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(method.Names[0].Name + "ArgsForCall")
+func callArgsMethodName(method *ast.Field) string {
+	return method.Names[0].Name + "ArgsForCall"
 }
 
-func callArgsFieldIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(privatize(callArgsMethodIdent(method).Name))
+func callArgsFieldName(method *ast.Field) string {
+	return privatize(callArgsMethodName(method))
 }
 
-func methodImplFuncIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(method.Names[0].Name + "Stub")
+func methodStubFuncName(method *ast.Field) string {
+	return method.Names[0].Name + "Stub"
 }
 
-func returnMethodIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(method.Names[0].Name + "Returns")
+func returnSetterMethodName(method *ast.Field) string {
+	return method.Names[0].Name + "Returns"
 }
 
-func returnStructIdent(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(privatize(returnMethodIdent(method).Name))
+func returnStructFieldName(method *ast.Field) string {
+	return privatize(returnSetterMethodName(method))
 }
 
 func receiverIdent() *ast.Ident {
@@ -514,14 +522,6 @@ func publicize(input string) string {
 
 func privatize(input string) string {
 	return strings.ToLower(input[0:1]) + input[1:]
-}
-
-func storedTypeForType(t ast.Expr) ast.Expr {
-	if ellipsis, ok := t.(*ast.Ellipsis); ok {
-		return &ast.ArrayType{Elt: ellipsis.Elt}
-	} else {
-		return t
-	}
 }
 
 var funcRegexp = regexp.MustCompile("\n(func)")
