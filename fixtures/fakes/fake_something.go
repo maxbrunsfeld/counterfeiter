@@ -66,9 +66,3 @@ func (fake *FakeSomething) DoNothingCallCount() int {
 	defer fake.RUnlock()
 	return len(fake.doNothingArgsForCall)
 }
-
-func (fake *FakeSomething) DoNothingArgsForCall(i int) {
-	fake.RLock()
-	defer fake.RUnlock()
-	return
-}

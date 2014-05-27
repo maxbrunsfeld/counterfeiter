@@ -33,10 +33,16 @@ func sourceFile(structName, packageName string, interfaceNode *ast.InterfaceType
 			declarations,
 			methodImplementationDecl(structName, method),
 			methodCallCountGetterDecl(structName, method),
-			methodCallArgsGetterDecl(structName, method),
 		)
 
-		if methodType.Results != nil {
+		if methodType.Params.NumFields() > 0 {
+			declarations = append(
+				declarations,
+				methodCallArgsGetterDecl(structName, method),
+			)
+		}
+
+		if methodType.Results.NumFields() > 0 {
 			declarations = append(
 				declarations,
 				methodReturnsSetterDecl(structName, method),
@@ -91,7 +97,7 @@ func typeDecl(structName string, iface *ast.InterfaceType) ast.Decl {
 			},
 		)
 
-		if methodType.Results != nil {
+		if methodType.Results.NumFields() > 0 {
 			structFields = append(
 				structFields,
 				&ast.Field{
@@ -147,7 +153,7 @@ func methodImplementationDecl(structName string, method *ast.Field) *ast.FuncDec
 	}
 
 	var lastStatement ast.Stmt
-	if methodType.Results != nil {
+	if methodType.Results.NumFields() > 0 {
 		returnValues := []ast.Expr{}
 		for i, _ := range methodType.Results.List {
 			returnValues = append(returnValues, &ast.SelectorExpr{
