@@ -10,37 +10,47 @@ import (
 	"strings"
 )
 
-func GenerateFake(
-	structName, packageName string,
-	interfaceNode *ast.InterfaceType) (string, error) {
-	gen := generator{
-		structName:    structName,
-		packageName:   packageName,
-		interfaceNode: interfaceNode,
-	}
-
+func GenerateFake(structName, packageName string, interfaceNode *ast.InterfaceType) (string, error) {
 	buf := new(bytes.Buffer)
-	err := printer.Fprint(buf, token.NewFileSet(), gen.SourceFile())
+	err := printer.Fprint(
+		buf,
+		token.NewFileSet(),
+		sourceFile(structName, packageName, interfaceNode),
+	)
 	return prettifyCode(buf.String()), err
 }
 
-type generator struct {
-	structName    string
-	packageName   string
-	interfaceNode *ast.InterfaceType
-}
+func sourceFile(structName, packageName string, interfaceNode *ast.InterfaceType) ast.Node {
+	declarations := []ast.Decl{
+		importsDecl(),
+		typeDecl(structName, interfaceNode),
+	}
 
-func (gen *generator) SourceFile() ast.Node {
+	for _, method := range interfaceNode.Methods.List {
+		methodType := method.Type.(*ast.FuncType)
+
+		declarations = append(
+			declarations,
+			methodImplementationDecl(structName, method),
+			methodCallCountGetterDecl(structName, method),
+			methodCallArgsGetterDecl(structName, method),
+		)
+
+		if methodType.Results != nil {
+			declarations = append(
+				declarations,
+				methodReturnsSetterDecl(structName, method),
+			)
+		}
+	}
+
 	return &ast.File{
-		Name: &ast.Ident{Name: gen.packageName},
-		Decls: append([]ast.Decl{
-			gen.imports(),
-			gen.typeDecl(),
-		}, gen.methodDecls()...),
+		Name:  &ast.Ident{Name: packageName},
+		Decls: declarations,
 	}
 }
 
-func (gen *generator) imports() ast.Decl {
+func importsDecl() ast.Decl {
 	return &ast.GenDecl{
 		Tok: token.IMPORT,
 		Specs: []ast.Spec{&ast.ImportSpec{
@@ -52,7 +62,7 @@ func (gen *generator) imports() ast.Decl {
 	}
 }
 
-func (gen *generator) typeDecl() ast.Decl {
+func typeDecl(structName string, iface *ast.InterfaceType) ast.Decl {
 	structFields := []*ast.Field{
 		{
 			Type: &ast.SelectorExpr{
@@ -62,7 +72,7 @@ func (gen *generator) typeDecl() ast.Decl {
 		},
 	}
 
-	for _, method := range gen.interfaceNode.Methods.List {
+	for _, method := range iface.Methods.List {
 		methodType := method.Type.(*ast.FuncType)
 
 		structFields = append(
@@ -96,7 +106,7 @@ func (gen *generator) typeDecl() ast.Decl {
 		Tok: token.TYPE,
 		Specs: []ast.Spec{
 			&ast.TypeSpec{
-				Name: &ast.Ident{Name: gen.structName},
+				Name: &ast.Ident{Name: structName},
 				Type: &ast.StructType{
 					Fields: &ast.FieldList{
 						List: structFields,
@@ -107,64 +117,42 @@ func (gen *generator) typeDecl() ast.Decl {
 	}
 }
 
-func (gen *generator) methodDecls() []ast.Decl {
-	result := []ast.Decl{}
-	for _, method := range gen.interfaceNode.Methods.List {
-		methodType := method.Type.(*ast.FuncType)
-
-		result = append(
-			result,
-			gen.methodImplementationDecl(method),
-			gen.methodCallCountGetterDecl(method),
-			gen.methodCallArgsGetterDecl(method),
-		)
-
-		if methodType.Results != nil {
-			result = append(
-				result,
-				gen.methodReturnsSetterDecl(method),
-			)
-		}
-	}
-	return result
-}
-
-func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl {
+func methodImplementationDecl(structName string, method *ast.Field) *ast.FuncDecl {
 	methodType := method.Type.(*ast.FuncType)
 
-	stubMethod := &ast.SelectorExpr{
+	stubFunc := &ast.SelectorExpr{
 		X:   receiverIdent(),
 		Sel: ast.NewIdent(methodStubFuncName(method)),
 	}
 
-	forwardArgs := []ast.Expr{}
-	methodParams := []*ast.Field{}
+	paramValues := []ast.Expr{}
+	paramFields := []*ast.Field{}
 	var ellipsisPos token.Pos
 
 	for i, field := range methodType.Params.List {
-		forwardArgs = append(forwardArgs, ast.NewIdent(nameForMethodParam(i)))
+		paramValues = append(paramValues, ast.NewIdent(nameForMethodParam(i)))
+
+		paramFields = append(paramFields, &ast.Field{
+			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
+			Type:  field.Type,
+		})
 
 		if _, ok := field.Type.(*ast.Ellipsis); ok {
 			ellipsisPos = token.Pos(i)
 		}
-
-		methodParams = append(methodParams, &ast.Field{
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
-			Type:  field.Type,
-		})
 	}
 
-	forwardCall := &ast.CallExpr{
-		Fun:      stubMethod,
-		Args:     forwardArgs,
+	stubFuncCall := &ast.CallExpr{
+		Fun:      stubFunc,
+		Args:     paramValues,
 		Ellipsis: ellipsisPos,
 	}
 
-	var callStatement ast.Stmt
+	var lastStatement ast.Stmt
 	if methodType.Results != nil {
-		returnFields := []ast.Expr{}
+		returnValues := []ast.Expr{}
 		for i, _ := range methodType.Results.List {
-			returnFields = append(returnFields, &ast.SelectorExpr{
+			returnValues = append(returnValues, &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
 					Sel: ast.NewIdent(returnStructFieldName(method)),
@@ -173,64 +161,31 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 			})
 		}
 
-		callStatement = &ast.IfStmt{
-			Cond: &ast.BinaryExpr{
-				X:  stubMethod,
-				Op: token.NEQ,
-				Y: &ast.BasicLit{
-					Kind:  token.STRING,
-					Value: "nil",
-				},
-			},
-			Body: &ast.BlockStmt{
-				List: []ast.Stmt{
-					&ast.ReturnStmt{
-						Results: []ast.Expr{forwardCall},
-					},
-				},
-			},
-			Else: &ast.BlockStmt{
-				List: []ast.Stmt{
-					&ast.ReturnStmt{
-						Results: returnFields,
-					},
-				},
-			},
+		lastStatement = &ast.IfStmt{
+			Cond: nilCheck(stubFunc),
+			Body: &ast.BlockStmt{List: []ast.Stmt{
+				&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
+			}},
+			Else: &ast.BlockStmt{List: []ast.Stmt{
+				&ast.ReturnStmt{Results: returnValues},
+			}},
 		}
 	} else {
-		callStatement = &ast.IfStmt{
-			Cond: &ast.BinaryExpr{
-				X:  stubMethod,
-				Op: token.NEQ,
-				Y: &ast.BasicLit{
-					Kind:  token.STRING,
-					Value: "nil",
-				},
-			},
-			Body: &ast.BlockStmt{
-				List: []ast.Stmt{
-					&ast.ExprStmt{
-						X: forwardCall,
-					},
-				},
-			},
+		lastStatement = &ast.IfStmt{
+			Cond: nilCheck(stubFunc),
+			Body: &ast.BlockStmt{List: []ast.Stmt{
+				&ast.ExprStmt{X: stubFuncCall},
+			}},
 		}
 	}
 
 	return &ast.FuncDecl{
 		Name: method.Names[0],
 		Type: &ast.FuncType{
-			Params:  &ast.FieldList{List: methodParams},
+			Params:  &ast.FieldList{List: paramFields},
 			Results: methodType.Results,
 		},
-		Recv: &ast.FieldList{
-			List: []*ast.Field{
-				{
-					Names: []*ast.Ident{receiverIdent()},
-					Type:  &ast.StarExpr{X: ast.NewIdent(gen.structName)},
-				},
-			},
-		},
+		Recv: receiverFieldList(structName),
 		Body: &ast.BlockStmt{
 			List: []ast.Stmt{
 				&ast.ExprStmt{
@@ -264,18 +219,18 @@ func (gen *generator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl 
 							},
 							&ast.CompositeLit{
 								Type: argsStructTypeForMethod(methodType),
-								Elts: forwardArgs,
+								Elts: paramValues,
 							},
 						},
 					}},
 				},
-				callStatement,
+				lastStatement,
 			},
 		},
 	}
 }
 
-func (gen *generator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl {
+func methodCallCountGetterDecl(structName string, method *ast.Field) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Name: ast.NewIdent(callCountMethodName(method)),
 		Type: &ast.FuncType{
@@ -285,14 +240,7 @@ func (gen *generator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl
 				},
 			}},
 		},
-		Recv: &ast.FieldList{
-			List: []*ast.Field{
-				{
-					Names: []*ast.Ident{receiverIdent()},
-					Type:  &ast.StarExpr{X: ast.NewIdent(gen.structName)},
-				},
-			},
-		},
+		Recv: receiverFieldList(structName),
 		Body: &ast.BlockStmt{
 			List: []ast.Stmt{
 				&ast.ExprStmt{
@@ -329,7 +277,7 @@ func (gen *generator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl
 	}
 }
 
-func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl {
+func methodCallArgsGetterDecl(structName string, method *ast.Field) *ast.FuncDecl {
 	indexIdent := ast.NewIdent("i")
 
 	resultValues := []ast.Expr{}
@@ -363,14 +311,7 @@ func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl 
 			}},
 			Results: &ast.FieldList{List: resultTypes},
 		},
-		Recv: &ast.FieldList{
-			List: []*ast.Field{
-				{
-					Names: []*ast.Ident{receiverIdent()},
-					Type:  &ast.StarExpr{X: ast.NewIdent(gen.structName)},
-				},
-			},
-		},
+		Recv: receiverFieldList(structName),
 		Body: &ast.BlockStmt{
 			List: []ast.Stmt{
 				&ast.ExprStmt{
@@ -397,10 +338,12 @@ func (gen *generator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl 
 	}
 }
 
-func (gen *generator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
+func methodReturnsSetterDecl(structName string, method *ast.Field) *ast.FuncDecl {
+	methodType := method.Type.(*ast.FuncType)
+
 	params := []*ast.Field{}
 	structFields := []ast.Expr{}
-	for i, result := range method.Type.(*ast.FuncType).Results.List {
+	for i, result := range methodType.Results.List {
 		params = append(params, &ast.Field{
 			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(i))},
 			Type:  result.Type,
@@ -414,14 +357,7 @@ func (gen *generator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{List: params},
 		},
-		Recv: &ast.FieldList{
-			List: []*ast.Field{
-				{
-					Names: []*ast.Ident{receiverIdent()},
-					Type:  &ast.StarExpr{X: ast.NewIdent(gen.structName)},
-				},
-			},
-		},
+		Recv: receiverFieldList(structName),
 		Body: &ast.BlockStmt{
 			List: []ast.Stmt{
 				&ast.AssignStmt{
@@ -434,7 +370,7 @@ func (gen *generator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
 					},
 					Rhs: []ast.Expr{
 						&ast.CompositeLit{
-							Type: returnStructTypeForMethod(method.Type.(*ast.FuncType)),
+							Type: returnStructTypeForMethod(methodType),
 							Elts: structFields,
 						},
 					},
@@ -445,16 +381,16 @@ func (gen *generator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
 }
 
 func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
-	paramFields := []*ast.Field{}
+	fields := []*ast.Field{}
 	for i, field := range methodType.Params.List {
-		paramFields = append(paramFields, &ast.Field{
+		fields = append(fields, &ast.Field{
 			Type:  storedTypeForType(field.Type),
 			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
 		})
 	}
 
 	return &ast.StructType{
-		Fields: &ast.FieldList{List: paramFields},
+		Fields: &ast.FieldList{List: fields},
 	}
 }
 
@@ -516,12 +452,34 @@ func receiverIdent() *ast.Ident {
 	return ast.NewIdent("fake")
 }
 
+func receiverFieldList(structName string) *ast.FieldList {
+	return &ast.FieldList{
+		List: []*ast.Field{
+			{
+				Names: []*ast.Ident{receiverIdent()},
+				Type:  &ast.StarExpr{X: ast.NewIdent(structName)},
+			},
+		},
+	}
+}
+
 func publicize(input string) string {
 	return strings.ToUpper(input[0:1]) + input[1:]
 }
 
 func privatize(input string) string {
 	return strings.ToLower(input[0:1]) + input[1:]
+}
+
+func nilCheck(x ast.Expr) ast.Expr {
+	return &ast.BinaryExpr{
+		X:  x,
+		Op: token.NEQ,
+		Y: &ast.BasicLit{
+			Kind:  token.STRING,
+			Value: "nil",
+		},
+	}
 }
 
 var funcRegexp = regexp.MustCompile("\n(func)")
