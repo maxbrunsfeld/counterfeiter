@@ -29,10 +29,10 @@ func commentLine() string {
 }
 
 func sourceFile(structName, packageName string, interfaceNode *ast.InterfaceType, importSpecs []*ast.ImportSpec) ast.Node {
-	declarations := append(
-		importDecls(importSpecs),
+	declarations := []ast.Decl{
+		importsDecl(importSpecs),
 		typeDecl(structName, interfaceNode),
-	)
+	}
 
 	for _, method := range interfaceNode.Methods.List {
 		methodType := method.Type.(*ast.FuncType)
@@ -64,23 +64,25 @@ func sourceFile(structName, packageName string, interfaceNode *ast.InterfaceType
 	}
 }
 
-func importDecls(importSpecs []*ast.ImportSpec) []ast.Decl {
-	specs := append(importSpecs, &ast.ImportSpec{
-		Path: &ast.BasicLit{
-			Kind:  token.STRING,
-			Value: `"sync"`,
+func importsDecl(importSpecs []*ast.ImportSpec) ast.Decl {
+	specs := []ast.Spec{
+		&ast.ImportSpec{
+			Path: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: `"sync"`,
+			},
 		},
-	})
-
-	result := []ast.Decl{}
-	for _, spec := range specs {
-		result = append(result, &ast.GenDecl{
-			Tok:   token.IMPORT,
-			Specs: []ast.Spec{spec},
-		})
 	}
 
-	return result
+	for _, spec := range importSpecs {
+		specs = append(specs, spec)
+	}
+
+	return &ast.GenDecl{
+		Lparen: 1,
+		Tok:    token.IMPORT,
+		Specs:  specs,
+	}
 }
 
 func typeDecl(structName string, iface *ast.InterfaceType) ast.Decl {

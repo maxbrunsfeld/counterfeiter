@@ -1,12 +1,11 @@
 package fixtures
 
 import (
+	"net/http"
 	"io"
-	"os"
+	some_alias "os"
 )
 
-import "net/http"
-
 type HasImports interface {
-	DoThings(io.Writer, *os.File) *http.Client
+	DoThings(io.Writer, *some_alias.File) *http.Client
 }
