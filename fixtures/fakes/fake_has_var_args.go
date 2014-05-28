@@ -13,6 +13,15 @@ type FakeHasVarArgs struct {
 	doThingsReturns struct {
 		result1 int
 	}
+	DoMoreThingsStub        func(int, int, ...string) int
+	doMoreThingsArgsForCall []struct {
+		arg1 int
+		arg2 int
+		arg3 []string
+	}
+	doMoreThingsReturns struct {
+		result1 int
+	}
 }
 
 func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
@@ -43,6 +52,39 @@ func (fake *FakeHasVarArgs) DoThingsArgsForCall(i int) (int, []string) {
 
 func (fake *FakeHasVarArgs) DoThingsReturns(result1 int) {
 	fake.doThingsReturns = struct {
+		result1 int
+	}{result1}
+}
+
+func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int {
+	fake.Lock()
+	defer fake.Unlock()
+	fake.doMoreThingsArgsForCall = append(fake.doMoreThingsArgsForCall, struct {
+		arg1 int
+		arg2 int
+		arg3 []string
+	}{arg1, arg2, arg3})
+	if fake.DoMoreThingsStub != nil {
+		return fake.DoMoreThingsStub(arg1, arg2, arg3...)
+	} else {
+		return fake.doMoreThingsReturns.result1
+	}
+}
+
+func (fake *FakeHasVarArgs) DoMoreThingsCallCount() int {
+	fake.RLock()
+	defer fake.RUnlock()
+	return len(fake.doMoreThingsArgsForCall)
+}
+
+func (fake *FakeHasVarArgs) DoMoreThingsArgsForCall(i int) (int, int, []string) {
+	fake.RLock()
+	defer fake.RUnlock()
+	return fake.doMoreThingsArgsForCall[i].arg1, fake.doMoreThingsArgsForCall[i].arg2, fake.doMoreThingsArgsForCall[i].arg3
+}
+
+func (fake *FakeHasVarArgs) DoMoreThingsReturns(result1 int) {
+	fake.doMoreThingsReturns = struct {
 		result1 int
 	}{result1}
 }
