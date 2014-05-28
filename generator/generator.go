@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/printer"
+	"go/format"
 	"go/token"
 	"regexp"
 	"strings"
@@ -12,7 +12,7 @@ import (
 
 func GenerateFake(structName, packageName string, interfaceNode *ast.InterfaceType) (string, error) {
 	buf := new(bytes.Buffer)
-	err := printer.Fprint(
+	err := format.Node(
 		buf,
 		token.NewFileSet(),
 		sourceFile(structName, packageName, interfaceNode),

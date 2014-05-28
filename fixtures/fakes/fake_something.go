@@ -4,17 +4,17 @@ import "sync"
 
 type FakeSomething struct {
 	sync.RWMutex
-	DoThingsStub		func(string, uint64) (int, error)
-	doThingsArgsForCall	[]struct {
-		arg1	string
-		arg2	uint64
+	DoThingsStub        func(string, uint64) (int, error)
+	doThingsArgsForCall []struct {
+		arg1 string
+		arg2 uint64
 	}
-	doThingsReturns	struct {
-		result1	int
-		result2	error
+	doThingsReturns struct {
+		result1 int
+		result2 error
 	}
-	DoNothingStub		func()
-	doNothingArgsForCall	[]struct {
+	DoNothingStub        func()
+	doNothingArgsForCall []struct {
 	}
 }
 
@@ -22,8 +22,8 @@ func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.Lock()
 	defer fake.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
-		arg1	string
-		arg2	uint64
+		arg1 string
+		arg2 uint64
 	}{arg1, arg2})
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
@@ -46,8 +46,8 @@ func (fake *FakeSomething) DoThingsArgsForCall(i int) (string, uint64) {
 
 func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 	fake.doThingsReturns = struct {
-		result1	int
-		result2	error
+		result1 int
+		result2 error
 	}{result1, result2}
 }
 

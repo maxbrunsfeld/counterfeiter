@@ -4,12 +4,12 @@ import "sync"
 
 type FakeHasVarArgs struct {
 	sync.RWMutex
-	DoThingsStub		func(int, ...string) int
-	doThingsArgsForCall	[]struct {
-		arg1	int
-		arg2	[]string
+	DoThingsStub        func(int, ...string) int
+	doThingsArgsForCall []struct {
+		arg1 int
+		arg2 []string
 	}
-	doThingsReturns	struct {
+	doThingsReturns struct {
 		result1 int
 	}
 }
@@ -18,8 +18,8 @@ func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
 	fake.Lock()
 	defer fake.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
-		arg1	int
-		arg2	[]string
+		arg1 int
+		arg2 []string
 	}{arg1, arg2})
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2...)
