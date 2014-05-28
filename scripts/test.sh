@@ -2,7 +2,7 @@
 
 set -e
 
-interfaces='Something HasVarArgs'
+interfaces='Something HasVarArgs HasImports'
 
 for interface in $interfaces; do
   go run main.go fixtures $interface
