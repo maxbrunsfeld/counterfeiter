@@ -9,8 +9,8 @@ import (
 )
 
 type FakeHasImports struct {
-	doThingsMutex       sync.RWMutex
 	DoThingsStub        func(io.Writer, *some_alias.File) *http.Client
+	doThingsMutex       sync.RWMutex
 	doThingsArgsForCall []struct {
 		arg1 io.Writer
 		arg2 *some_alias.File

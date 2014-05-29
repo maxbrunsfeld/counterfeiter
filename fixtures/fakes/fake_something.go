@@ -4,8 +4,8 @@ package fakes
 import "sync"
 
 type FakeSomething struct {
-	doThingsMutex       sync.RWMutex
 	DoThingsStub        func(string, uint64) (int, error)
+	doThingsMutex       sync.RWMutex
 	doThingsArgsForCall []struct {
 		arg1 string
 		arg2 uint64
@@ -14,8 +14,8 @@ type FakeSomething struct {
 		result1 int
 		result2 error
 	}
-	doNothingMutex       sync.RWMutex
 	DoNothingStub        func()
+	doNothingMutex       sync.RWMutex
 	doNothingArgsForCall []struct {
 	}
 }

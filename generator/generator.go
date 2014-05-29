@@ -95,16 +95,16 @@ func typeDecl(structName string, iface *ast.InterfaceType) ast.Decl {
 			structFields,
 
 			&ast.Field{
+				Names: []*ast.Ident{ast.NewIdent(methodStubFuncName(method))},
+				Type:  method.Type,
+			},
+
+			&ast.Field{
 				Type: &ast.SelectorExpr{
 					X:   ast.NewIdent("sync"),
 					Sel: ast.NewIdent("RWMutex"),
 				},
 				Names: []*ast.Ident{ast.NewIdent(mutexFieldName(method))},
-			},
-
-			&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent(methodStubFuncName(method))},
-				Type:  method.Type,
 			},
 
 			&ast.Field{

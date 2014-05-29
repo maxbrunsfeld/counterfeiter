@@ -4,8 +4,8 @@ package fakes
 import "sync"
 
 type FakeHasVarArgs struct {
-	doThingsMutex       sync.RWMutex
 	DoThingsStub        func(int, ...string) int
+	doThingsMutex       sync.RWMutex
 	doThingsArgsForCall []struct {
 		arg1 int
 		arg2 []string
@@ -13,8 +13,8 @@ type FakeHasVarArgs struct {
 	doThingsReturns struct {
 		result1 int
 	}
-	doMoreThingsMutex       sync.RWMutex
 	DoMoreThingsStub        func(int, int, ...string) int
+	doMoreThingsMutex       sync.RWMutex
 	doMoreThingsArgsForCall []struct {
 		arg1 int
 		arg2 int
