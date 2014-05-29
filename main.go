@@ -14,15 +14,15 @@ import (
 
 var usage = `
 USAGE
-	counterfeiter <source_path> <interface_name> [-]
-		[-o <output_path>]
-		[--fakeName <fake_name>]
+	counterfeiter
+		[-o <output-path>] [--fake-name <fake-name>]
+		<source-path> <interface-name> [-]
 
 ARGUMENTS
-	source_path
+	source-path
 		Path to a file or directory containing an interface to fake
 
-	interface_name
+	interface-name
 		Name of an interface to fake
 
 	'-' argument
@@ -35,7 +35,7 @@ OPTIONS
 		By default, code will be written to a 'fakes' directory inside
 		of the directory containing the original interface.
 	
-	--fakeName
+	--fake-name
 		Name of the fake struct to generate. By default, 'Fake' will
 		be prepended to the name of the interface.
 `
@@ -47,7 +47,7 @@ var outputPathFlag = flag.String(
 )
 
 var fakeNameFlag = flag.String(
-	"fakeName",
+	"fake-name",
 	"",
 	"The name of the fake struct",
 )
