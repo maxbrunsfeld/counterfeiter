@@ -4,7 +4,7 @@ package fakes
 import "sync"
 
 type FakeHasVarArgs struct {
-	sync.RWMutex
+	doThingsMutex       sync.RWMutex
 	DoThingsStub        func(int, ...string) int
 	doThingsArgsForCall []struct {
 		arg1 int
@@ -13,6 +13,7 @@ type FakeHasVarArgs struct {
 	doThingsReturns struct {
 		result1 int
 	}
+	doMoreThingsMutex       sync.RWMutex
 	DoMoreThingsStub        func(int, int, ...string) int
 	doMoreThingsArgsForCall []struct {
 		arg1 int
@@ -25,8 +26,8 @@ type FakeHasVarArgs struct {
 }
 
 func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
-	fake.Lock()
-	defer fake.Unlock()
+	fake.doThingsMutex.Lock()
+	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 int
 		arg2 []string
@@ -39,14 +40,14 @@ func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
 }
 
 func (fake *FakeHasVarArgs) DoThingsCallCount() int {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
 	return len(fake.doThingsArgsForCall)
 }
 
 func (fake *FakeHasVarArgs) DoThingsArgsForCall(i int) (int, []string) {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
 	return fake.doThingsArgsForCall[i].arg1, fake.doThingsArgsForCall[i].arg2
 }
 
@@ -57,8 +58,8 @@ func (fake *FakeHasVarArgs) DoThingsReturns(result1 int) {
 }
 
 func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int {
-	fake.Lock()
-	defer fake.Unlock()
+	fake.doMoreThingsMutex.Lock()
+	defer fake.doMoreThingsMutex.Unlock()
 	fake.doMoreThingsArgsForCall = append(fake.doMoreThingsArgsForCall, struct {
 		arg1 int
 		arg2 int
@@ -72,14 +73,14 @@ func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int
 }
 
 func (fake *FakeHasVarArgs) DoMoreThingsCallCount() int {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doMoreThingsMutex.RLock()
+	defer fake.doMoreThingsMutex.RUnlock()
 	return len(fake.doMoreThingsArgsForCall)
 }
 
 func (fake *FakeHasVarArgs) DoMoreThingsArgsForCall(i int) (int, int, []string) {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doMoreThingsMutex.RLock()
+	defer fake.doMoreThingsMutex.RUnlock()
 	return fake.doMoreThingsArgsForCall[i].arg1, fake.doMoreThingsArgsForCall[i].arg2, fake.doMoreThingsArgsForCall[i].arg3
 }
 

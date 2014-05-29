@@ -9,7 +9,7 @@ import (
 )
 
 type FakeHasImports struct {
-	sync.RWMutex
+	doThingsMutex       sync.RWMutex
 	DoThingsStub        func(io.Writer, *some_alias.File) *http.Client
 	doThingsArgsForCall []struct {
 		arg1 io.Writer
@@ -21,8 +21,8 @@ type FakeHasImports struct {
 }
 
 func (fake *FakeHasImports) DoThings(arg1 io.Writer, arg2 *some_alias.File) *http.Client {
-	fake.Lock()
-	defer fake.Unlock()
+	fake.doThingsMutex.Lock()
+	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 io.Writer
 		arg2 *some_alias.File
@@ -35,14 +35,14 @@ func (fake *FakeHasImports) DoThings(arg1 io.Writer, arg2 *some_alias.File) *htt
 }
 
 func (fake *FakeHasImports) DoThingsCallCount() int {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
 	return len(fake.doThingsArgsForCall)
 }
 
 func (fake *FakeHasImports) DoThingsArgsForCall(i int) (io.Writer, *some_alias.File) {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
 	return fake.doThingsArgsForCall[i].arg1, fake.doThingsArgsForCall[i].arg2
 }
 

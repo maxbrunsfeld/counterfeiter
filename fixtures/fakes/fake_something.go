@@ -4,7 +4,7 @@ package fakes
 import "sync"
 
 type FakeSomething struct {
-	sync.RWMutex
+	doThingsMutex       sync.RWMutex
 	DoThingsStub        func(string, uint64) (int, error)
 	doThingsArgsForCall []struct {
 		arg1 string
@@ -14,14 +14,15 @@ type FakeSomething struct {
 		result1 int
 		result2 error
 	}
+	doNothingMutex       sync.RWMutex
 	DoNothingStub        func()
 	doNothingArgsForCall []struct {
 	}
 }
 
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
-	fake.Lock()
-	defer fake.Unlock()
+	fake.doThingsMutex.Lock()
+	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 string
 		arg2 uint64
@@ -34,14 +35,14 @@ func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 }
 
 func (fake *FakeSomething) DoThingsCallCount() int {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
 	return len(fake.doThingsArgsForCall)
 }
 
 func (fake *FakeSomething) DoThingsArgsForCall(i int) (string, uint64) {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
 	return fake.doThingsArgsForCall[i].arg1, fake.doThingsArgsForCall[i].arg2
 }
 
@@ -53,8 +54,8 @@ func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 }
 
 func (fake *FakeSomething) DoNothing() {
-	fake.Lock()
-	defer fake.Unlock()
+	fake.doNothingMutex.Lock()
+	defer fake.doNothingMutex.Unlock()
 	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct {
 	}{})
 	if fake.DoNothingStub != nil {
@@ -63,7 +64,7 @@ func (fake *FakeSomething) DoNothing() {
 }
 
 func (fake *FakeSomething) DoNothingCallCount() int {
-	fake.RLock()
-	defer fake.RUnlock()
+	fake.doNothingMutex.RLock()
+	defer fake.doNothingMutex.RUnlock()
 	return len(fake.doNothingArgsForCall)
 }

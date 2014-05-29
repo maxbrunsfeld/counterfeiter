@@ -86,20 +86,21 @@ func importsDecl(importSpecs []*ast.ImportSpec) ast.Decl {
 }
 
 func typeDecl(structName string, iface *ast.InterfaceType) ast.Decl {
-	structFields := []*ast.Field{
-		{
-			Type: &ast.SelectorExpr{
-				X:   ast.NewIdent("sync"),
-				Sel: ast.NewIdent("RWMutex"),
-			},
-		},
-	}
+	structFields := []*ast.Field{}
 
 	for _, method := range iface.Methods.List {
 		methodType := method.Type.(*ast.FuncType)
 
 		structFields = append(
 			structFields,
+
+			&ast.Field{
+				Type: &ast.SelectorExpr{
+					X:   ast.NewIdent("sync"),
+					Sel: ast.NewIdent("RWMutex"),
+				},
+				Names: []*ast.Ident{ast.NewIdent(mutexFieldName(method))},
+			},
 
 			&ast.Field{
 				Names: []*ast.Ident{ast.NewIdent(methodStubFuncName(method))},
@@ -208,22 +209,9 @@ func methodImplementationDecl(structName string, method *ast.Field) *ast.FuncDec
 		},
 		Recv: receiverFieldList(structName),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.ExprStmt{
-				X: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("Lock"),
-					},
-				},
-			},
-			&ast.DeferStmt{
-				Call: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("Unlock"),
-					},
-				},
-			},
+			callMutex(method, "Lock"),
+			deferMutex(method, "Unlock"),
+
 			&ast.AssignStmt{
 				Tok: token.ASSIGN,
 				Lhs: []ast.Expr{&ast.SelectorExpr{
@@ -261,22 +249,9 @@ func methodCallCountGetterDecl(structName string, method *ast.Field) *ast.FuncDe
 		},
 		Recv: receiverFieldList(structName),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.ExprStmt{
-				X: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("RLock"),
-					},
-				},
-			},
-			&ast.DeferStmt{
-				Call: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("RUnlock"),
-					},
-				},
-			},
+			callMutex(method, "RLock"),
+			deferMutex(method, "RUnlock"),
+
 			&ast.ReturnStmt{
 				Results: []ast.Expr{
 					&ast.CallExpr{
@@ -296,7 +271,6 @@ func methodCallCountGetterDecl(structName string, method *ast.Field) *ast.FuncDe
 
 func methodCallArgsGetterDecl(structName string, method *ast.Field) *ast.FuncDecl {
 	indexIdent := ast.NewIdent("i")
-
 	resultValues := []ast.Expr{}
 	resultTypes := []*ast.Field{}
 
@@ -330,22 +304,8 @@ func methodCallArgsGetterDecl(structName string, method *ast.Field) *ast.FuncDec
 		},
 		Recv: receiverFieldList(structName),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.ExprStmt{
-				X: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("RLock"),
-					},
-				},
-			},
-			&ast.DeferStmt{
-				Call: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("RUnlock"),
-					},
-				},
-			},
+			callMutex(method, "RLock"),
+			deferMutex(method, "RUnlock"),
 			&ast.ReturnStmt{
 				Results: resultValues,
 			},
@@ -449,6 +409,10 @@ func callArgsFieldName(method *ast.Field) string {
 	return privatize(callArgsMethodName(method))
 }
 
+func mutexFieldName(method *ast.Field) string {
+	return privatize(method.Names[0].Name) + "Mutex"
+}
+
 func methodStubFuncName(method *ast.Field) string {
 	return method.Names[0].Name + "Stub"
 }
@@ -471,6 +435,34 @@ func receiverFieldList(structName string) *ast.FieldList {
 			{
 				Names: []*ast.Ident{receiverIdent()},
 				Type:  &ast.StarExpr{X: ast.NewIdent(structName)},
+			},
+		},
+	}
+}
+
+func callMutex(method *ast.Field, verb string) ast.Stmt {
+	return &ast.ExprStmt{
+		X: &ast.CallExpr{
+			Fun: &ast.SelectorExpr{
+				X: &ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: ast.NewIdent(mutexFieldName(method)),
+				},
+				Sel: ast.NewIdent(verb),
+			},
+		},
+	}
+}
+
+func deferMutex(method *ast.Field, verb string) ast.Stmt {
+	return &ast.DeferStmt{
+		Call: &ast.CallExpr{
+			Fun: &ast.SelectorExpr{
+				X: &ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: ast.NewIdent(mutexFieldName(method)),
+				},
+				Sel: ast.NewIdent(verb),
 			},
 		},
 	}
