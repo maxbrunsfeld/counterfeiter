@@ -16,8 +16,7 @@ type FakeSomething struct {
 	}
 	DoNothingStub        func()
 	doNothingMutex       sync.RWMutex
-	doNothingArgsForCall []struct {
-	}
+	doNothingArgsForCall []struct{}
 }
 
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
@@ -56,8 +55,7 @@ func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 func (fake *FakeSomething) DoNothing() {
 	fake.doNothingMutex.Lock()
 	defer fake.doNothingMutex.Unlock()
-	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct {
-	}{})
+	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct{}{})
 	if fake.DoNothingStub != nil {
 		fake.DoNothingStub()
 	}

@@ -487,10 +487,12 @@ func nilCheck(x ast.Expr) ast.Expr {
 	}
 }
 
-var funcRegexp = regexp.MustCompile("\n(func)")
-
 func prettifyCode(code string) string {
-	code = funcRegexp.ReplaceAllString(code, "\n\n$1")
+	code = funcRegexp.ReplaceAllString(code, "\n\nfunc")
+	code = emptyStructRegexp.ReplaceAllString(code, "struct{}")
 	code = strings.Replace(code, "\n\n\n", "\n\n", -1)
 	return code
 }
+
+var funcRegexp = regexp.MustCompile("\nfunc")
+var emptyStructRegexp = regexp.MustCompile("struct[\\s]+{[\\s]+}")
