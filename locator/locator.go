@@ -29,37 +29,36 @@ func GetInterface(interfaceName, path string) (*ast.InterfaceType, []*ast.Import
 		return nil, nil, fmt.Errorf("Couldn't find package '%s' in directory", basename)
 	}
 
-	importSpecs := []*ast.ImportSpec{}
+	var file *ast.File
 	var result *ast.InterfaceType
-	ast.Inspect(pkg, func(node ast.Node) bool {
-		importSpec, ok := node.(*ast.ImportSpec)
-		if ok {
-			importSpecs = append(importSpecs, importSpec)
-		}
-
-		typeSpec, ok := node.(*ast.TypeSpec)
-		if ok && typeSpec.Name.Name == interfaceName {
-			if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
-				result = interfaceType
-			} else {
-				err = fmt.Errorf("Name '%s' does not refer to an interface", interfaceName)
+	for _, f := range pkg.Files {
+		ast.Inspect(f, func(node ast.Node) bool {
+			typeSpec, ok := node.(*ast.TypeSpec)
+			if ok && typeSpec.Name.Name == interfaceName {
+				if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
+					result = interfaceType
+					file = f
+				} else {
+					err = fmt.Errorf("Name '%s' does not refer to an interface", interfaceName)
+				}
 				return false
 			}
-		}
-		return true
-	})
-
-	// usedImportSpecs := map[*ast.ImportSpec]struct{}{}
-	// ast.Inspect(result, func(node ast.Node) bool {
-	// if selector, ok := node.(*ast.SelectorExpr); ok {
-	// fmt.Println("SELECTOR", selector)
-	// }
-	// return true
-	// })
+			return true
+		})
+	}
 
 	if result == nil {
 		return nil, nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
 	}
+
+	importSpecs := []*ast.ImportSpec{}
+	ast.Inspect(file, func(node ast.Node) bool {
+		importSpec, ok := node.(*ast.ImportSpec)
+		if ok {
+			importSpecs = append(importSpecs, importSpec)
+		}
+		return true
+	})
 
 	return result, importSpecs, err
 }
