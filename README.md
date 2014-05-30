@@ -5,7 +5,7 @@ Counterfeiter
 
 When writing unit-tests for an object, it is often useful to have fake implementations
 of the object's collaborators. In go, such fake implementations cannot be generated
-automatically at runtime. This tool allows you to generate them before compiling your code.
+automatically at runtime. This tool allows you to generate them before compilation.
 
 ### Generating fakes
 
@@ -26,8 +26,11 @@ type Something interface {
 
 Run counterfeiter like this:
 
-```
+```shell
 $ counterfeiter path/to/some_package Something
+```
+
+```
 Wrote `FakeSomething` to `path/to/some_package/fakes/fake_something.go`
 ```
 
@@ -35,7 +38,7 @@ You can customize the location of the ouptut using the `-o` flag, or write the c
 
 ### Using the fake in your tests
 
-Fake objects record their calls:
+Instantiate fakes with `new`:
 
 ```go
 import "my-repo/path/to/some_package/fakes"
@@ -43,9 +46,15 @@ import "my-repo/path/to/some_package/fakes"
 // ...
 
 fake := new(fakes.FakeSomething)
+```
+
+Fakes record the arguments they were called with:
+
+```go
 fake.DoThings("stuff", 5)
 
 Expect(fake.DoThingsCallCount()).To(Equal(1))
+
 str, num := fake.DoThingsArgsForCall(0)
 Expect(str).To(Equal("stuff"))
 Expect(num).To(Equal(uint64(5)))
