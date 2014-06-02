@@ -23,42 +23,45 @@ func GetInterface(interfaceName, path string) (*ast.InterfaceType, []*ast.Import
 		return nil, nil, err
 	}
 
-	basename := filepath.Base(path)
-	pkg := packages[basename]
-	if pkg == nil {
-		return nil, nil, fmt.Errorf("Couldn't find package '%s' in directory", basename)
-	}
-
-	var file *ast.File
-	var result *ast.InterfaceType
-	for _, f := range pkg.Files {
-		ast.Inspect(f, func(node ast.Node) bool {
-			typeSpec, ok := node.(*ast.TypeSpec)
-			if ok && typeSpec.Name.Name == interfaceName {
-				if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
-					result = interfaceType
-					file = f
-				} else {
-					err = fmt.Errorf("Name '%s' does not refer to an interface", interfaceName)
-				}
-				return false
-			}
-			return true
-		})
-	}
-
-	if result == nil {
-		return nil, nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
-	}
-
 	importSpecs := []*ast.ImportSpec{}
-	ast.Inspect(file, func(node ast.Node) bool {
-		importSpec, ok := node.(*ast.ImportSpec)
-		if ok {
-			importSpecs = append(importSpecs, importSpec)
-		}
-		return true
-	})
+	var iface *ast.InterfaceType
 
-	return result, importSpecs, err
+	for _, pkg := range packages {
+		var file *ast.File
+
+		for _, f := range pkg.Files {
+			ast.Inspect(f, func(node ast.Node) bool {
+				typeSpec, ok := node.(*ast.TypeSpec)
+				if ok && typeSpec.Name.Name == interfaceName {
+					if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
+						iface = interfaceType
+						file = f
+					} else {
+						err = fmt.Errorf("Name '%s' does not refer to an interface", interfaceName)
+					}
+					return false
+				}
+				return true
+			})
+		}
+
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if iface != nil {
+			ast.Inspect(file, func(node ast.Node) bool {
+				importSpec, ok := node.(*ast.ImportSpec)
+				if ok {
+					importSpecs = append(importSpecs, importSpec)
+				}
+				return true
+			})
+
+			return iface, importSpecs, nil
+			break
+		}
+	}
+
+	return nil, nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
 }

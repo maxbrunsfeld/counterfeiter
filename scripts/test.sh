@@ -2,10 +2,11 @@
 
 set -e
 
-interfaces='Something HasVarArgs HasImports'
+counterfeiter='go run main.go'
 
-for interface in $interfaces; do
-  go run main.go fixtures $interface
-done
+$counterfeiter fixtures Something
+$counterfeiter fixtures HasVarArgs
+$counterfeiter fixtures HasImports
+$counterfeiter fixtures/another_package InAliasedPackage
 
 go test -v .
