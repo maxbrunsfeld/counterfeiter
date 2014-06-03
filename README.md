@@ -43,9 +43,7 @@ Instantiate fakes with `new`:
 ```go
 import "my-repo/path/to/some_package/fakes"
 
-// ...
-
-fake := new(fakes.FakeSomething)
+var fake = new(fakes.FakeSomething)
 ```
 
 Fakes record the arguments they were called with:
