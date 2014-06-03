@@ -3,6 +3,8 @@ package fakes
 
 import (
 	"sync"
+
+	. "github.com/maxbrunsfeld/counterfeiter/fixtures"
 )
 
 type FakeSomething struct {
@@ -68,3 +70,5 @@ func (fake *FakeSomething) DoNothingCallCount() int {
 	defer fake.doNothingMutex.RUnlock()
 	return len(fake.doNothingArgsForCall)
 }
+
+var _ Something = new(FakeSomething)

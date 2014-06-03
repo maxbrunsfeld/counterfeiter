@@ -3,6 +3,8 @@ package fakes
 
 import (
 	"sync"
+
+	. "github.com/maxbrunsfeld/counterfeiter/fixtures/another_package"
 )
 
 type FakeInAliasedPackage struct {
@@ -46,3 +48,5 @@ func (fake *FakeInAliasedPackage) StuffReturns(result1 string) {
 		result1 string
 	}{result1}
 }
+
+var _ InAliasedPackage = new(FakeInAliasedPackage)
