@@ -167,18 +167,18 @@ func (gen CodeGenerator) methodImplementationDecl(method *ast.Field) *ast.FuncDe
 	paramFields := []*ast.Field{}
 	var ellipsisPos token.Pos
 
-	for i, field := range methodType.Params.List {
-		paramValues = append(paramValues, ast.NewIdent(nameForMethodParam(i)))
+	eachMethodParam(methodType, func(name string, t ast.Expr, i int) {
+		paramValues = append(paramValues, ast.NewIdent(name))
 
 		paramFields = append(paramFields, &ast.Field{
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
-			Type:  field.Type,
+			Names: []*ast.Ident{ast.NewIdent(name)},
+			Type:  t,
 		})
 
-		if _, ok := field.Type.(*ast.Ellipsis); ok {
+		if _, ok := t.(*ast.Ellipsis); ok {
 			ellipsisPos = token.Pos(i)
 		}
-	}
+	})
 
 	stubFuncCall := &ast.CallExpr{
 		Fun:      stubFunc,
@@ -290,7 +290,7 @@ func (gen CodeGenerator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDe
 	resultValues := []ast.Expr{}
 	resultTypes := []*ast.Field{}
 
-	for i, field := range method.Type.(*ast.FuncType).Params.List {
+	eachMethodParam(method.Type.(*ast.FuncType), func(name string, t ast.Expr, _ int) {
 		resultValues = append(resultValues, &ast.SelectorExpr{
 			X: &ast.IndexExpr{
 				X: &ast.SelectorExpr{
@@ -299,13 +299,13 @@ func (gen CodeGenerator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDe
 				},
 				Index: indexIdent,
 			},
-			Sel: ast.NewIdent(nameForMethodParam(i)),
+			Sel: ast.NewIdent(name),
 		})
 
 		resultTypes = append(resultTypes, &ast.Field{
-			Type: storedTypeForType(field.Type),
+			Type: storedTypeForType(t),
 		})
-	}
+	})
 
 	return &ast.FuncDecl{
 		Name: ast.NewIdent(callArgsMethodName(method)),
@@ -398,14 +398,30 @@ func (gen CodeGenerator) ensureInterfaceIsUsedDecl() *ast.GenDecl {
 	}
 }
 
+func eachMethodParam(methodType *ast.FuncType, cb func(string, ast.Expr, int)) {
+	i := 0
+	for _, field := range methodType.Params.List {
+		if len(field.Names) == 0 {
+			cb(fmt.Sprintf("arg%d", i+1), field.Type, i)
+			i++
+		} else {
+			for _, name := range field.Names {
+				cb(name.Name, field.Type, i)
+				i++
+			}
+		}
+	}
+}
+
 func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	fields := []*ast.Field{}
-	for i, field := range methodType.Params.List {
+
+	eachMethodParam(methodType, func(name string, t ast.Expr, _ int) {
 		fields = append(fields, &ast.Field{
-			Type:  storedTypeForType(field.Type),
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodParam(i))},
+			Type:  storedTypeForType(t),
+			Names: []*ast.Ident{ast.NewIdent(name)},
 		})
-	}
+	})
 
 	return &ast.StructType{
 		Fields: &ast.FieldList{List: fields},
@@ -458,10 +474,6 @@ func typeForOriginalType(t ast.Expr, typeNames []string) ast.Expr {
 
 func nameForMethodResult(i int) string {
 	return fmt.Sprintf("result%d", i+1)
-}
-
-func nameForMethodParam(i int) string {
-	return fmt.Sprintf("arg%d", i+1)
 }
 
 func callCountMethodName(method *ast.Field) string {
