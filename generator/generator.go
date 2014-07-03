@@ -189,15 +189,15 @@ func (gen CodeGenerator) methodImplementationDecl(method *ast.Field) *ast.FuncDe
 	var lastStatement ast.Stmt
 	if methodType.Results.NumFields() > 0 {
 		returnValues := []ast.Expr{}
-		for i, _ := range methodType.Results.List {
+		eachMethodResult(methodType, func(name string, t ast.Expr) {
 			returnValues = append(returnValues, &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
 					Sel: ast.NewIdent(returnStructFieldName(method)),
 				},
-				Sel: ast.NewIdent(nameForMethodResult(i)),
+				Sel: ast.NewIdent(name),
 			})
-		}
+		})
 
 		lastStatement = &ast.IfStmt{
 			Cond: nilCheck(stubFunc),
@@ -334,14 +334,14 @@ func (gen CodeGenerator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDec
 
 	params := []*ast.Field{}
 	structFields := []ast.Expr{}
-	for i, result := range methodType.Results.List {
+	eachMethodResult(methodType, func(name string, t ast.Expr) {
 		params = append(params, &ast.Field{
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(i))},
-			Type:  result.Type,
+			Names: []*ast.Ident{ast.NewIdent(name)},
+			Type:  t,
 		})
 
-		structFields = append(structFields, ast.NewIdent(nameForMethodResult(i)))
-	}
+		structFields = append(structFields, ast.NewIdent(name))
+	})
 
 	return &ast.FuncDecl{
 		Name: ast.NewIdent(returnSetterMethodName(method)),
@@ -413,6 +413,12 @@ func eachMethodParam(methodType *ast.FuncType, cb func(string, ast.Expr, int)) {
 	}
 }
 
+func eachMethodResult(methodType *ast.FuncType, cb func(string, ast.Expr)) {
+	for _, field := range methodType.Results.List {
+		cb(fmt.Sprintf("result%d", i+1), field.Type)
+	}
+}
+
 func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	fields := []*ast.Field{}
 
@@ -430,12 +436,12 @@ func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 
 func returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	resultFields := []*ast.Field{}
-	for i, field := range methodType.Results.List {
+	eachMethodResult(methodType, func(name string, t ast.Expr) {
 		resultFields = append(resultFields, &ast.Field{
-			Type:  field.Type,
-			Names: []*ast.Ident{ast.NewIdent(nameForMethodResult(i))},
+			Type:  t,
+			Names: []*ast.Ident{ast.NewIdent(name)},
 		})
-	}
+	})
 
 	return &ast.StructType{
 		Fields: &ast.FieldList{List: resultFields},
@@ -470,10 +476,6 @@ func typeForOriginalType(t ast.Expr, typeNames []string) ast.Expr {
 	})
 
 	return t
-}
-
-func nameForMethodResult(i int) string {
-	return fmt.Sprintf("result%d", i+1)
 }
 
 func callCountMethodName(method *ast.Field) string {
