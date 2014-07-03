@@ -11,4 +11,4 @@ $counterfeiter fixtures HasOtherTypes
 $counterfeiter fixtures ReusesArgTypes
 $counterfeiter fixtures/another_package InAliasedPackage
 
-go test -v .
+go test -race -v .
