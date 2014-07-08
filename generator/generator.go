@@ -16,7 +16,7 @@ type CodeGenerator struct {
 	InterfaceName string
 	StructName    string
 	PackageName   string
-	InterfaceNode *ast.InterfaceType
+	Methods       []*ast.Field
 	ImportSpecs   []*ast.ImportSpec
 	ImportPath    string
 }
@@ -38,7 +38,7 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 		gen.typeDecl(),
 	}
 
-	for _, method := range gen.InterfaceNode.Methods.List {
+	for _, method := range gen.Methods {
 		methodType := method.Type.(*ast.FuncType)
 
 		declarations = append(
@@ -104,7 +104,7 @@ func (gen CodeGenerator) importsDecl() ast.Decl {
 func (gen CodeGenerator) typeDecl() ast.Decl {
 	structFields := []*ast.Field{}
 
-	for _, method := range gen.InterfaceNode.Methods.List {
+	for _, method := range gen.Methods {
 		methodType := method.Type.(*ast.FuncType)
 
 		structFields = append(
