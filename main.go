@@ -20,24 +20,24 @@ USAGE
 
 ARGUMENTS
 	source-path
-		Path to a file or directory containing an interface to fake
+		Path to the file or directory containing the interface to fake
 
 	interface-name
-		Name of an interface to fake
+		Name of the interface to fake
 
 	'-' argument
-		Write code to standard out instead of a file
+		Write code to standard out instead of to a file
 
 OPTIONS
 	-o
-		Path the file or directory to which code should be written.
+		Path to the file or directory to which code should be written.
 		This also determines the package name that will be used.
 		By default, code will be written to a 'fakes' directory inside
 		of the directory containing the original interface.
 	
 	--fake-name
 		Name of the fake struct to generate. By default, 'Fake' will
-		be prepended to the name of the interface.
+		be prepended to the name of the original interface.
 `
 
 var outputPathFlag = flag.String(
