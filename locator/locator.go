@@ -64,55 +64,7 @@ func methodsForInterface(iface *ast.InterfaceType, importPath string, importSpec
 	for _, field := range iface.Methods.List {
 		switch t := field.Type.(type) {
 		case *ast.FuncType:
-			ast.Inspect(t, func(node ast.Node) bool {
-				switch node := node.(type) {
-				case *ast.Field:
-					if typeIdent, ok := node.Type.(*ast.Ident); ok {
-						if _, ok := typeNames[typeIdent.Name]; ok {
-							node.Type = &ast.SelectorExpr{
-								X:   ast.NewIdent(path.Base(importPath)),
-								Sel: typeIdent,
-							}
-						}
-					}
-				case *ast.StarExpr:
-					if typeIdent, ok := node.X.(*ast.Ident); ok {
-						if _, ok := typeNames[typeIdent.Name]; ok {
-							node.X = &ast.SelectorExpr{
-								X:   ast.NewIdent(path.Base(importPath)),
-								Sel: typeIdent,
-							}
-						}
-					}
-				case *ast.MapType:
-					if typeIdent, ok := node.Key.(*ast.Ident); ok {
-						if _, ok := typeNames[typeIdent.Name]; ok {
-							node.Key = &ast.SelectorExpr{
-								X:   ast.NewIdent(path.Base(importPath)),
-								Sel: typeIdent,
-							}
-						}
-					}
-					if typeIdent, ok := node.Value.(*ast.Ident); ok {
-						if _, ok := typeNames[typeIdent.Name]; ok {
-							node.Value = &ast.SelectorExpr{
-								X:   ast.NewIdent(path.Base(importPath)),
-								Sel: typeIdent,
-							}
-						}
-					}
-				case *ast.ArrayType:
-					if typeIdent, ok := node.Elt.(*ast.Ident); ok {
-						if _, ok := typeNames[typeIdent.Name]; ok {
-							node.Elt = &ast.SelectorExpr{
-								X:   ast.NewIdent(path.Base(importPath)),
-								Sel: typeIdent,
-							}
-						}
-					}
-				}
-				return true
-			})
+			prefixTypes(t, path.Base(importPath), typeNames)
 			result = append(result, field)
 		case *ast.Ident:
 			methods, _, err := getInterfaceFromImportPath(t.Name, importPath)
@@ -131,6 +83,34 @@ func methodsForInterface(iface *ast.InterfaceType, importPath string, importSpec
 		}
 	}
 	return result, nil
+}
+
+func prefixTypes(t *ast.FuncType, pkgName string, typeNames map[string]struct{}) {
+	ast.Inspect(t, func(node ast.Node) bool {
+		switch node := node.(type) {
+		case *ast.Field:
+			prefixType(&node.Type, pkgName, typeNames)
+		case *ast.StarExpr:
+			prefixType(&node.X, pkgName, typeNames)
+		case *ast.MapType:
+			prefixType(&node.Key, pkgName, typeNames)
+			prefixType(&node.Value, pkgName, typeNames)
+		case *ast.ArrayType:
+			prefixType(&node.Elt, pkgName, typeNames)
+		}
+		return true
+	})
+}
+
+func prefixType(node *ast.Expr, pkgName string, typeNames map[string]struct{}) {
+	if typeIdent, ok := (*node).(*ast.Ident); ok {
+		if _, ok := typeNames[typeIdent.Name]; ok {
+			*node = &ast.SelectorExpr{
+				X:   ast.NewIdent(pkgName),
+				Sel: typeIdent,
+			}
+		}
+	}
 }
 
 func getDir(path string) (string, error) {
