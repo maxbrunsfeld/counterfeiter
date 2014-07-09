@@ -2,7 +2,9 @@
 
 set -e
 
-counterfeiter='go run main.go'
+counterfeiter='/tmp/counterfeiter_test'
+
+go build -o $counterfeiter
 
 $counterfeiter fixtures Something
 $counterfeiter fixtures HasVarArgs
