@@ -12,6 +12,6 @@ $counterfeiter fixtures HasImports
 $counterfeiter fixtures HasOtherTypes
 $counterfeiter fixtures ReusesArgTypes
 $counterfeiter fixtures EmbedsInterfaces
-$counterfeiter fixtures/another_package InAliasedPackage
+$counterfeiter fixtures/aliased_package InAliasedPackage
 
 go test -race -v .

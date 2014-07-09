@@ -84,6 +84,32 @@ func methodsForInterface(iface *ast.InterfaceType, importPath string, importSpec
 							}
 						}
 					}
+				case *ast.MapType:
+					if typeIdent, ok := node.Key.(*ast.Ident); ok {
+						if _, ok := typeNames[typeIdent.Name]; ok {
+							node.Key = &ast.SelectorExpr{
+								X:   ast.NewIdent(path.Base(importPath)),
+								Sel: typeIdent,
+							}
+						}
+					}
+					if typeIdent, ok := node.Value.(*ast.Ident); ok {
+						if _, ok := typeNames[typeIdent.Name]; ok {
+							node.Value = &ast.SelectorExpr{
+								X:   ast.NewIdent(path.Base(importPath)),
+								Sel: typeIdent,
+							}
+						}
+					}
+				case *ast.ArrayType:
+					if typeIdent, ok := node.Elt.(*ast.Ident); ok {
+						if _, ok := typeNames[typeIdent.Name]; ok {
+							node.Elt = &ast.SelectorExpr{
+								X:   ast.NewIdent(path.Base(importPath)),
+								Sel: typeIdent,
+							}
+						}
+					}
 				}
 				return true
 			})

@@ -45,4 +45,4 @@ func (fake *FakeInAliasedPackage) StuffReturns(result1 string) {
 	}{result1}
 }
 
-var _ another_package.InAliasedPackage = new(FakeInAliasedPackage)
+var _ aliased_package.InAliasedPackage = new(FakeInAliasedPackage)

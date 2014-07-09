@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/maxbrunsfeld/counterfeiter/fixtures"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures/another_package"
 )
 
 type FakeEmbedsInterfaces struct {
@@ -14,6 +15,14 @@ type FakeEmbedsInterfaces struct {
 	serveHTTPArgsForCall []struct {
 		arg1 http.ResponseWriter
 		arg2 *http.Request
+	}
+	AnotherMethodStub        func([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType)
+	anotherMethodMutex       sync.RWMutex
+	anotherMethodArgsForCall []struct {
+		arg1 []another_package.SomeType
+		arg2 map[another_package.SomeType]another_package.SomeType
+		arg3 *another_package.SomeType
+		arg4 another_package.SomeType
 	}
 	EmbeddedMethodStub        func() string
 	embeddedMethodMutex       sync.RWMutex
@@ -48,6 +57,32 @@ func (fake *FakeEmbedsInterfaces) ServeHTTPArgsForCall(i int) (http.ResponseWrit
 	fake.serveHTTPMutex.RLock()
 	defer fake.serveHTTPMutex.RUnlock()
 	return fake.serveHTTPArgsForCall[i].arg1, fake.serveHTTPArgsForCall[i].arg2
+}
+
+func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType, arg2 map[another_package.SomeType]another_package.SomeType, arg3 *another_package.SomeType, arg4 another_package.SomeType) {
+	fake.anotherMethodMutex.Lock()
+	defer fake.anotherMethodMutex.Unlock()
+	fake.anotherMethodArgsForCall = append(fake.anotherMethodArgsForCall, struct {
+		arg1 []another_package.SomeType
+		arg2 map[another_package.SomeType]another_package.SomeType
+		arg3 *another_package.SomeType
+		arg4 another_package.SomeType
+	}{arg1, arg2, arg3, arg4})
+	if fake.AnotherMethodStub != nil {
+		fake.AnotherMethodStub(arg1, arg2, arg3, arg4)
+	}
+}
+
+func (fake *FakeEmbedsInterfaces) AnotherMethodCallCount() int {
+	fake.anotherMethodMutex.RLock()
+	defer fake.anotherMethodMutex.RUnlock()
+	return len(fake.anotherMethodArgsForCall)
+}
+
+func (fake *FakeEmbedsInterfaces) AnotherMethodArgsForCall(i int) ([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType) {
+	fake.anotherMethodMutex.RLock()
+	defer fake.anotherMethodMutex.RUnlock()
+	return fake.anotherMethodArgsForCall[i].arg1, fake.anotherMethodArgsForCall[i].arg2, fake.anotherMethodArgsForCall[i].arg3, fake.anotherMethodArgsForCall[i].arg4
 }
 
 func (fake *FakeEmbedsInterfaces) EmbeddedMethod() string {
