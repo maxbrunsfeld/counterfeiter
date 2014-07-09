@@ -7,7 +7,7 @@ import (
 	some_alias "os"
 	"sync"
 
-	. "github.com/maxbrunsfeld/counterfeiter/fixtures"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures"
 )
 
 type FakeHasImports struct {
@@ -54,4 +54,4 @@ func (fake *FakeHasImports) DoThingsReturns(result1 *http.Client) {
 	}{result1}
 }
 
-var _ HasImports = new(FakeHasImports)
+var _ fixtures.HasImports = new(FakeHasImports)

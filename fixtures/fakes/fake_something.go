@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	. "github.com/maxbrunsfeld/counterfeiter/fixtures"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures"
 )
 
 type FakeSomething struct {
@@ -71,4 +71,4 @@ func (fake *FakeSomething) DoNothingCallCount() int {
 	return len(fake.doNothingArgsForCall)
 }
 
-var _ Something = new(FakeSomething)
+var _ fixtures.Something = new(FakeSomething)

@@ -1,9 +1,9 @@
 package fixtures
 
-import "io"
+import "net/http"
 
 type EmbedsInterfaces interface {
-	io.Writer
+	http.Handler
 	InterfaceToEmbed
 
 	DoThings()

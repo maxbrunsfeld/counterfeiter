@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
+	"path"
 	"regexp"
 	"strings"
 
@@ -76,7 +77,6 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 func (gen CodeGenerator) importsDecl() ast.Decl {
 	specs := []ast.Spec{
 		&ast.ImportSpec{
-			Name: ast.NewIdent("."),
 			Path: &ast.BasicLit{
 				Kind:  token.STRING,
 				Value: `"` + gen.ImportPath + `"`,
@@ -386,7 +386,10 @@ func (gen CodeGenerator) ensureInterfaceIsUsedDecl() *ast.GenDecl {
 		Specs: []ast.Spec{
 			&ast.ValueSpec{
 				Names: []*ast.Ident{ast.NewIdent("_")},
-				Type:  ast.NewIdent(gen.InterfaceName),
+				Type: &ast.SelectorExpr{
+					X:   ast.NewIdent(path.Base(gen.ImportPath)),
+					Sel: ast.NewIdent(gen.InterfaceName),
+				},
 				Values: []ast.Expr{
 					&ast.CallExpr{
 						Fun:  ast.NewIdent("new"),

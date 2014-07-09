@@ -44,9 +44,11 @@ func getInterfaceFromImportPath(interfaceName, importPath string) ([]*ast.Field,
 			return nil, nil, err
 		}
 
+		typeNames := getTypeNames(pkg)
+
 		if iface != nil {
 			imports := getImports(file)
-			methods, err := methodsForInterface(iface, importPath, imports)
+			methods, err := methodsForInterface(iface, importPath, imports, typeNames)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -57,11 +59,34 @@ func getInterfaceFromImportPath(interfaceName, importPath string) ([]*ast.Field,
 	return nil, nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
 }
 
-func methodsForInterface(iface *ast.InterfaceType, importPath string, importSpecs []*ast.ImportSpec) ([]*ast.Field, error) {
+func methodsForInterface(iface *ast.InterfaceType, importPath string, importSpecs []*ast.ImportSpec, typeNames map[string]struct{}) ([]*ast.Field, error) {
 	result := []*ast.Field{}
 	for _, field := range iface.Methods.List {
 		switch t := field.Type.(type) {
 		case *ast.FuncType:
+			ast.Inspect(t, func(node ast.Node) bool {
+				switch node := node.(type) {
+				case *ast.Field:
+					if typeIdent, ok := node.Type.(*ast.Ident); ok {
+						if _, ok := typeNames[typeIdent.Name]; ok {
+							node.Type = &ast.SelectorExpr{
+								X:   ast.NewIdent(path.Base(importPath)),
+								Sel: typeIdent,
+							}
+						}
+					}
+				case *ast.StarExpr:
+					if typeIdent, ok := node.X.(*ast.Ident); ok {
+						if _, ok := typeNames[typeIdent.Name]; ok {
+							node.X = &ast.SelectorExpr{
+								X:   ast.NewIdent(path.Base(importPath)),
+								Sel: typeIdent,
+							}
+						}
+					}
+				}
+				return true
+			})
 			result = append(result, field)
 		case *ast.Ident:
 			methods, _, err := getInterfaceFromImportPath(t.Name, importPath)
@@ -178,6 +203,19 @@ func getImports(file *ast.File) []*ast.ImportSpec {
 	ast.Inspect(file, func(node ast.Node) bool {
 		if importSpec, ok := node.(*ast.ImportSpec); ok {
 			result = append(result, importSpec)
+		}
+		return true
+	})
+	return result
+}
+
+func getTypeNames(pkg *ast.Package) map[string]struct{} {
+	result := map[string]struct{}{}
+	ast.Inspect(pkg, func(node ast.Node) bool {
+		if typeSpec, ok := node.(*ast.TypeSpec); ok {
+			if typeSpec.Name != nil {
+				result[typeSpec.Name.Name] = struct{}{}
+			}
 		}
 		return true
 	})

@@ -4,25 +4,25 @@ package fakes
 import (
 	"sync"
 
-	. "github.com/maxbrunsfeld/counterfeiter/fixtures"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures"
 )
 
 type FakeHasOtherTypes struct {
-	GetThingStub        func(SomeString) SomeFunc
+	GetThingStub        func(fixtures.SomeString) fixtures.SomeFunc
 	getThingMutex       sync.RWMutex
 	getThingArgsForCall []struct {
-		arg1 SomeString
+		arg1 fixtures.SomeString
 	}
 	getThingReturns struct {
-		result1 SomeFunc
+		result1 fixtures.SomeFunc
 	}
 }
 
-func (fake *FakeHasOtherTypes) GetThing(arg1 SomeString) SomeFunc {
+func (fake *FakeHasOtherTypes) GetThing(arg1 fixtures.SomeString) fixtures.SomeFunc {
 	fake.getThingMutex.Lock()
 	defer fake.getThingMutex.Unlock()
 	fake.getThingArgsForCall = append(fake.getThingArgsForCall, struct {
-		arg1 SomeString
+		arg1 fixtures.SomeString
 	}{arg1})
 	if fake.GetThingStub != nil {
 		return fake.GetThingStub(arg1)
@@ -37,16 +37,16 @@ func (fake *FakeHasOtherTypes) GetThingCallCount() int {
 	return len(fake.getThingArgsForCall)
 }
 
-func (fake *FakeHasOtherTypes) GetThingArgsForCall(i int) SomeString {
+func (fake *FakeHasOtherTypes) GetThingArgsForCall(i int) fixtures.SomeString {
 	fake.getThingMutex.RLock()
 	defer fake.getThingMutex.RUnlock()
 	return fake.getThingArgsForCall[i].arg1
 }
 
-func (fake *FakeHasOtherTypes) GetThingReturns(result1 SomeFunc) {
+func (fake *FakeHasOtherTypes) GetThingReturns(result1 fixtures.SomeFunc) {
 	fake.getThingReturns = struct {
-		result1 SomeFunc
+		result1 fixtures.SomeFunc
 	}{result1}
 }
 
-var _ HasOtherTypes = new(FakeHasOtherTypes)
+var _ fixtures.HasOtherTypes = new(FakeHasOtherTypes)

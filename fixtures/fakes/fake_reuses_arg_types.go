@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	. "github.com/maxbrunsfeld/counterfeiter/fixtures"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures"
 )
 
 type FakeReusesArgTypes struct {
@@ -40,4 +40,4 @@ func (fake *FakeReusesArgTypes) DoThingsArgsForCall(i int) (string, string) {
 	return fake.doThingsArgsForCall[i].x, fake.doThingsArgsForCall[i].y
 }
 
-var _ ReusesArgTypes = new(FakeReusesArgTypes)
+var _ fixtures.ReusesArgTypes = new(FakeReusesArgTypes)

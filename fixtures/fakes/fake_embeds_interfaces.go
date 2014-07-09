@@ -2,19 +2,18 @@
 package fakes
 
 import (
+	"net/http"
 	"sync"
-	. "github.com/maxbrunsfeld/counterfeiter/fixtures"
+
+	"github.com/maxbrunsfeld/counterfeiter/fixtures"
 )
 
 type FakeEmbedsInterfaces struct {
-	WriteStub        func(p []byte) (n int, err error)
-	writeMutex       sync.RWMutex
-	writeArgsForCall []struct {
-		p []byte
-	}
-	writeReturns struct {
-		result1 int
-		result2 error
+	ServeHTTPStub        func(http.ResponseWriter, *http.Request)
+	serveHTTPMutex       sync.RWMutex
+	serveHTTPArgsForCall []struct {
+		arg1 http.ResponseWriter
+		arg2 *http.Request
 	}
 	EmbeddedMethodStub        func() string
 	embeddedMethodMutex       sync.RWMutex
@@ -27,36 +26,28 @@ type FakeEmbedsInterfaces struct {
 	doThingsArgsForCall []struct{}
 }
 
-func (fake *FakeEmbedsInterfaces) Write(p []byte) (n int, err error) {
-	fake.writeMutex.Lock()
-	defer fake.writeMutex.Unlock()
-	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
-		p []byte
-	}{p})
-	if fake.WriteStub != nil {
-		return fake.WriteStub(p)
-	} else {
-		return fake.writeReturns.result1, fake.writeReturns.result2
+func (fake *FakeEmbedsInterfaces) ServeHTTP(arg1 http.ResponseWriter, arg2 *http.Request) {
+	fake.serveHTTPMutex.Lock()
+	defer fake.serveHTTPMutex.Unlock()
+	fake.serveHTTPArgsForCall = append(fake.serveHTTPArgsForCall, struct {
+		arg1 http.ResponseWriter
+		arg2 *http.Request
+	}{arg1, arg2})
+	if fake.ServeHTTPStub != nil {
+		fake.ServeHTTPStub(arg1, arg2)
 	}
 }
 
-func (fake *FakeEmbedsInterfaces) WriteCallCount() int {
-	fake.writeMutex.RLock()
-	defer fake.writeMutex.RUnlock()
-	return len(fake.writeArgsForCall)
+func (fake *FakeEmbedsInterfaces) ServeHTTPCallCount() int {
+	fake.serveHTTPMutex.RLock()
+	defer fake.serveHTTPMutex.RUnlock()
+	return len(fake.serveHTTPArgsForCall)
 }
 
-func (fake *FakeEmbedsInterfaces) WriteArgsForCall(i int) []byte {
-	fake.writeMutex.RLock()
-	defer fake.writeMutex.RUnlock()
-	return fake.writeArgsForCall[i].p
-}
-
-func (fake *FakeEmbedsInterfaces) WriteReturns(result1 int, result2 error) {
-	fake.writeReturns = struct {
-		result1 int
-		result2 error
-	}{result1, result2}
+func (fake *FakeEmbedsInterfaces) ServeHTTPArgsForCall(i int) (http.ResponseWriter, *http.Request) {
+	fake.serveHTTPMutex.RLock()
+	defer fake.serveHTTPMutex.RUnlock()
+	return fake.serveHTTPArgsForCall[i].arg1, fake.serveHTTPArgsForCall[i].arg2
 }
 
 func (fake *FakeEmbedsInterfaces) EmbeddedMethod() string {
@@ -97,4 +88,4 @@ func (fake *FakeEmbedsInterfaces) DoThingsCallCount() int {
 	return len(fake.doThingsArgsForCall)
 }
 
-var _ EmbedsInterfaces = new(FakeEmbedsInterfaces)
+var _ fixtures.EmbedsInterfaces = new(FakeEmbedsInterfaces)
