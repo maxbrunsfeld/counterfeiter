@@ -67,7 +67,7 @@ func main() {
 	fakePackageName := filepath.Base(outputDir)
 	shouldPrintToStdout := len(args) >= 3 && args[2] == "-"
 
-	methods, importSpecs, importPath, err := locator.GetInterfaceFromFilePath(interfaceName, sourceDir)
+	methods, importSpecs, importPath, pkgName, err := locator.GetInterfaceFromFilePath(interfaceName, sourceDir)
 	if err != nil {
 		fail("%v", err)
 	}
@@ -79,6 +79,7 @@ func main() {
 		Methods:       methods,
 		ImportSpecs:   importSpecs,
 		ImportPath:    importPath,
+		OriginalPackageName: pkgName,
 	}.GenerateFake()
 
 	if err != nil {

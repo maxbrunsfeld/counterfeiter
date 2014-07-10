@@ -12,62 +12,68 @@ import (
 	"strings"
 )
 
-func GetInterfaceFromFilePath(interfaceName, filePath string) ([]*ast.Field, []*ast.ImportSpec, string, error) {
+func GetInterfaceFromFilePath(interfaceName, filePath string) (
+	methods []*ast.Field,
+	imports []*ast.ImportSpec,
+	importPath string,
+	packageName string,
+	err error) {
+
 	dirPath, err := getDir(filePath)
 	if err != nil {
-		return nil, nil, "", err
+		return nil, nil, "", "", err
 	}
 
-	importPath, err := importPathForDirPath(dirPath)
+	importPath, err = importPathForDirPath(dirPath)
 	if err != nil {
-		return nil, nil, "", err
+		return nil, nil, "", "", err
 	}
 
-	fields, imports, err := getInterfaceFromImportPath(interfaceName, importPath)
-	return fields, imports, importPath, err
+	fields, imports, pkgName, err := getInterfaceFromImportPath(interfaceName, importPath)
+	return fields, imports, importPath, pkgName, err
 }
 
-func getInterfaceFromImportPath(interfaceName, importPath string) ([]*ast.Field, []*ast.ImportSpec, error) {
+func getInterfaceFromImportPath(interfaceName, importPath string) ([]*ast.Field, []*ast.ImportSpec, string, error) {
 	dirPath, err := dirPathForImportPath(importPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
 
 	packages, err := packagesForDirPath(dirPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
 
 	for _, pkg := range packages {
 		iface, file, err := findInterface(pkg, interfaceName)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, "", err
 		}
 
 		typeNames := getTypeNames(pkg)
 
 		if iface != nil {
 			imports := getImports(file)
-			methods, err := methodsForInterface(iface, importPath, imports, typeNames)
+			methods, err := methodsForInterface(iface, importPath, pkg.Name, imports, typeNames)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, "", err
 			}
-			return methods, imports, nil
+			return methods, imports, pkg.Name, nil
 		}
 	}
 
-	return nil, nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
+	return nil, nil, "", fmt.Errorf("Could not find interface '%s'", interfaceName)
 }
 
-func methodsForInterface(iface *ast.InterfaceType, importPath string, importSpecs []*ast.ImportSpec, typeNames map[string]struct{}) ([]*ast.Field, error) {
+func methodsForInterface(iface *ast.InterfaceType, importPath, pkgName string, importSpecs []*ast.ImportSpec, typeNames map[string]struct{}) ([]*ast.Field, error) {
 	result := []*ast.Field{}
 	for _, field := range iface.Methods.List {
 		switch t := field.Type.(type) {
 		case *ast.FuncType:
-			prefixTypes(t, path.Base(importPath), typeNames)
+			prefixTypes(t, pkgName, typeNames)
 			result = append(result, field)
 		case *ast.Ident:
-			methods, _, err := getInterfaceFromImportPath(t.Name, importPath)
+			methods, _, _, err := getInterfaceFromImportPath(t.Name, importPath)
 			if err != nil {
 				return nil, err
 			}
@@ -75,7 +81,7 @@ func methodsForInterface(iface *ast.InterfaceType, importPath string, importSpec
 		case *ast.SelectorExpr:
 			pkgAlias := t.X.(*ast.Ident).Name
 			pkgImportPath := findImportPath(importSpecs, pkgAlias)
-			methods, _, err := getInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
+			methods, _, _, err := getInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
 			if err != nil {
 				return nil, err
 			}

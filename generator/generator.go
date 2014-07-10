@@ -6,7 +6,6 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
-	"path"
 	"regexp"
 	"strings"
 
@@ -14,12 +13,13 @@ import (
 )
 
 type CodeGenerator struct {
-	InterfaceName string
-	StructName    string
-	PackageName   string
-	Methods       []*ast.Field
-	ImportSpecs   []*ast.ImportSpec
-	ImportPath    string
+	InterfaceName       string
+	StructName          string
+	PackageName         string
+	Methods             []*ast.Field
+	ImportSpecs         []*ast.ImportSpec
+	ImportPath          string
+	OriginalPackageName string
 }
 
 func (gen CodeGenerator) GenerateFake() (string, error) {
@@ -387,7 +387,7 @@ func (gen CodeGenerator) ensureInterfaceIsUsedDecl() *ast.GenDecl {
 			&ast.ValueSpec{
 				Names: []*ast.Ident{ast.NewIdent("_")},
 				Type: &ast.SelectorExpr{
-					X:   ast.NewIdent(path.Base(gen.ImportPath)),
+					X:   ast.NewIdent(gen.OriginalPackageName),
 					Sel: ast.NewIdent(gen.InterfaceName),
 				},
 				Values: []ast.Expr{

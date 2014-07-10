@@ -14,4 +14,6 @@ $counterfeiter fixtures ReusesArgTypes
 $counterfeiter fixtures EmbedsInterfaces
 $counterfeiter fixtures/aliased_package InAliasedPackage
 
+go build ./fixtures/...
+
 go test -race -v .
