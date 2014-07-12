@@ -33,8 +33,8 @@ func (gen CodeGenerator) GenerateFake() (string, error) {
 
 func (gen CodeGenerator) sourceFile() ast.Node {
 	declarations := []ast.Decl{
-		gen.importsDecl(),
-		gen.typeDecl(),
+		gen.imports(),
+		gen.fakeStructType(),
 	}
 
 	for _, method := range gen.Model.Methods {
@@ -42,28 +42,28 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 
 		declarations = append(
 			declarations,
-			gen.methodImplementationDecl(method),
-			gen.methodCallCountGetterDecl(method),
+			gen.methodImplementation(method),
+			gen.methodCallCountGetter(method),
 		)
 
 		if methodType.Params.NumFields() > 0 {
 			declarations = append(
 				declarations,
-				gen.methodCallArgsGetterDecl(method),
+				gen.methodCallArgsGetter(method),
 			)
 		}
 
 		if methodType.Results.NumFields() > 0 {
 			declarations = append(
 				declarations,
-				gen.methodReturnsSetterDecl(method),
+				gen.methodReturnsSetter(method),
 			)
 		}
 	}
 
 	declarations = append(
 		declarations,
-		gen.ensureInterfaceIsUsedDecl(),
+		gen.ensureInterfaceIsUsed(),
 	)
 
 	return &ast.File{
@@ -72,7 +72,7 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 	}
 }
 
-func (gen CodeGenerator) importsDecl() ast.Decl {
+func (gen CodeGenerator) imports() ast.Decl {
 	specs := []ast.Spec{
 		&ast.ImportSpec{
 			Path: &ast.BasicLit{
@@ -99,7 +99,7 @@ func (gen CodeGenerator) importsDecl() ast.Decl {
 	}
 }
 
-func (gen CodeGenerator) typeDecl() ast.Decl {
+func (gen CodeGenerator) fakeStructType() ast.Decl {
 	structFields := []*ast.Field{}
 
 	for _, method := range gen.Model.Methods {
@@ -153,7 +153,7 @@ func (gen CodeGenerator) typeDecl() ast.Decl {
 	}
 }
 
-func (gen CodeGenerator) methodImplementationDecl(method *ast.Field) *ast.FuncDecl {
+func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 	methodType := method.Type.(*ast.FuncType)
 
 	stubFunc := &ast.SelectorExpr{
@@ -251,7 +251,7 @@ func (gen CodeGenerator) methodImplementationDecl(method *ast.Field) *ast.FuncDe
 	}
 }
 
-func (gen CodeGenerator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncDecl {
+func (gen CodeGenerator) methodCallCountGetter(method *ast.Field) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Name: ast.NewIdent(callCountMethodName(method)),
 		Type: &ast.FuncType{
@@ -283,7 +283,7 @@ func (gen CodeGenerator) methodCallCountGetterDecl(method *ast.Field) *ast.FuncD
 	}
 }
 
-func (gen CodeGenerator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDecl {
+func (gen CodeGenerator) methodCallArgsGetter(method *ast.Field) *ast.FuncDecl {
 	indexIdent := ast.NewIdent("i")
 	resultValues := []ast.Expr{}
 	resultTypes := []*ast.Field{}
@@ -327,7 +327,7 @@ func (gen CodeGenerator) methodCallArgsGetterDecl(method *ast.Field) *ast.FuncDe
 	}
 }
 
-func (gen CodeGenerator) methodReturnsSetterDecl(method *ast.Field) *ast.FuncDecl {
+func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 	methodType := method.Type.(*ast.FuncType)
 
 	params := []*ast.Field{}
@@ -378,7 +378,7 @@ func (gen CodeGenerator) receiverFieldList() *ast.FieldList {
 	}
 }
 
-func (gen CodeGenerator) ensureInterfaceIsUsedDecl() *ast.GenDecl {
+func (gen CodeGenerator) ensureInterfaceIsUsed() *ast.GenDecl {
 	return &ast.GenDecl{
 		Tok: token.VAR,
 		Specs: []ast.Spec{
