@@ -9,17 +9,15 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/maxbrunsfeld/counterfeiter/model"
+
 	"code.google.com/p/go.tools/imports"
 )
 
 type CodeGenerator struct {
-	InterfaceName       string
-	StructName          string
-	PackageName         string
-	Methods             []*ast.Field
-	ImportSpecs         []*ast.ImportSpec
-	ImportPath          string
-	OriginalPackageName string
+	Model       model.InterfaceToFake
+	StructName  string
+	PackageName string
 }
 
 func (gen CodeGenerator) GenerateFake() (string, error) {
@@ -39,7 +37,7 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 		gen.typeDecl(),
 	}
 
-	for _, method := range gen.Methods {
+	for _, method := range gen.Model.Methods {
 		methodType := method.Type.(*ast.FuncType)
 
 		declarations = append(
@@ -79,7 +77,7 @@ func (gen CodeGenerator) importsDecl() ast.Decl {
 		&ast.ImportSpec{
 			Path: &ast.BasicLit{
 				Kind:  token.STRING,
-				Value: `"` + gen.ImportPath + `"`,
+				Value: `"` + gen.Model.ImportPath + `"`,
 			},
 		},
 		&ast.ImportSpec{
@@ -90,7 +88,7 @@ func (gen CodeGenerator) importsDecl() ast.Decl {
 		},
 	}
 
-	for _, spec := range gen.ImportSpecs {
+	for _, spec := range gen.Model.ImportSpecs {
 		specs = append(specs, spec)
 	}
 
@@ -104,7 +102,7 @@ func (gen CodeGenerator) importsDecl() ast.Decl {
 func (gen CodeGenerator) typeDecl() ast.Decl {
 	structFields := []*ast.Field{}
 
-	for _, method := range gen.Methods {
+	for _, method := range gen.Model.Methods {
 		methodType := method.Type.(*ast.FuncType)
 
 		structFields = append(
@@ -387,8 +385,8 @@ func (gen CodeGenerator) ensureInterfaceIsUsedDecl() *ast.GenDecl {
 			&ast.ValueSpec{
 				Names: []*ast.Ident{ast.NewIdent("_")},
 				Type: &ast.SelectorExpr{
-					X:   ast.NewIdent(gen.OriginalPackageName),
-					Sel: ast.NewIdent(gen.InterfaceName),
+					X:   ast.NewIdent(gen.Model.PackageName),
+					Sel: ast.NewIdent(gen.Model.Name),
 				},
 				Values: []ast.Expr{
 					&ast.CallExpr{
