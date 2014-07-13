@@ -472,28 +472,6 @@ func storedTypeForType(t ast.Expr) ast.Expr {
 	}
 }
 
-func typeForOriginalType(t ast.Expr, typeNames []string) ast.Expr {
-	if ident, ok := t.(*ast.Ident); ok {
-		for _, typeName := range typeNames {
-			if typeName == ident.Name {
-				return &ast.SelectorExpr{
-					X:   ast.NewIdent("the_package"),
-					Sel: ident,
-				}
-			}
-		}
-	}
-
-	ast.Inspect(t, func(node ast.Node) bool {
-		if field, ok := node.(*ast.Field); ok {
-			field.Type = typeForOriginalType(field.Type, typeNames)
-		}
-		return true
-	})
-
-	return t
-}
-
 func callCountMethodName(method *ast.Field) string {
 	return method.Names[0].Name + "CallCount"
 }
