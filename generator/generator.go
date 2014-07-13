@@ -353,6 +353,21 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 				Lhs: []ast.Expr{
 					&ast.SelectorExpr{
 						X:   receiverIdent(),
+						Sel: ast.NewIdent(methodStubFuncName(method)),
+					},
+				},
+				Rhs: []ast.Expr{
+					&ast.BasicLit{
+						Kind:  token.STRING,
+						Value: "nil",
+					},
+				},
+			},
+			&ast.AssignStmt{
+				Tok: token.ASSIGN,
+				Lhs: []ast.Expr{
+					&ast.SelectorExpr{
+						X:   receiverIdent(),
 						Sel: ast.NewIdent(returnStructFieldName(method)),
 					},
 				},

@@ -50,6 +50,7 @@ func (fake *FakeSomething) DoThingsArgsForCall(i int) (string, uint64) {
 }
 
 func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
+	fake.DoThingsStub = nil
 	fake.doThingsReturns = struct {
 		result1 int
 		result2 error

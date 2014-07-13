@@ -49,6 +49,7 @@ func (fake *FakeHasImports) DoThingsArgsForCall(i int) (io.Writer, *some_alias.F
 }
 
 func (fake *FakeHasImports) DoThingsReturns(result1 *http.Client) {
+	fake.DoThingsStub = nil
 	fake.doThingsReturns = struct {
 		result1 *http.Client
 	}{result1}
