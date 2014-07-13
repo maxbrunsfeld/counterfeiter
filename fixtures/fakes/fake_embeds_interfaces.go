@@ -103,6 +103,7 @@ func (fake *FakeEmbedsInterfaces) EmbeddedMethodCallCount() int {
 }
 
 func (fake *FakeEmbedsInterfaces) EmbeddedMethodReturns(result1 string) {
+	fake.EmbeddedMethodStub = nil
 	fake.embeddedMethodReturns = struct {
 		result1 string
 	}{result1}

@@ -44,6 +44,7 @@ func (fake *FakeInAliasedPackage) StuffArgsForCall(i int) int {
 }
 
 func (fake *FakeInAliasedPackage) StuffReturns(result1 string) {
+	fake.StuffStub = nil
 	fake.stuffReturns = struct {
 		result1 string
 	}{result1}

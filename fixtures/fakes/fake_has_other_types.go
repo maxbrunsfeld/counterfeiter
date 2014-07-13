@@ -44,6 +44,7 @@ func (fake *FakeHasOtherTypes) GetThingArgsForCall(i int) fixtures.SomeString {
 }
 
 func (fake *FakeHasOtherTypes) GetThingReturns(result1 fixtures.SomeFunc) {
+	fake.GetThingStub = nil
 	fake.getThingReturns = struct {
 		result1 fixtures.SomeFunc
 	}{result1}

@@ -56,6 +56,7 @@ func (fake *FakeHasVarArgs) DoThingsArgsForCall(i int) (int, []string) {
 }
 
 func (fake *FakeHasVarArgs) DoThingsReturns(result1 int) {
+	fake.DoThingsStub = nil
 	fake.doThingsReturns = struct {
 		result1 int
 	}{result1}
@@ -89,6 +90,7 @@ func (fake *FakeHasVarArgs) DoMoreThingsArgsForCall(i int) (int, int, []string) 
 }
 
 func (fake *FakeHasVarArgs) DoMoreThingsReturns(result1 int) {
+	fake.DoMoreThingsStub = nil
 	fake.doMoreThingsReturns = struct {
 		result1 int
 	}{result1}
