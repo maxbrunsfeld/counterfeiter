@@ -224,7 +224,6 @@ func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
 			callMutex(method, "Lock"),
-			deferMutex(method, "Unlock"),
 
 			&ast.AssignStmt{
 				Tok: token.ASSIGN,
@@ -246,6 +245,9 @@ func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 					},
 				}},
 			},
+
+			callMutex(method, "Unlock"),
+
 			lastStatement,
 		}},
 	}

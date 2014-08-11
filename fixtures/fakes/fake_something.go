@@ -25,11 +25,11 @@ type FakeSomething struct {
 
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 string
 		arg2 uint64
 	}{arg1, arg2})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
 	} else {
@@ -59,8 +59,8 @@ func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 
 func (fake *FakeSomething) DoNothing() {
 	fake.doNothingMutex.Lock()
-	defer fake.doNothingMutex.Unlock()
 	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct{}{})
+	fake.doNothingMutex.Unlock()
 	if fake.DoNothingStub != nil {
 		fake.DoNothingStub()
 	}
