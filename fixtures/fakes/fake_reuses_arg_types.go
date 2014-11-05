@@ -18,11 +18,11 @@ type FakeReusesArgTypes struct {
 
 func (fake *FakeReusesArgTypes) DoThings(x string, y string) {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		x string
 		y string
 	}{x, y})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		fake.DoThingsStub(x, y)
 	}

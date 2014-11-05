@@ -20,10 +20,10 @@ type FakeInAliasedPackage struct {
 
 func (fake *FakeInAliasedPackage) Stuff(arg1 int) string {
 	fake.stuffMutex.Lock()
-	defer fake.stuffMutex.Unlock()
 	fake.stuffArgsForCall = append(fake.stuffArgsForCall, struct {
 		arg1 int
 	}{arg1})
+	fake.stuffMutex.Unlock()
 	if fake.StuffStub != nil {
 		return fake.StuffStub(arg1)
 	} else {

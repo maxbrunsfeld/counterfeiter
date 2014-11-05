@@ -16,13 +16,14 @@ type FakeEmbedsInterfaces struct {
 		arg1 http.ResponseWriter
 		arg2 *http.Request
 	}
-	AnotherMethodStub        func([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType)
+	AnotherMethodStub        func([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType, chan another_package.SomeType)
 	anotherMethodMutex       sync.RWMutex
 	anotherMethodArgsForCall []struct {
 		arg1 []another_package.SomeType
 		arg2 map[another_package.SomeType]another_package.SomeType
 		arg3 *another_package.SomeType
 		arg4 another_package.SomeType
+		arg5 chan another_package.SomeType
 	}
 	EmbeddedMethodStub        func() string
 	embeddedMethodMutex       sync.RWMutex
@@ -37,11 +38,11 @@ type FakeEmbedsInterfaces struct {
 
 func (fake *FakeEmbedsInterfaces) ServeHTTP(arg1 http.ResponseWriter, arg2 *http.Request) {
 	fake.serveHTTPMutex.Lock()
-	defer fake.serveHTTPMutex.Unlock()
 	fake.serveHTTPArgsForCall = append(fake.serveHTTPArgsForCall, struct {
 		arg1 http.ResponseWriter
 		arg2 *http.Request
 	}{arg1, arg2})
+	fake.serveHTTPMutex.Unlock()
 	if fake.ServeHTTPStub != nil {
 		fake.ServeHTTPStub(arg1, arg2)
 	}
@@ -59,17 +60,18 @@ func (fake *FakeEmbedsInterfaces) ServeHTTPArgsForCall(i int) (http.ResponseWrit
 	return fake.serveHTTPArgsForCall[i].arg1, fake.serveHTTPArgsForCall[i].arg2
 }
 
-func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType, arg2 map[another_package.SomeType]another_package.SomeType, arg3 *another_package.SomeType, arg4 another_package.SomeType) {
+func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType, arg2 map[another_package.SomeType]another_package.SomeType, arg3 *another_package.SomeType, arg4 another_package.SomeType, arg5 chan another_package.SomeType) {
 	fake.anotherMethodMutex.Lock()
-	defer fake.anotherMethodMutex.Unlock()
 	fake.anotherMethodArgsForCall = append(fake.anotherMethodArgsForCall, struct {
 		arg1 []another_package.SomeType
 		arg2 map[another_package.SomeType]another_package.SomeType
 		arg3 *another_package.SomeType
 		arg4 another_package.SomeType
-	}{arg1, arg2, arg3, arg4})
+		arg5 chan another_package.SomeType
+	}{arg1, arg2, arg3, arg4, arg5})
+	fake.anotherMethodMutex.Unlock()
 	if fake.AnotherMethodStub != nil {
-		fake.AnotherMethodStub(arg1, arg2, arg3, arg4)
+		fake.AnotherMethodStub(arg1, arg2, arg3, arg4, arg5)
 	}
 }
 
@@ -79,16 +81,16 @@ func (fake *FakeEmbedsInterfaces) AnotherMethodCallCount() int {
 	return len(fake.anotherMethodArgsForCall)
 }
 
-func (fake *FakeEmbedsInterfaces) AnotherMethodArgsForCall(i int) ([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType) {
+func (fake *FakeEmbedsInterfaces) AnotherMethodArgsForCall(i int) ([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType, chan another_package.SomeType) {
 	fake.anotherMethodMutex.RLock()
 	defer fake.anotherMethodMutex.RUnlock()
-	return fake.anotherMethodArgsForCall[i].arg1, fake.anotherMethodArgsForCall[i].arg2, fake.anotherMethodArgsForCall[i].arg3, fake.anotherMethodArgsForCall[i].arg4
+	return fake.anotherMethodArgsForCall[i].arg1, fake.anotherMethodArgsForCall[i].arg2, fake.anotherMethodArgsForCall[i].arg3, fake.anotherMethodArgsForCall[i].arg4, fake.anotherMethodArgsForCall[i].arg5
 }
 
 func (fake *FakeEmbedsInterfaces) EmbeddedMethod() string {
 	fake.embeddedMethodMutex.Lock()
-	defer fake.embeddedMethodMutex.Unlock()
 	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct{}{})
+	fake.embeddedMethodMutex.Unlock()
 	if fake.EmbeddedMethodStub != nil {
 		return fake.EmbeddedMethodStub()
 	} else {
@@ -111,8 +113,8 @@ func (fake *FakeEmbedsInterfaces) EmbeddedMethodReturns(result1 string) {
 
 func (fake *FakeEmbedsInterfaces) DoThings() {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct{}{})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		fake.DoThingsStub()
 	}

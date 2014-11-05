@@ -105,6 +105,8 @@ func prefixTypes(t *ast.FuncType, pkgName string, typeNames map[string]struct{})
 			prefixType(&node.Value, pkgName, typeNames)
 		case *ast.ArrayType:
 			prefixType(&node.Elt, pkgName, typeNames)
+		case *ast.ChanType:
+			prefixType(&node.Value, pkgName, typeNames)
 		}
 		return true
 	})

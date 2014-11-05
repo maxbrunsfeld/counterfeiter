@@ -24,11 +24,11 @@ type FakeHasImports struct {
 
 func (fake *FakeHasImports) DoThings(arg1 io.Writer, arg2 *some_alias.File) *http.Client {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 io.Writer
 		arg2 *some_alias.File
 	}{arg1, arg2})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
 	} else {

@@ -20,10 +20,10 @@ type FakeHasOtherTypes struct {
 
 func (fake *FakeHasOtherTypes) GetThing(arg1 fixtures.SomeString) fixtures.SomeFunc {
 	fake.getThingMutex.Lock()
-	defer fake.getThingMutex.Unlock()
 	fake.getThingArgsForCall = append(fake.getThingArgsForCall, struct {
 		arg1 fixtures.SomeString
 	}{arg1})
+	fake.getThingMutex.Unlock()
 	if fake.GetThingStub != nil {
 		return fake.GetThingStub(arg1)
 	} else {

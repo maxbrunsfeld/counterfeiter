@@ -31,11 +31,11 @@ type FakeHasVarArgs struct {
 
 func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 int
 		arg2 []string
 	}{arg1, arg2})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2...)
 	} else {
@@ -64,12 +64,12 @@ func (fake *FakeHasVarArgs) DoThingsReturns(result1 int) {
 
 func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int {
 	fake.doMoreThingsMutex.Lock()
-	defer fake.doMoreThingsMutex.Unlock()
 	fake.doMoreThingsArgsForCall = append(fake.doMoreThingsArgsForCall, struct {
 		arg1 int
 		arg2 int
 		arg3 []string
 	}{arg1, arg2, arg3})
+	fake.doMoreThingsMutex.Unlock()
 	if fake.DoMoreThingsStub != nil {
 		return fake.DoMoreThingsStub(arg1, arg2, arg3...)
 	} else {
