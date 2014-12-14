@@ -11,7 +11,7 @@ import (
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
 
-	"code.google.com/p/go.tools/imports"
+	"golang.org/x/tools/imports"
 )
 
 type CodeGenerator struct {
