@@ -180,7 +180,7 @@ func goSourcePaths() []string {
 	for _, path := range strings.Split(os.Getenv("GOPATH"), ":") {
 		result = append(result, filepath.Join(path, "src"))
 	}
-	result = append(result, filepath.Join(runtime.GOROOT(), "src", "pkg"))
+	result = append(result, filepath.Join(runtime.GOROOT(), "src"))
 	return result
 }
 
