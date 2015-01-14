@@ -174,7 +174,7 @@ func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 		})
 
 		if _, ok := t.(*ast.Ellipsis); ok {
-			ellipsisPos = token.Pos(i)
+			ellipsisPos = token.Pos(i + 1)
 		}
 	})
 

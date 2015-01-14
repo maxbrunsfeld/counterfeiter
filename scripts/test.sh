@@ -10,6 +10,7 @@ go build -o $counterfeiter
 
 $counterfeiter fixtures Something
 $counterfeiter fixtures HasVarArgs
+$counterfeiter fixtures HasVarArgsWithLocalTypes
 $counterfeiter fixtures HasImports
 $counterfeiter fixtures HasOtherTypes
 $counterfeiter fixtures ReusesArgTypes
