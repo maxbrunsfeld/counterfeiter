@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.2
+  - 1.4
 install:
   - go get -v -t ./...
 script: scripts/test.sh
