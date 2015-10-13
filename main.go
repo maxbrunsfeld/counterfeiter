@@ -34,7 +34,7 @@ OPTIONS
 		This also determines the package name that will be used.
 		By default, code will be written to a 'fakes' directory inside
 		of the directory containing the original interface.
-	
+
 	--fake-name
 		Name of the fake struct to generate. By default, 'Fake' will
 		be prepended to the name of the original interface.
@@ -55,6 +55,7 @@ var fakeNameFlag = flag.String(
 func main() {
 	flag.Parse()
 	args := flag.Args()
+
 	if len(args) < 2 {
 		fail("%s", usage)
 	}
