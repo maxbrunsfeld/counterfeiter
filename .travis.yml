@@ -1,6 +1,7 @@
 language: go
 go:
-  - 1.4
+  - 1.5
+sudo : false # uses new containerized infrastructure
 install:
   - go get -v -t ./...
 script: scripts/test.sh
