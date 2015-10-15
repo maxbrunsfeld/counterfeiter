@@ -18,10 +18,28 @@ var _ = Describe("The counterfeiter CLI", func() {
 
 	BeforeEach(func() {
 		pathToCLI = tmpPath("counterfeiter")
-		copyIn("something.go", pathToCLI)
+	})
+
+	Describe("when given a single argument", func() {
+		It("interactively prompts the user for the interface they want to counterfeit", func() {
+			reader, writer := io.Pipe()
+
+			copyIn("multiple_interfaces.go", pathToCLI)
+			session := startCounterfeiterWithStdinPipe(pathToCLI, reader, "multiple_interfaces.go")
+
+			writer.Write([]byte("1\n"))
+			writer.Close()
+
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(string(session.Out.Contents())).To(ContainSubstring("Wrote `FakeFirstInterface`"))
+		})
 	})
 
 	Describe("when given two arguments", func() {
+		BeforeEach(func() {
+			copyIn("something.go", pathToCLI)
+		})
+
 		It("writes a fake for the given interface from the provided file", func() {
 			session := startCounterfeiter(pathToCLI, "something.go", "Something")
 
@@ -33,6 +51,10 @@ var _ = Describe("The counterfeiter CLI", func() {
 	})
 
 	Describe("when provided three arguments", func() {
+		BeforeEach(func() {
+			copyIn("something.go", pathToCLI)
+		})
+
 		It("writes the fake to stdout", func() {
 			session := startCounterfeiter(pathToCLI, "something.go", "Something", "-")
 
@@ -79,6 +101,21 @@ func startCounterfeiter(workingDir string, args ...string) *gexec.Session {
 	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
 
 	cmd := exec.Command(pathToCounterfeiter, args...)
+	cmd.Dir = workingDir
+	cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
+
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).ToNot(HaveOccurred())
+	return session
+}
+
+func startCounterfeiterWithStdinPipe(workingDir string, stdin io.Reader, args ...string) *gexec.Session {
+	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
+	absPath, _ := filepath.Abs(fakeGoPathDir)
+	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
+
+	cmd := exec.Command(pathToCounterfeiter, args...)
+	cmd.Stdin = stdin
 	cmd.Dir = workingDir
 	cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
 

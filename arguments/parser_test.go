@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	locatorFakes "github.com/maxbrunsfeld/counterfeiter/locator/fakes"
+	terminalFakes "github.com/maxbrunsfeld/counterfeiter/terminal/fakes"
+
 	. "github.com/maxbrunsfeld/counterfeiter/arguments"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,16 +25,41 @@ var _ = Describe("parsing arguments", func() {
 	var symlinkEvaler SymlinkEvaler
 	var fileStatReader FileStatReader
 
+	var ui *terminalFakes.FakeUI
+	var interfaceLocator *locatorFakes.FakeInterfaceLocator
+
+	var failWasCalled bool
+	// fake UI helper
+
+	var fakeUIBuffer = func() string {
+		var output string
+		for i := 0; i < ui.WriteLineCallCount(); i++ {
+			output = output + ui.WriteLineArgsForCall(i)
+		}
+		return output
+	}
+
 	JustBeforeEach(func() {
-		subject = NewArgumentParser(fail, cwd, symlinkEvaler, fileStatReader)
+		subject = NewArgumentParser(
+			fail,
+			cwd,
+			symlinkEvaler,
+			fileStatReader,
+			ui,
+			interfaceLocator,
+		)
 		parsedArgs = subject.ParseArguments(args...)
 	})
 
 	BeforeEach(func() {
-		fail = func(_ string, _ ...interface{}) {}
+		failWasCalled = false
+		fail = func(_ string, _ ...interface{}) { failWasCalled = true }
 		cwd = func() string {
 			return "/home/test-user/workspace"
 		}
+
+		ui = new(terminalFakes.FakeUI)
+		interfaceLocator = new(locatorFakes.FakeInterfaceLocator)
 
 		symlinkEvaler = func(input string) (string, error) {
 			return input, nil
@@ -39,6 +67,43 @@ var _ = Describe("parsing arguments", func() {
 		fileStatReader = func(filename string) (os.FileInfo, error) {
 			return fakeFileInfo(filename, true), nil
 		}
+	})
+
+	Describe("when a single argument is provided", func() {
+		BeforeEach(func() {
+			args = []string{"some/path"}
+
+			interfaceLocator.GetInterfacesFromFilePathReturns([]string{"Foo", "Bar"})
+			ui.ReadLineFromStdinReturns("1")
+		})
+
+		It("prompts the user for which interface they want", func() {
+			Expect(fakeUIBuffer()).To(ContainSubstring("Which interface to counterfeit?"))
+		})
+
+		It("shows the user each interface found in the given filepath", func() {
+			Expect(fakeUIBuffer()).To(ContainSubstring("1. Foo"))
+			Expect(fakeUIBuffer()).To(ContainSubstring("2. Bar"))
+		})
+
+		It("asks its interface locator for valid interfaces", func() {
+			Expect(interfaceLocator.GetInterfacesFromFilePathCallCount()).To(Equal(1))
+			Expect(interfaceLocator.GetInterfacesFromFilePathArgsForCall(0)).To(Equal("/home/test-user/workspace/some/path"))
+		})
+
+		It("yields the interface name the user chose", func() {
+			Expect(parsedArgs.InterfaceName).To(Equal("Foo"))
+		})
+
+		Describe("when the user types an invalid option", func() {
+			BeforeEach(func() {
+				ui.ReadLineFromStdinReturns("garbage")
+			})
+
+			It("invokes its fail handler", func() {
+				Expect(failWasCalled).To(BeTrue())
+			})
+		})
 	})
 
 	Describe("when two arguments are provided", func() {
@@ -86,10 +151,7 @@ var _ = Describe("parsing arguments", func() {
 			})
 
 			Context("when the file stat cannot be read", func() {
-				var failWasCalled bool
-
 				BeforeEach(func() {
-					fail = func(_ string, _ ...interface{}) { failWasCalled = true }
 					fileStatReader = func(_ string) (os.FileInfo, error) {
 						return fakeFileInfo("", false), errors.New("submarine-shoutout")
 					}

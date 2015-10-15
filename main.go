@@ -9,6 +9,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
 	"github.com/maxbrunsfeld/counterfeiter/locator"
+	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
 var usage = `
@@ -43,7 +44,7 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	if len(args) < 2 {
+	if len(args) < 1 {
 		fail("%s", usage)
 		return
 	}
@@ -53,6 +54,8 @@ func main() {
 		cwd,
 		filepath.EvalSymlinks,
 		os.Stat,
+		terminal.NewUI(),
+		locator.NewInterfaceLocator(),
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
 

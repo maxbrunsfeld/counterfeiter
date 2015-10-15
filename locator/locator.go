@@ -10,9 +10,66 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unicode"
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
 )
+
+type InterfaceLocator interface {
+	GetInterfacesFromFilePath(string) []string
+}
+
+func NewInterfaceLocator() InterfaceLocator {
+	return interfaceLocator{}
+}
+
+type interfaceLocator struct{}
+
+func (locator interfaceLocator) GetInterfacesFromFilePath(path string) []string {
+	dir, err := getDir(path)
+	if err != nil {
+		panic(err)
+	}
+
+	importPath, err := importPathForDirPath(dir)
+	if err != nil {
+		panic(err)
+	}
+
+	dirPath, err := dirPathForImportPath(importPath)
+	if err != nil {
+		panic(err)
+	}
+
+	packages, err := packagesForDirPath(dirPath)
+	if err != nil {
+		panic(err)
+	}
+
+	interfacesInPackage := []string{}
+	for _, pkg := range packages {
+
+		for _, f := range pkg.Files {
+			ast.Inspect(f, func(node ast.Node) bool {
+				if typeSpec, ok := node.(*ast.TypeSpec); ok {
+					if _, ok := typeSpec.Type.(*ast.InterfaceType); ok {
+						firstRune := rune(typeSpec.Name.Name[0])
+
+						if !unicode.IsUpper(firstRune) {
+							return true
+						}
+
+						interfacesInPackage = append(interfacesInPackage, typeSpec.Name.Name)
+					}
+				}
+
+				return true
+			})
+		}
+	}
+
+	return interfacesInPackage
+}
 
 func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceToFake, error) {
 	dirPath, err := getDir(filePath)

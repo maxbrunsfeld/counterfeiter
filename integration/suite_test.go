@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCounterfeiterCLI(t *testing.T) {
+func TestCounterfeiterCLIIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Counterfeiter CLI Suite")
+	RunSpecs(t, "Counterfeiter CLI Integration Suite")
 }

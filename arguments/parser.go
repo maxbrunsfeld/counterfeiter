@@ -1,9 +1,14 @@
 package arguments
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/maxbrunsfeld/counterfeiter/locator"
+	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
 type ArgumentParser interface {
@@ -15,32 +20,78 @@ func NewArgumentParser(
 	currentWorkingDir CurrentWorkingDir,
 	symlinkEvaler SymlinkEvaler,
 	fileStatReader FileStatReader,
+	ui terminal.UI,
+	interfaceLocator locator.InterfaceLocator,
 ) ArgumentParser {
-	return argumentParser{
+	return &argumentParser{
+		ui:                ui,
 		failHandler:       failHandler,
 		currentWorkingDir: currentWorkingDir,
 		symlinkEvaler:     symlinkEvaler,
 		fileStatReader:    fileStatReader,
+		interfaceLocator:  interfaceLocator,
 	}
 }
 
-func (argParser argumentParser) ParseArguments(args ...string) ParsedArguments {
+func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments {
 	sourcePackageDir := argParser.getSourceDir(args[0])
-	fakeImplName := getFakeName(args[1], *fakeNameFlag)
-	outputPath := argParser.getOutputPath(sourcePackageDir, fakeImplName, *outputPathFlag)
+
+	var interfaceName string
+
+	if len(args) > 1 {
+		interfaceName = args[1]
+	} else {
+		interfaceName = argParser.PromptUserForInterfaceName(sourcePackageDir)
+	}
+
+	fakeImplName := getFakeName(interfaceName, *fakeNameFlag)
+
+	outputPath := argParser.getOutputPath(
+		sourcePackageDir,
+		fakeImplName,
+		*outputPathFlag,
+	)
 
 	return ParsedArguments{
 		SourcePackageDir: sourcePackageDir,
 		OutputPath:       outputPath,
 
-		InterfaceName: args[1],
+		InterfaceName: interfaceName,
 		FakeImplName:  fakeImplName,
 
-		PrintToStdOut: len(args) == 3 && args[2] == "-",
+		PrintToStdOut: any(args, "-"),
 	}
 }
 
+func (parser *argumentParser) PromptUserForInterfaceName(filepath string) string {
+	parser.ui.WriteLine("Which interface to counterfeit?")
+
+	interfacesInPackage := parser.interfaceLocator.GetInterfacesFromFilePath(filepath)
+
+	for i, interfaceName := range interfacesInPackage {
+		parser.ui.WriteLine(fmt.Sprintf("%d. %s", i+1, interfaceName))
+	}
+	parser.ui.WriteLine("")
+
+	response := parser.ui.ReadLineFromStdin()
+	parsedResponse, err := strconv.ParseInt(response, 10, 64)
+	if err != nil {
+		parser.failHandler("Unknown option '%s'", response)
+		return ""
+	}
+
+	option := int(parsedResponse - 1)
+	if option < 0 || option >= len(interfacesInPackage) {
+		parser.failHandler("Unknown option '%s'", response)
+		return ""
+	}
+
+	return interfacesInPackage[option]
+}
+
 type argumentParser struct {
+	ui                terminal.UI
+	interfaceLocator  locator.InterfaceLocator
 	failHandler       FailHandler
 	currentWorkingDir CurrentWorkingDir
 	symlinkEvaler     SymlinkEvaler
@@ -67,7 +118,7 @@ func getFakeName(interfaceName, arg string) string {
 
 var camelRegexp = regexp.MustCompile("([a-z])([A-Z])")
 
-func (argParser argumentParser) getOutputPath(sourceDir, fakeName, arg string) string {
+func (argParser *argumentParser) getOutputPath(sourceDir, fakeName, arg string) string {
 	if arg == "" {
 		snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(fakeName, "${1}_${2}"))
 		return filepath.Join(sourceDir, "fakes", snakeCaseName+".go")
@@ -79,7 +130,7 @@ func (argParser argumentParser) getOutputPath(sourceDir, fakeName, arg string) s
 	}
 }
 
-func (argParser argumentParser) getSourceDir(arg string) string {
+func (argParser *argumentParser) getSourceDir(arg string) string {
 	if !filepath.IsAbs(arg) {
 		arg = filepath.Join(argParser.currentWorkingDir(), arg)
 	}
@@ -95,6 +146,16 @@ func (argParser argumentParser) getSourceDir(arg string) string {
 	} else {
 		return arg
 	}
+}
+
+func any(slice []string, needle string) bool {
+	for _, str := range slice {
+		if str == needle {
+			return true
+		}
+	}
+
+	return false
 }
 
 type FailHandler func(string, ...interface{})
