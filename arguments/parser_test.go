@@ -75,6 +75,17 @@ var _ = Describe("parsing arguments", func() {
 
 			interfaceLocator.GetInterfacesFromFilePathReturns([]string{"Foo", "Bar"})
 			ui.ReadLineFromStdinReturns("1")
+			ui.TerminalIsTTYReturns(true)
+		})
+
+		Context("but the connecting terminal is not a TTY", func() {
+			BeforeEach(func() {
+				ui.TerminalIsTTYReturns(false)
+			})
+
+			It("should invoke the fail handler", func() {
+				Expect(failWasCalled).To(BeTrue())
+			})
 		})
 
 		It("prompts the user for which interface they want", func() {

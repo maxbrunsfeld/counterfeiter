@@ -21,6 +21,7 @@ $counterfeiter /tmp/symlinked_fixtures Something >/dev/null
 
 go build ./fixtures/...
 
-go test -race -v ./...
+go test -race -v . ./arguments ./integration
 
 rm /tmp/symlinked_fixtures
+rm -rf fixtures/fixtures

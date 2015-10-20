@@ -64,6 +64,12 @@ func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments 
 }
 
 func (parser *argumentParser) PromptUserForInterfaceName(filepath string) string {
+	if !(parser.ui.TerminalIsTTY()) {
+		parser.ui.WriteLine("Cowardly refusing to prompt user for an interface name in a non-tty environment")
+		parser.failHandler("Perhaps you meant to invoke counterfeiter with more than one argument?")
+		return ""
+	}
+
 	parser.ui.WriteLine("Which interface to counterfeit?")
 
 	interfacesInPackage := parser.interfaceLocator.GetInterfacesFromFilePath(filepath)

@@ -22,7 +22,9 @@ func NewUI() UI {
 type ui struct{}
 
 func (ui *ui) TerminalIsTTY() bool {
-	return terminal.IsTerminal(int(os.Stdin.Fd()))
+	isTTY := terminal.IsTerminal(int(os.Stdin.Fd()))
+	hasOverride := os.Getenv("COUNTERFEITER_INTERACTIVE") == "1"
+	return isTTY || hasOverride
 }
 
 func (ui *ui) ReadLineFromStdin() string {

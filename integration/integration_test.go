@@ -117,7 +117,10 @@ func startCounterfeiterWithStdinPipe(workingDir string, stdin io.Reader, args ..
 	cmd := exec.Command(pathToCounterfeiter, args...)
 	cmd.Stdin = stdin
 	cmd.Dir = workingDir
-	cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
+	cmd.Env = []string{
+		"GOPATH=" + absPathWithSymlinks,
+		"COUNTERFEITER_INTERACTIVE=1",
+	}
 
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
