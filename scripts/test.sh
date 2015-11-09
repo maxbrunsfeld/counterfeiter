@@ -8,18 +8,20 @@ ln -fs $(pwd)/fixtures /tmp/symlinked_fixtures
 
 go build -o $counterfeiter
 
-$counterfeiter fixtures Something
-$counterfeiter fixtures HasVarArgs
-$counterfeiter fixtures HasVarArgsWithLocalTypes
-$counterfeiter fixtures HasImports
-$counterfeiter fixtures HasOtherTypes
-$counterfeiter fixtures ReusesArgTypes
-$counterfeiter fixtures EmbedsInterfaces
-$counterfeiter fixtures/aliased_package InAliasedPackage
-$counterfeiter /tmp/symlinked_fixtures Something
+$counterfeiter fixtures Something >/dev/null
+$counterfeiter fixtures HasVarArgs >/dev/null
+$counterfeiter fixtures HasVarArgsWithLocalTypes >/dev/null
+$counterfeiter fixtures HasImports >/dev/null
+$counterfeiter fixtures HasOtherTypes >/dev/null
+$counterfeiter fixtures ReusesArgTypes >/dev/null
+$counterfeiter fixtures EmbedsInterfaces >/dev/null
+$counterfeiter fixtures/aliased_package InAliasedPackage >/dev/null
+$counterfeiter /tmp/symlinked_fixtures Something >/dev/null
+
 
 go build ./fixtures/...
 
-go test -race -v .
+go test -race -v . ./arguments ./integration
 
 rm /tmp/symlinked_fixtures
+rm -rf fixtures/fixtures
