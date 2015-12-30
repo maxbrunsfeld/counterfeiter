@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/format"
 	"os"
 	"path/filepath"
 
@@ -81,6 +82,9 @@ func main() {
 	if err != nil {
 		fail("%v", err)
 	}
+
+	newCode, err := format.Source([]byte(code))
+	code = string(newCode)
 
 	if parsedArgs.PrintToStdOut {
 		fmt.Println(code)
