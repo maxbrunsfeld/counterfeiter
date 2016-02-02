@@ -144,6 +144,26 @@ var _ = Describe("parsing arguments", func() {
 			))
 		})
 
+		Context("when the interface is unexported", func() {
+			BeforeEach(func() {
+				args = []string{"some/path", "mySpecialInterface"}
+			})
+
+			It("fixes up the fake name to be TitleCase", func() {
+				Expect(parsedArgs.FakeImplName).To(Equal("FakeMySpecialInterface"))
+			})
+
+			It("snake cases the filename for the output directory", func() {
+				Expect(parsedArgs.OutputPath).To(Equal(
+					filepath.Join(
+						parsedArgs.SourcePackageDir,
+						"fakes",
+						"fake_my_special_interface.go",
+					),
+				))
+			})
+		})
+
 		Describe("the source directory", func() {
 			It("should be an absolute path", func() {
 				Expect(filepath.IsAbs(parsedArgs.SourcePackageDir)).To(BeTrue())

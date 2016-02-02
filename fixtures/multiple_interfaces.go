@@ -8,4 +8,6 @@ type SecondInterface interface {
 	EmbeddedMethod() string
 }
 
-type unexportedInterface interface{}
+type unexportedInterface interface {
+	SomeMethod(string, bool) (int, error)
+}

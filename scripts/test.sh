@@ -15,6 +15,7 @@ $counterfeiter fixtures HasImports >/dev/null
 $counterfeiter fixtures HasOtherTypes >/dev/null
 $counterfeiter fixtures ReusesArgTypes >/dev/null
 $counterfeiter fixtures EmbedsInterfaces >/dev/null
+$counterfeiter fixtures unexportedInterface >/dev/null
 $counterfeiter fixtures/aliased_package InAliasedPackage >/dev/null
 $counterfeiter /tmp/symlinked_fixtures Something >/dev/null
 
