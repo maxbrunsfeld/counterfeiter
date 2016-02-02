@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
 
@@ -29,6 +30,10 @@ func (gen CodeGenerator) GenerateFake() (string, error) {
 
 	code, err := imports.Process("", buf.Bytes(), nil)
 	return commentLine() + prettifyCode(string(code)), err
+}
+
+func (gen CodeGenerator) isExportedInterface() bool {
+	return unicode.IsUpper([]rune(gen.Model.Name)[0])
 }
 
 func (gen CodeGenerator) sourceFile() ast.Node {
@@ -61,10 +66,12 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 		}
 	}
 
-	declarations = append(
-		declarations,
-		gen.ensureInterfaceIsUsed(),
-	)
+	if gen.isExportedInterface() {
+		declarations = append(
+			declarations,
+			gen.ensureInterfaceIsUsed(),
+		)
+	}
 
 	return &ast.File{
 		Name:  &ast.Ident{Name: gen.PackageName},

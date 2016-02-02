@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/maxbrunsfeld/counterfeiter/locator"
 	"github.com/maxbrunsfeld/counterfeiter/terminal"
@@ -114,8 +115,18 @@ type ParsedArguments struct {
 	PrintToStdOut bool
 }
 
+func fixupUnexportedNames(interfaceName string) string {
+	asRunes := []rune(interfaceName)
+	if len(asRunes) == 0 || !unicode.IsLower(asRunes[0]) {
+		return interfaceName
+	}
+	asRunes[0] = unicode.ToUpper(asRunes[0])
+	return string(asRunes)
+}
+
 func getFakeName(interfaceName, arg string) string {
 	if arg == "" {
+		interfaceName = fixupUnexportedNames(interfaceName)
 		return "Fake" + interfaceName
 	} else {
 		return arg
