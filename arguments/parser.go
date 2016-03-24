@@ -138,13 +138,18 @@ var camelRegexp = regexp.MustCompile("([a-z])([A-Z])")
 func (argParser *argumentParser) getOutputPath(sourceDir, fakeName, arg string) string {
 	if arg == "" {
 		snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(fakeName, "${1}_${2}"))
-		return filepath.Join(sourceDir, "fakes", snakeCaseName+".go")
+		return filepath.Join(sourceDir, packageNameForPath(sourceDir), snakeCaseName+".go")
 	} else {
 		if !filepath.IsAbs(arg) {
 			arg = filepath.Join(argParser.currentWorkingDir(), arg)
 		}
 		return arg
 	}
+}
+
+func packageNameForPath(pathToPackage string) string {
+	_, packageName := filepath.Split(pathToPackage)
+	return packageName + "fakes"
 }
 
 func (argParser *argumentParser) getSourceDir(arg string) string {

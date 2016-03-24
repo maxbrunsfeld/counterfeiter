@@ -25,4 +25,6 @@ go build ./fixtures/...
 go test -race -v . ./arguments ./integration
 
 rm /tmp/symlinked_fixtures
-rm -rf fixtures/fixtures
+rm -rf fixtures/fixturesfakes
+rm -rf fixtures/aliased_package/aliased_packagefakes
+rm -rf arguments/argumentsfakes

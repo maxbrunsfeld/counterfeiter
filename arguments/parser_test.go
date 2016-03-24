@@ -71,7 +71,7 @@ var _ = Describe("parsing arguments", func() {
 
 	Describe("when a single argument is provided", func() {
 		BeforeEach(func() {
-			args = []string{"some/path"}
+			args = []string{"my/mypackage"}
 
 			interfaceLocator.GetInterfacesFromFilePathReturns([]string{"Foo", "Bar"})
 			ui.ReadLineFromStdinReturns("1")
@@ -99,7 +99,7 @@ var _ = Describe("parsing arguments", func() {
 
 		It("asks its interface locator for valid interfaces", func() {
 			Expect(interfaceLocator.GetInterfacesFromFilePathCallCount()).To(Equal(1))
-			Expect(interfaceLocator.GetInterfacesFromFilePathArgsForCall(0)).To(Equal("/home/test-user/workspace/some/path"))
+			Expect(interfaceLocator.GetInterfacesFromFilePathArgsForCall(0)).To(Equal("/home/test-user/workspace/my/mypackage"))
 		})
 
 		It("yields the interface name the user chose", func() {
@@ -119,7 +119,7 @@ var _ = Describe("parsing arguments", func() {
 
 	Describe("when two arguments are provided", func() {
 		BeforeEach(func() {
-			args = []string{"some/path", "MySpecialInterface"}
+			args = []string{"my/mypackage", "MySpecialInterface"}
 		})
 
 		It("indicates to not print to stdout", func() {
@@ -138,7 +138,7 @@ var _ = Describe("parsing arguments", func() {
 			Expect(parsedArgs.OutputPath).To(Equal(
 				filepath.Join(
 					parsedArgs.SourcePackageDir,
-					"fakes",
+					"mypackagefakes",
 					"fake_my_special_interface.go",
 				),
 			))
@@ -146,7 +146,7 @@ var _ = Describe("parsing arguments", func() {
 
 		Context("when the interface is unexported", func() {
 			BeforeEach(func() {
-				args = []string{"some/path", "mySpecialInterface"}
+				args = []string{"my/mypackage", "mySpecialInterface"}
 			})
 
 			It("fixes up the fake name to be TitleCase", func() {
@@ -157,7 +157,7 @@ var _ = Describe("parsing arguments", func() {
 				Expect(parsedArgs.OutputPath).To(Equal(
 					filepath.Join(
 						parsedArgs.SourcePackageDir,
-						"fakes",
+						"mypackagefakes",
 						"fake_my_special_interface.go",
 					),
 				))
@@ -198,7 +198,7 @@ var _ = Describe("parsing arguments", func() {
 	Describe("when three arguments are provided", func() {
 		Context("and the third one is '-'", func() {
 			BeforeEach(func() {
-				args = []string{"some/path", "MySpecialInterface", "-"}
+				args = []string{"my/mypackage", "MySpecialInterface", "-"}
 			})
 
 			It("treats the second argument as the interface to counterfeit", func() {
@@ -217,7 +217,7 @@ var _ = Describe("parsing arguments", func() {
 				Expect(parsedArgs.OutputPath).To(Equal(
 					filepath.Join(
 						parsedArgs.SourcePackageDir,
-						"fakes",
+						"mypackagefakes",
 						"fake_my_special_interface.go",
 					),
 				))
@@ -244,7 +244,7 @@ var _ = Describe("parsing arguments", func() {
 
 		Context("and the third one is some random input", func() {
 			BeforeEach(func() {
-				args = []string{"some/path", "MySpecialInterface", "WHOOPS"}
+				args = []string{"my/mypackage", "MySpecialInterface", "WHOOPS"}
 			})
 
 			It("indicates to not print to stdout", func() {
