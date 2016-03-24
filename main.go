@@ -13,34 +13,6 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
-var usage = `
-USAGE
-	counterfeiter
-		[-o <output-path>] [--fake-name <fake-name>]
-		<source-path> <interface-name> [-]
-
-ARGUMENTS
-	source-path
-		Path to the file or directory containing the interface to fake
-
-	interface-name
-		Name of the interface to fake
-
-	'-' argument
-		Write code to standard out instead of to a file
-
-OPTIONS
-	-o
-		Path to the file or directory to which code should be written.
-		This also determines the package name that will be used.
-		By default, code will be written to a 'fakes' directory inside
-		of the directory containing the original interface.
-
-	--fake-name
-		Name of the fake struct to generate. By default, 'Fake' will
-		be prepended to the name of the original interface.
-`
-
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -121,3 +93,31 @@ func fail(s string, args ...interface{}) {
 	fmt.Printf(s+"\n", args...)
 	os.Exit(1)
 }
+
+var usage = `
+USAGE
+	counterfeiter
+		[-o <output-path>] [--fake-name <fake-name>]
+		<source-path> <interface-name> [-]
+
+ARGUMENTS
+	source-path
+		Path to the file or directory containing the interface to fake
+
+	interface-name
+		Name of the interface to fake
+
+	'-' argument
+		Write code to standard out instead of to a file
+
+OPTIONS
+	-o
+		Path to the file or directory to which code should be written.
+		This also determines the package name that will be used.
+		By default, code will be written to a 'fakes' directory inside
+		of the directory containing the original interface.
+
+	--fake-name
+		Name of the fake struct to generate. By default, 'Fake' will
+		be prepended to the name of the original interface.
+`
