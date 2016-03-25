@@ -12,11 +12,11 @@ automatically at runtime. This tool allows you to generate them before compilati
 Choose an interface for which you would like a fake implementation:
 
 ```shell
-$ cat path/to/some_package/something.go
+$ cat path/to/foo/something.go
 ```
 
 ```go
-package some_package
+package foo
 
 type Something interface {
 	DoThings(string, uint64) (int, error)
@@ -27,11 +27,11 @@ type Something interface {
 Run counterfeiter like this:
 
 ```shell
-$ counterfeiter path/to/some_package Something
+$ counterfeiter path/to/foo Something
 ```
 
 ```
-Wrote `FakeSomething` to `path/to/some_package/fakes/fake_something.go`
+Wrote `FakeSomething` to `path/to/foo/foofakes/fake_something.go`
 ```
 
 You can customize the location of the ouptut using the `-o` flag, or write the code to standard out by providing `-` as a third argument.
@@ -41,9 +41,9 @@ You can customize the location of the ouptut using the `-o` flag, or write the c
 Instantiate fakes with `new`:
 
 ```go
-import "my-repo/path/to/some_package/fakes"
+import "my-repo/path/to/foo/foofakes"
 
-var fake = new(fakes.FakeSomething)
+var fake = new(foofakes.FakeSomething)
 ```
 
 Fakes record the arguments they were called with:
