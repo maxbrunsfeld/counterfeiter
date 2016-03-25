@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,15 @@ var _ = Describe("The counterfeiter CLI", func() {
 
 	BeforeEach(func() {
 		pathToCLI = tmpPath("counterfeiter")
+	})
+
+	It("can generate a fake for a typed function", func() {
+		copyIn("typed_function.go", pathToCLI)
+
+		session := startCounterfeiter(pathToCLI, "typed_function.go", "SomethingFactory")
+
+		Eventually(session).Should(gexec.Exit(0))
+		Eventually(session).Should(gbytes.Say("Wrote `FakeSomethingFactory"))
 	})
 
 	Describe("when given a single argument", func() {

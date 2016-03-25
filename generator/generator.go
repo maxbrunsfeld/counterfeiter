@@ -47,7 +47,7 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 
 		declarations = append(
 			declarations,
-			gen.methodImplementation(method),
+			gen.stubbedMethodImplementation(method),
 			gen.methodCallCountGetter(method),
 		)
 
@@ -116,7 +116,7 @@ func (gen CodeGenerator) fakeStructType() ast.Decl {
 			structFields,
 
 			&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent(methodStubFuncName(method))},
+				Names: []*ast.Ident{ast.NewIdent(gen.methodStubFuncName(method))},
 				Type:  method.Type,
 			},
 
@@ -125,11 +125,11 @@ func (gen CodeGenerator) fakeStructType() ast.Decl {
 					X:   ast.NewIdent("sync"),
 					Sel: ast.NewIdent("RWMutex"),
 				},
-				Names: []*ast.Ident{ast.NewIdent(mutexFieldName(method))},
+				Names: []*ast.Ident{ast.NewIdent(gen.mutexFieldName(method))},
 			},
 
 			&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent(callArgsFieldName(method))},
+				Names: []*ast.Ident{ast.NewIdent(gen.callArgsFieldName(method))},
 				Type: &ast.ArrayType{
 					Elt: argsStructTypeForMethod(methodType),
 				},
@@ -140,7 +140,7 @@ func (gen CodeGenerator) fakeStructType() ast.Decl {
 			structFields = append(
 				structFields,
 				&ast.Field{
-					Names: []*ast.Ident{ast.NewIdent(returnStructFieldName(method))},
+					Names: []*ast.Ident{ast.NewIdent(gen.returnStructFieldName(method))},
 					Type:  returnStructTypeForMethod(methodType),
 				},
 			)
@@ -160,12 +160,12 @@ func (gen CodeGenerator) fakeStructType() ast.Decl {
 	}
 }
 
-func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
+func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.FuncDecl {
 	methodType := method.Type.(*ast.FuncType)
 
 	stubFunc := &ast.SelectorExpr{
 		X:   receiverIdent(),
-		Sel: ast.NewIdent(methodStubFuncName(method)),
+		Sel: ast.NewIdent(gen.methodStubFuncName(method)),
 	}
 
 	paramValues := []ast.Expr{}
@@ -198,7 +198,7 @@ func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 			returnValues = append(returnValues, &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: ast.NewIdent(returnStructFieldName(method)),
+					Sel: ast.NewIdent(gen.returnStructFieldName(method)),
 				},
 				Sel: ast.NewIdent(name),
 			})
@@ -222,28 +222,35 @@ func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 		}
 	}
 
+	var methodName *ast.Ident
+	if gen.Model.RepresentedByInterface {
+		methodName = method.Names[0]
+	} else {
+		methodName = ast.NewIdent("Spy")
+	}
+
 	return &ast.FuncDecl{
-		Name: method.Names[0],
+		Name: methodName,
 		Type: &ast.FuncType{
 			Params:  &ast.FieldList{List: paramFields},
 			Results: methodType.Results,
 		},
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
-			callMutex(method, "Lock"),
+			gen.callMutex(method, "Lock"),
 
 			&ast.AssignStmt{
 				Tok: token.ASSIGN,
 				Lhs: []ast.Expr{&ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: ast.NewIdent(callArgsFieldName(method)),
+					Sel: ast.NewIdent(gen.callArgsFieldName(method)),
 				}},
 				Rhs: []ast.Expr{&ast.CallExpr{
 					Fun: ast.NewIdent("append"),
 					Args: []ast.Expr{
 						&ast.SelectorExpr{
 							X:   receiverIdent(),
-							Sel: ast.NewIdent(callArgsFieldName(method)),
+							Sel: ast.NewIdent(gen.callArgsFieldName(method)),
 						},
 						&ast.CompositeLit{
 							Type: argsStructTypeForMethod(methodType),
@@ -253,7 +260,7 @@ func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 				}},
 			},
 
-			callMutex(method, "Unlock"),
+			gen.callMutex(method, "Unlock"),
 
 			lastStatement,
 		}},
@@ -262,7 +269,7 @@ func (gen CodeGenerator) methodImplementation(method *ast.Field) *ast.FuncDecl {
 
 func (gen CodeGenerator) methodCallCountGetter(method *ast.Field) *ast.FuncDecl {
 	return &ast.FuncDecl{
-		Name: ast.NewIdent(callCountMethodName(method)),
+		Name: ast.NewIdent(gen.callCountMethodName(method)),
 		Type: &ast.FuncType{
 			Results: &ast.FieldList{List: []*ast.Field{
 				&ast.Field{
@@ -272,8 +279,8 @@ func (gen CodeGenerator) methodCallCountGetter(method *ast.Field) *ast.FuncDecl 
 		},
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
-			callMutex(method, "RLock"),
-			deferMutex(method, "RUnlock"),
+			gen.callMutex(method, "RLock"),
+			gen.deferMutex(method, "RUnlock"),
 
 			&ast.ReturnStmt{
 				Results: []ast.Expr{
@@ -282,7 +289,7 @@ func (gen CodeGenerator) methodCallCountGetter(method *ast.Field) *ast.FuncDecl 
 						Args: []ast.Expr{
 							&ast.SelectorExpr{
 								X:   receiverIdent(),
-								Sel: ast.NewIdent(callArgsFieldName(method)),
+								Sel: ast.NewIdent(gen.callArgsFieldName(method)),
 							},
 						},
 					},
@@ -302,7 +309,7 @@ func (gen CodeGenerator) methodCallArgsGetter(method *ast.Field) *ast.FuncDecl {
 			X: &ast.IndexExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: ast.NewIdent(callArgsFieldName(method)),
+					Sel: ast.NewIdent(gen.callArgsFieldName(method)),
 				},
 				Index: indexIdent,
 			},
@@ -315,7 +322,7 @@ func (gen CodeGenerator) methodCallArgsGetter(method *ast.Field) *ast.FuncDecl {
 	})
 
 	return &ast.FuncDecl{
-		Name: ast.NewIdent(callArgsMethodName(method)),
+		Name: ast.NewIdent(gen.callArgsMethodName(method)),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{List: []*ast.Field{
 				&ast.Field{
@@ -327,8 +334,8 @@ func (gen CodeGenerator) methodCallArgsGetter(method *ast.Field) *ast.FuncDecl {
 		},
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
-			callMutex(method, "RLock"),
-			deferMutex(method, "RUnlock"),
+			gen.callMutex(method, "RLock"),
+			gen.deferMutex(method, "RUnlock"),
 			&ast.ReturnStmt{
 				Results: resultValues,
 			},
@@ -351,7 +358,7 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 	})
 
 	return &ast.FuncDecl{
-		Name: ast.NewIdent(returnSetterMethodName(method)),
+		Name: ast.NewIdent(gen.returnSetterMethodName(method)),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{List: params},
 		},
@@ -362,7 +369,7 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 				Lhs: []ast.Expr{
 					&ast.SelectorExpr{
 						X:   receiverIdent(),
-						Sel: ast.NewIdent(methodStubFuncName(method)),
+						Sel: ast.NewIdent(gen.methodStubFuncName(method)),
 					},
 				},
 				Rhs: []ast.Expr{
@@ -377,7 +384,7 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 				Lhs: []ast.Expr{
 					&ast.SelectorExpr{
 						X:   receiverIdent(),
-						Sel: ast.NewIdent(returnStructFieldName(method)),
+						Sel: ast.NewIdent(gen.returnStructFieldName(method)),
 					},
 				},
 				Rhs: []ast.Expr{
@@ -403,23 +410,47 @@ func (gen CodeGenerator) receiverFieldList() *ast.FieldList {
 }
 
 func (gen CodeGenerator) ensureInterfaceIsUsed() *ast.GenDecl {
-	return &ast.GenDecl{
-		Tok: token.VAR,
-		Specs: []ast.Spec{
-			&ast.ValueSpec{
-				Names: []*ast.Ident{ast.NewIdent("_")},
-				Type: &ast.SelectorExpr{
-					X:   ast.NewIdent(gen.Model.PackageName),
-					Sel: ast.NewIdent(gen.Model.Name),
-				},
-				Values: []ast.Expr{
-					&ast.CallExpr{
-						Fun:  ast.NewIdent("new"),
-						Args: []ast.Expr{ast.NewIdent(gen.StructName)},
+	if gen.Model.RepresentedByInterface {
+		return &ast.GenDecl{
+			Tok: token.VAR,
+			Specs: []ast.Spec{
+				&ast.ValueSpec{
+					Names: []*ast.Ident{ast.NewIdent("_")},
+					Type: &ast.SelectorExpr{
+						X:   ast.NewIdent(gen.Model.PackageName),
+						Sel: ast.NewIdent(gen.Model.Name),
+					},
+					Values: []ast.Expr{
+						&ast.CallExpr{
+							Fun:  ast.NewIdent("new"),
+							Args: []ast.Expr{ast.NewIdent(gen.StructName)},
+						},
 					},
 				},
 			},
-		},
+		}
+	} else {
+		return &ast.GenDecl{
+			Tok: token.VAR,
+			Specs: []ast.Spec{
+				&ast.ValueSpec{
+					Names: []*ast.Ident{ast.NewIdent("_")},
+					Type: &ast.SelectorExpr{
+						X:   ast.NewIdent(gen.Model.PackageName),
+						Sel: ast.NewIdent(gen.Model.Name),
+					},
+					Values: []ast.Expr{
+						&ast.SelectorExpr{
+							Sel: ast.NewIdent("Spy"),
+							X: &ast.CallExpr{
+								Fun:  ast.NewIdent("new"),
+								Args: []ast.Expr{ast.NewIdent(gen.StructName)},
+							},
+						},
+					},
+				},
+			},
+		}
 	}
 }
 
@@ -481,45 +512,65 @@ func storedTypeForType(t ast.Expr) ast.Expr {
 	}
 }
 
-func callCountMethodName(method *ast.Field) string {
-	return method.Names[0].Name + "CallCount"
+func (gen CodeGenerator) callCountMethodName(method *ast.Field) string {
+	if gen.Model.RepresentedByInterface {
+		return method.Names[0].Name + "CallCount"
+	} else {
+		return "CallCount"
+	}
 }
 
-func callArgsMethodName(method *ast.Field) string {
-	return method.Names[0].Name + "ArgsForCall"
+func (gen CodeGenerator) callArgsMethodName(method *ast.Field) string {
+	if gen.Model.RepresentedByInterface {
+		return method.Names[0].Name + "ArgsForCall"
+	} else {
+		return "ArgsForCall"
+	}
 }
 
-func callArgsFieldName(method *ast.Field) string {
-	return privatize(callArgsMethodName(method))
+func (gen CodeGenerator) callArgsFieldName(method *ast.Field) string {
+	return privatize(gen.callArgsMethodName(method))
 }
 
-func mutexFieldName(method *ast.Field) string {
-	return privatize(method.Names[0].Name) + "Mutex"
+func (gen CodeGenerator) mutexFieldName(method *ast.Field) string {
+	if gen.Model.RepresentedByInterface {
+		return privatize(method.Names[0].Name) + "Mutex"
+	} else {
+		return "mutex"
+	}
 }
 
-func methodStubFuncName(method *ast.Field) string {
-	return method.Names[0].Name + "Stub"
+func (gen CodeGenerator) methodStubFuncName(method *ast.Field) string {
+	if gen.Model.RepresentedByInterface {
+		return method.Names[0].Name + "Stub"
+	} else {
+		return "Stub"
+	}
 }
 
-func returnSetterMethodName(method *ast.Field) string {
-	return method.Names[0].Name + "Returns"
+func (gen CodeGenerator) returnSetterMethodName(method *ast.Field) string {
+	if gen.Model.RepresentedByInterface {
+		return method.Names[0].Name + "Returns"
+	} else {
+		return "Returns"
+	}
 }
 
-func returnStructFieldName(method *ast.Field) string {
-	return privatize(returnSetterMethodName(method))
+func (gen CodeGenerator) returnStructFieldName(method *ast.Field) string {
+	return privatize(gen.returnSetterMethodName(method))
 }
 
 func receiverIdent() *ast.Ident {
 	return ast.NewIdent("fake")
 }
 
-func callMutex(method *ast.Field, verb string) ast.Stmt {
+func (gen CodeGenerator) callMutex(method *ast.Field, verb string) ast.Stmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: ast.NewIdent(mutexFieldName(method)),
+					Sel: ast.NewIdent(gen.mutexFieldName(method)),
 				},
 				Sel: ast.NewIdent(verb),
 			},
@@ -527,13 +578,13 @@ func callMutex(method *ast.Field, verb string) ast.Stmt {
 	}
 }
 
-func deferMutex(method *ast.Field, verb string) ast.Stmt {
+func (gen CodeGenerator) deferMutex(method *ast.Field, verb string) ast.Stmt {
 	return &ast.DeferStmt{
 		Call: &ast.CallExpr{
 			Fun: &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: ast.NewIdent(mutexFieldName(method)),
+					Sel: ast.NewIdent(gen.mutexFieldName(method)),
 				},
 				Sel: ast.NewIdent(verb),
 			},

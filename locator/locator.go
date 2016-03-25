@@ -97,7 +97,7 @@ func getInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 	}
 
 	for _, pkg := range packages {
-		iface, file, err := findInterface(pkg, interfaceName)
+		iface, file, isFunction, err := findInterface(pkg, interfaceName)
 		if err != nil {
 			return nil, err
 		}
@@ -105,49 +105,37 @@ func getInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 		typeNames := getTypeNames(pkg)
 
 		if iface != nil {
-			imports := getImports(file)
-			methods, err := methodsForInterface(iface, importPath, pkg.Name, imports, typeNames)
+			var methods []*ast.Field
+			var err error
+			var imports []*ast.ImportSpec = getImports(file)
+
+			switch iface.(type) {
+			case *ast.InterfaceType:
+				interfaceNode := iface.(*ast.InterfaceType)
+				methods, err = methodsForInterface(interfaceNode, importPath, pkg.Name, imports, typeNames)
+			case *ast.FuncType:
+				funcNode := iface.(*ast.FuncType)
+				methods, err = methodsForFunction(interfaceName, funcNode)
+			default:
+				err = fmt.Errorf("cannot generate a counterfeit for a '%T'", iface)
+			}
+
 			if err != nil {
 				return nil, err
 			}
 
 			return &model.InterfaceToFake{
-				Name:        interfaceName,
-				Methods:     methods,
-				ImportPath:  importPath,
-				ImportSpecs: imports,
-				PackageName: pkg.Name,
+				Name:                   interfaceName,
+				Methods:                methods,
+				ImportPath:             importPath,
+				ImportSpecs:            imports,
+				PackageName:            pkg.Name,
+				RepresentedByInterface: !isFunction,
 			}, nil
 		}
 	}
 
 	return nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
-}
-
-func methodsForInterface(iface *ast.InterfaceType, importPath, pkgName string, importSpecs []*ast.ImportSpec, typeNames map[string]struct{}) ([]*ast.Field, error) {
-	result := []*ast.Field{}
-	for _, field := range iface.Methods.List {
-		switch t := field.Type.(type) {
-		case *ast.FuncType:
-			prefixTypes(t, pkgName, typeNames)
-			result = append(result, field)
-		case *ast.Ident:
-			iface, err := getInterfaceFromImportPath(t.Name, importPath)
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, iface.Methods...)
-		case *ast.SelectorExpr:
-			pkgAlias := t.X.(*ast.Ident).Name
-			pkgImportPath := findImportPath(importSpecs, pkgAlias)
-			iface, err := getInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, iface.Methods...)
-		}
-	}
-	return result, nil
 }
 
 func prefixTypes(t *ast.FuncType, pkgName string, typeNames map[string]struct{}) {
@@ -245,24 +233,31 @@ func packagesForDirPath(path string) (map[string]*ast.Package, error) {
 	return parser.ParseDir(token.NewFileSet(), path, nil, parser.AllErrors)
 }
 
-func findInterface(pkg *ast.Package, interfaceName string) (*ast.InterfaceType, *ast.File, error) {
+func findInterface(pkg *ast.Package, interfaceName string) (ast.Node, *ast.File, bool, error) {
 	var file *ast.File
-	var iface *ast.InterfaceType
+	var iface ast.Node
 	var err error
+	var isFunction bool
 
 	for _, f := range pkg.Files {
 		ast.Inspect(f, func(node ast.Node) bool {
 			typeSpec, ok := node.(*ast.TypeSpec)
-			if ok && typeSpec.Name.Name == interfaceName {
-				if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
-					iface = interfaceType
-					file = f
-				} else {
-					err = fmt.Errorf("Name '%s' does not refer to an interface", interfaceName)
-				}
-				return false
+			if !ok || typeSpec.Name.Name != interfaceName {
+				return true
 			}
-			return true
+
+			switch typeSpec.Type.(type) {
+			case *ast.InterfaceType:
+				file = f
+				iface = typeSpec.Type
+			case *ast.FuncType:
+				file = f
+				isFunction = true
+				iface = typeSpec.Type
+			default:
+				err = fmt.Errorf("Name '%s' does not refer to an interface", interfaceName)
+			}
+			return false
 		})
 
 		if iface != nil {
@@ -270,7 +265,7 @@ func findInterface(pkg *ast.Package, interfaceName string) (*ast.InterfaceType, 
 		}
 	}
 
-	return iface, file, err
+	return iface, file, isFunction, err
 }
 
 func getImports(file *ast.File) []*ast.ImportSpec {
