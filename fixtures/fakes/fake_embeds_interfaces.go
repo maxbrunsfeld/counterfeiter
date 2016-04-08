@@ -28,7 +28,7 @@ type FakeEmbedsInterfaces struct {
 	EmbeddedMethodStub        func() string
 	embeddedMethodMutex       sync.RWMutex
 	embeddedMethodArgsForCall []struct{}
-	embeddedMethodReturns struct {
+	embeddedMethodReturns     struct {
 		result1 string
 	}
 	DoThingsStub        func()

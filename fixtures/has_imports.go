@@ -1,8 +1,8 @@
 package fixtures
 
 import (
-	"net/http"
 	"io"
+	"net/http"
 	some_alias "os"
 )
 
