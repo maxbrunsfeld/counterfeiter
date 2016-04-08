@@ -143,22 +143,22 @@ import (
 )
 
 type FakeRequestFactory struct {
-	Stub        func(string, map[string]interface{}) (string, error)
+	Stub        func(fixtures.Params, map[string]interface{}) (fixtures.Request, error)
 	mutex       sync.RWMutex
 	argsForCall []struct {
-		arg1 string
+		arg1 fixtures.Params
 		arg2 map[string]interface{}
 	}
 	returns struct {
-		result1 string
+		result1 fixtures.Request
 		result2 error
 	}
 }
 
-func (fake *FakeRequestFactory) Spy(arg1 string, arg2 map[string]interface{}) (string, error) {
+func (fake *FakeRequestFactory) Spy(arg1 fixtures.Params, arg2 map[string]interface{}) (fixtures.Request, error) {
 	fake.mutex.Lock()
 	fake.argsForCall = append(fake.argsForCall, struct {
-		arg1 string
+		arg1 fixtures.Params
 		arg2 map[string]interface{}
 	}{arg1, arg2})
 	fake.mutex.Unlock()
@@ -175,16 +175,16 @@ func (fake *FakeRequestFactory) CallCount() int {
 	return len(fake.argsForCall)
 }
 
-func (fake *FakeRequestFactory) ArgsForCall(i int) (string, map[string]interface{}) {
+func (fake *FakeRequestFactory) ArgsForCall(i int) (fixtures.Params, map[string]interface{}) {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
 	return fake.argsForCall[i].arg1, fake.argsForCall[i].arg2
 }
 
-func (fake *FakeRequestFactory) Returns(result1 string, result2 error) {
+func (fake *FakeRequestFactory) Returns(result1 fixtures.Request, result2 error) {
 	fake.Stub = nil
 	fake.returns = struct {
-		result1 string
+		result1 fixtures.Request
 		result2 error
 	}{result1, result2}
 }

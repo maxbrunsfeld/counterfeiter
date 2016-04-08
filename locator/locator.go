@@ -115,7 +115,7 @@ func getInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 				methods, err = methodsForInterface(interfaceNode, importPath, pkg.Name, imports, typeNames)
 			case *ast.FuncType:
 				funcNode := iface.(*ast.FuncType)
-				methods, err = methodsForFunction(interfaceName, funcNode)
+				methods, err = methodsForFunction(funcNode, interfaceName, pkg.Name, typeNames)
 			default:
 				err = fmt.Errorf("cannot generate a counterfeit for a '%T'", iface)
 			}
@@ -138,28 +138,28 @@ func getInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 	return nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
 }
 
-func prefixTypes(t *ast.FuncType, pkgName string, typeNames map[string]struct{}) {
+func addPackagePrefixToTypesInGeneratedPackage(t *ast.FuncType, pkgName string, typeNames map[string]bool) {
 	ast.Inspect(t, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.Field:
-			prefixType(&node.Type, pkgName, typeNames)
+			addPackagePrefixToNode(&node.Type, pkgName, typeNames)
 		case *ast.StarExpr:
-			prefixType(&node.X, pkgName, typeNames)
+			addPackagePrefixToNode(&node.X, pkgName, typeNames)
 		case *ast.MapType:
-			prefixType(&node.Key, pkgName, typeNames)
-			prefixType(&node.Value, pkgName, typeNames)
+			addPackagePrefixToNode(&node.Key, pkgName, typeNames)
+			addPackagePrefixToNode(&node.Value, pkgName, typeNames)
 		case *ast.ArrayType:
-			prefixType(&node.Elt, pkgName, typeNames)
+			addPackagePrefixToNode(&node.Elt, pkgName, typeNames)
 		case *ast.ChanType:
-			prefixType(&node.Value, pkgName, typeNames)
+			addPackagePrefixToNode(&node.Value, pkgName, typeNames)
 		case *ast.Ellipsis:
-			prefixType(&node.Elt, pkgName, typeNames)
+			addPackagePrefixToNode(&node.Elt, pkgName, typeNames)
 		}
 		return true
 	})
 }
 
-func prefixType(node *ast.Expr, pkgName string, typeNames map[string]struct{}) {
+func addPackagePrefixToNode(node *ast.Expr, pkgName string, typeNames map[string]bool) {
 	if typeIdent, ok := (*node).(*ast.Ident); ok {
 		if _, ok := typeNames[typeIdent.Name]; ok {
 			*node = &ast.SelectorExpr{
@@ -279,12 +279,12 @@ func getImports(file *ast.File) []*ast.ImportSpec {
 	return result
 }
 
-func getTypeNames(pkg *ast.Package) map[string]struct{} {
-	result := map[string]struct{}{}
+func getTypeNames(pkg *ast.Package) map[string]bool {
+	result := make(map[string]bool)
 	ast.Inspect(pkg, func(node ast.Node) bool {
 		if typeSpec, ok := node.(*ast.TypeSpec); ok {
 			if typeSpec.Name != nil {
-				result[typeSpec.Name.Name] = struct{}{}
+				result[typeSpec.Name.Name] = true
 			}
 		}
 		return true
