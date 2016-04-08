@@ -37,9 +37,10 @@ var _ = Describe("Locator", func() {
 			})
 
 			It("should have the correct methods", func() {
-				Expect(model.Methods).To(HaveLen(2))
+				Expect(model.Methods).To(HaveLen(3))
 				Expect(model.Methods[0].Names[0].Name).To(Equal("DoThings"))
 				Expect(model.Methods[1].Names[0].Name).To(Equal("DoNothing"))
+				Expect(model.Methods[2].Names[0].Name).To(Equal("DoASlice"))
 			})
 
 			It("does not return an error", func() {
