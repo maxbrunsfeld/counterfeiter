@@ -127,7 +127,7 @@ func (fake *FakeSomething) DoASlice(arg1 []byte) {
 	}{arg1Copy})
 	fake.doASliceMutex.Unlock()
 	if fake.DoASliceStub != nil {
-		fake.DoASliceStub(arg1Copy)
+		fake.DoASliceStub(arg1)
 	}
 }
 

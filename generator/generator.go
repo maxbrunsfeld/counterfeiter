@@ -168,7 +168,8 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		Sel: ast.NewIdent(gen.methodStubFuncName(method)),
 	}
 
-	paramValues := []ast.Expr{}
+	paramValuesToRecord := []ast.Expr{}
+	paramValuesToPassToStub := []ast.Expr{}
 	paramFields := []*ast.Field{}
 	var ellipsisPos token.Pos
 	var bodyStatements []ast.Stmt
@@ -213,15 +214,16 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 						},
 					},
 				})
-			paramValues = append(paramValues, ast.NewIdent(copyName))
+			paramValuesToRecord = append(paramValuesToRecord, ast.NewIdent(copyName))
 		} else {
-			paramValues = append(paramValues, ast.NewIdent(name))
+			paramValuesToRecord = append(paramValuesToRecord, ast.NewIdent(name))
 		}
+		paramValuesToPassToStub = append(paramValuesToPassToStub, ast.NewIdent(name))
 	})
 
 	stubFuncCall := &ast.CallExpr{
 		Fun:      stubFunc,
-		Args:     paramValues,
+		Args:     paramValuesToPassToStub,
 		Ellipsis: ellipsisPos,
 	}
 
@@ -274,7 +276,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 					},
 					&ast.CompositeLit{
 						Type: argsStructTypeForMethod(methodType),
-						Elts: paramValues,
+						Elts: paramValuesToRecord,
 					},
 				},
 			}},
