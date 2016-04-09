@@ -183,7 +183,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 			ellipsisPos = token.Pos(i + 1)
 		}
 
-		if _, ok := t.(*ast.ArrayType); ok {
+		if tArray, ok := t.(*ast.ArrayType); ok && tArray.Len == nil {
 			copyName := name + "Copy"
 			bodyStatements = append(bodyStatements,
 				&ast.AssignStmt{

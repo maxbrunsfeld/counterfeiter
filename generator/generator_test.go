@@ -62,6 +62,11 @@ type FakeSomething struct {
 	doASliceArgsForCall []struct {
 		arg1 []byte
 	}
+	DoAnArrayStub        func([4]byte)
+	doAnArrayMutex       sync.RWMutex
+	doAnArrayArgsForCall []struct {
+		arg1 [4]byte
+	}
 }
 
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
@@ -136,6 +141,29 @@ func (fake *FakeSomething) DoASliceArgsForCall(i int) []byte {
 	fake.doASliceMutex.RLock()
 	defer fake.doASliceMutex.RUnlock()
 	return fake.doASliceArgsForCall[i].arg1
+}
+
+func (fake *FakeSomething) DoAnArray(arg1 [4]byte) {
+	fake.doAnArrayMutex.Lock()
+	fake.doAnArrayArgsForCall = append(fake.doAnArrayArgsForCall, struct {
+		arg1 [4]byte
+	}{arg1})
+	fake.doAnArrayMutex.Unlock()
+	if fake.DoAnArrayStub != nil {
+		fake.DoAnArrayStub(arg1)
+	}
+}
+
+func (fake *FakeSomething) DoAnArrayCallCount() int {
+	fake.doAnArrayMutex.RLock()
+	defer fake.doAnArrayMutex.RUnlock()
+	return len(fake.doAnArrayArgsForCall)
+}
+
+func (fake *FakeSomething) DoAnArrayArgsForCall(i int) [4]byte {
+	fake.doAnArrayMutex.RLock()
+	defer fake.doAnArrayMutex.RUnlock()
+	return fake.doAnArrayArgsForCall[i].arg1
 }
 
 var _ fixtures.Something = new(FakeSomething)
