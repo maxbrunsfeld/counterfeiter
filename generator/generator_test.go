@@ -114,13 +114,15 @@ func (fake *FakeSomething) DoNothingCallCount() int {
 }
 
 func (fake *FakeSomething) DoASlice(arg1 []byte) {
+	arg1Copy := make([]byte, len(arg1))
+	copy(arg1Copy, arg1)
 	fake.doASliceMutex.Lock()
 	fake.doASliceArgsForCall = append(fake.doASliceArgsForCall, struct {
 		arg1 []byte
-	}{arg1})
+	}{arg1Copy})
 	fake.doASliceMutex.Unlock()
 	if fake.DoASliceStub != nil {
-		fake.DoASliceStub(arg1)
+		fake.DoASliceStub(arg1Copy)
 	}
 }
 
