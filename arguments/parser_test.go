@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"testing"
 	"time"
 
 	locatorFakes "github.com/maxbrunsfeld/counterfeiter/locator/fakes"
@@ -253,11 +252,6 @@ var _ = Describe("parsing arguments", func() {
 		})
 	})
 })
-
-func TestCounterfeiterCLI(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Argument Parser Suite")
-}
 
 func fakeFileInfo(filename string, isDir bool) os.FileInfo {
 	return testFileInfo{name: filename, isDir: isDir}

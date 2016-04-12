@@ -22,7 +22,7 @@ $counterfeiter /tmp/symlinked_fixtures Something >/dev/null
 
 go build ./fixtures/...
 
-go test -race -v . ./arguments ./integration
+go test -race -v ./...
 
 rm /tmp/symlinked_fixtures
 rm -rf fixtures/fixturesfakes
