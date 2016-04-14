@@ -168,13 +168,13 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		Sel: ast.NewIdent(gen.methodStubFuncName(method)),
 	}
 
-	paramValues := []ast.Expr{}
+	paramValuesToRecord := []ast.Expr{}
+	paramValuesToPassToStub := []ast.Expr{}
 	paramFields := []*ast.Field{}
 	var ellipsisPos token.Pos
+	var bodyStatements []ast.Stmt
 
 	eachMethodParam(methodType, func(name string, t ast.Expr, i int) {
-		paramValues = append(paramValues, ast.NewIdent(name))
-
 		paramFields = append(paramFields, &ast.Field{
 			Names: []*ast.Ident{ast.NewIdent(name)},
 			Type:  t,
@@ -183,11 +183,47 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		if _, ok := t.(*ast.Ellipsis); ok {
 			ellipsisPos = token.Pos(i + 1)
 		}
+
+		if tArray, ok := t.(*ast.ArrayType); ok && tArray.Len == nil {
+			copyName := name + "Copy"
+			bodyStatements = append(bodyStatements,
+				&ast.AssignStmt{
+					Tok: token.DEFINE,
+					Lhs: []ast.Expr{
+						ast.NewIdent(copyName),
+					},
+					Rhs: []ast.Expr{
+						&ast.CallExpr{
+							Fun: ast.NewIdent("make"),
+							Args: []ast.Expr{
+								t,
+								&ast.CallExpr{
+									Fun:  ast.NewIdent("len"),
+									Args: []ast.Expr{ast.NewIdent(name)},
+								},
+							},
+						},
+					},
+				},
+				&ast.ExprStmt{
+					X: &ast.CallExpr{
+						Fun: ast.NewIdent("copy"),
+						Args: []ast.Expr{
+							ast.NewIdent(copyName),
+							ast.NewIdent(name),
+						},
+					},
+				})
+			paramValuesToRecord = append(paramValuesToRecord, ast.NewIdent(copyName))
+		} else {
+			paramValuesToRecord = append(paramValuesToRecord, ast.NewIdent(name))
+		}
+		paramValuesToPassToStub = append(paramValuesToPassToStub, ast.NewIdent(name))
 	})
 
 	stubFuncCall := &ast.CallExpr{
 		Fun:      stubFunc,
-		Args:     paramValues,
+		Args:     paramValuesToPassToStub,
 		Ellipsis: ellipsisPos,
 	}
 
@@ -222,6 +258,35 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		}
 	}
 
+	bodyStatements = append(bodyStatements,
+		gen.callMutex(method, "Lock"),
+
+		&ast.AssignStmt{
+			Tok: token.ASSIGN,
+			Lhs: []ast.Expr{&ast.SelectorExpr{
+				X:   receiverIdent(),
+				Sel: ast.NewIdent(gen.callArgsFieldName(method)),
+			}},
+			Rhs: []ast.Expr{&ast.CallExpr{
+				Fun: ast.NewIdent("append"),
+				Args: []ast.Expr{
+					&ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent(gen.callArgsFieldName(method)),
+					},
+					&ast.CompositeLit{
+						Type: argsStructTypeForMethod(methodType),
+						Elts: paramValuesToRecord,
+					},
+				},
+			}},
+		},
+
+		gen.callMutex(method, "Unlock"),
+
+		lastStatement,
+	)
+
 	var methodName *ast.Ident
 	if gen.Model.RepresentedByInterface {
 		methodName = method.Names[0]
@@ -236,34 +301,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 			Results: methodType.Results,
 		},
 		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			gen.callMutex(method, "Lock"),
-
-			&ast.AssignStmt{
-				Tok: token.ASSIGN,
-				Lhs: []ast.Expr{&ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent(gen.callArgsFieldName(method)),
-				}},
-				Rhs: []ast.Expr{&ast.CallExpr{
-					Fun: ast.NewIdent("append"),
-					Args: []ast.Expr{
-						&ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent(gen.callArgsFieldName(method)),
-						},
-						&ast.CompositeLit{
-							Type: argsStructTypeForMethod(methodType),
-							Elts: paramValues,
-						},
-					},
-				}},
-			},
-
-			gen.callMutex(method, "Unlock"),
-
-			lastStatement,
-		}},
+		Body: &ast.BlockStmt{List: bodyStatements},
 	}
 }
 
