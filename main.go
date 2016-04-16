@@ -114,8 +114,9 @@ OPTIONS
 	-o
 		Path to the file or directory to which code should be written.
 		This also determines the package name that will be used.
-		By default, code will be written to a 'fakes' directory inside
-		of the directory containing the original interface.
+		By default, code will be written to a directory inside the
+		directory containing the original interface, whose name is the
+		name of that directory with 'fakes' appended
 
 	--fake-name
 		Name of the fake struct to generate. By default, 'Fake' will
