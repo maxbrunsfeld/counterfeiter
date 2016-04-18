@@ -119,8 +119,11 @@ func (fake *FakeSomething) DoNothingCallCount() int {
 }
 
 func (fake *FakeSomething) DoASlice(arg1 []byte) {
-	arg1Copy := make([]byte, len(arg1))
-	copy(arg1Copy, arg1)
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
 	fake.doASliceMutex.Lock()
 	fake.doASliceArgsForCall = append(fake.doASliceArgsForCall, struct {
 		arg1 []byte

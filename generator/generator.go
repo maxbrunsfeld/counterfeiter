@@ -187,32 +187,48 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		if tArray, ok := t.(*ast.ArrayType); ok && tArray.Len == nil {
 			copyName := name + "Copy"
 			bodyStatements = append(bodyStatements,
-				&ast.AssignStmt{
-					Tok: token.DEFINE,
-					Lhs: []ast.Expr{
-						ast.NewIdent(copyName),
-					},
-					Rhs: []ast.Expr{
-						&ast.CallExpr{
-							Fun: ast.NewIdent("make"),
-							Args: []ast.Expr{
-								t,
-								&ast.CallExpr{
-									Fun:  ast.NewIdent("len"),
-									Args: []ast.Expr{ast.NewIdent(name)},
-								},
+				&ast.DeclStmt{
+					Decl: &ast.GenDecl{
+						Tok: token.VAR,
+						Specs: []ast.Spec{
+							&ast.ValueSpec{
+								Names: []*ast.Ident{ast.NewIdent(copyName)},
+								Type:  t,
 							},
 						},
 					},
 				},
-				&ast.ExprStmt{
-					X: &ast.CallExpr{
-						Fun: ast.NewIdent("copy"),
-						Args: []ast.Expr{
-							ast.NewIdent(copyName),
-							ast.NewIdent(name),
+				&ast.IfStmt{
+					Cond: nilCheck(ast.NewIdent(name)),
+					Body: &ast.BlockStmt{List: []ast.Stmt{
+						&ast.AssignStmt{
+							Tok: token.ASSIGN,
+							Lhs: []ast.Expr{
+								ast.NewIdent(copyName),
+							},
+							Rhs: []ast.Expr{
+								&ast.CallExpr{
+									Fun: ast.NewIdent("make"),
+									Args: []ast.Expr{
+										t,
+										&ast.CallExpr{
+											Fun:  ast.NewIdent("len"),
+											Args: []ast.Expr{ast.NewIdent(name)},
+										},
+									},
+								},
+							},
 						},
-					},
+						&ast.ExprStmt{
+							X: &ast.CallExpr{
+								Fun: ast.NewIdent("copy"),
+								Args: []ast.Expr{
+									ast.NewIdent(copyName),
+									ast.NewIdent(name),
+								},
+							},
+						},
+					}},
 				})
 			paramValuesToRecord = append(paramValuesToRecord, ast.NewIdent(copyName))
 		} else {
