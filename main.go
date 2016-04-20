@@ -112,13 +112,21 @@ ARGUMENTS
 
 OPTIONS
 	-o
-		Path to the file or directory to which code should be written.
+		Path to the file or directory for the generated fakes.
 		This also determines the package name that will be used.
-		By default, code will be written to a directory inside the
-		directory containing the original interface, whose name is the
-		name of that directory with 'fakes' appended
+		By default, the generated fakes will be generated in
+		the package "xyzfakes" which is nested in package "xyz",
+		where "xyz" is the name of referenced package.
+
+	example:
+		# writes "FakeMyInterface" to ./fakes/fake_my_interface.go
+		counterfeiter -o ./fakes MyInterface ./mypackage
 
 	--fake-name
 		Name of the fake struct to generate. By default, 'Fake' will
 		be prepended to the name of the original interface.
+
+	example:
+		# writes "CoolThing" to ./fakes/cool_thing.go
+		counterfeiter --fake-name CoolThing MyInterface ./mypackage
 `
