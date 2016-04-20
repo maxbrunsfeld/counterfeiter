@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	locatorFakes "github.com/maxbrunsfeld/counterfeiter/locator/fakes"
-	terminalFakes "github.com/maxbrunsfeld/counterfeiter/terminal/fakes"
+	"github.com/maxbrunsfeld/counterfeiter/locator/locatorfakes"
+	"github.com/maxbrunsfeld/counterfeiter/terminal/terminalfakes"
 
 	. "github.com/maxbrunsfeld/counterfeiter/arguments"
 	. "github.com/onsi/ginkgo"
@@ -24,8 +24,8 @@ var _ = Describe("parsing arguments", func() {
 	var symlinkEvaler SymlinkEvaler
 	var fileStatReader FileStatReader
 
-	var ui *terminalFakes.FakeUI
-	var interfaceLocator *locatorFakes.FakeInterfaceLocator
+	var ui *terminalfakes.FakeUI
+	var interfaceLocator *locatorfakes.FakeInterfaceLocator
 
 	var failWasCalled bool
 	// fake UI helper
@@ -57,8 +57,8 @@ var _ = Describe("parsing arguments", func() {
 			return "/home/test-user/workspace"
 		}
 
-		ui = new(terminalFakes.FakeUI)
-		interfaceLocator = new(locatorFakes.FakeInterfaceLocator)
+		ui = new(terminalfakes.FakeUI)
+		interfaceLocator = new(locatorfakes.FakeInterfaceLocator)
 
 		symlinkEvaler = func(input string) (string, error) {
 			return input, nil

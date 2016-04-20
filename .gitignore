@@ -21,3 +21,11 @@ _testmain.go
 
 *.exe
 *.test
+
+arguments/argumentsfakes/
+fixtures/aliased_package/aliased_packagefakes/
+fixtures/another_package/another_packagefakes/
+fixtures/fixturesfakes/
+fixtures/symlinked_fixturesfakes/
+locator/locatorfakes/
+terminal/terminalfakes/

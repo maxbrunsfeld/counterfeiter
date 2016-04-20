@@ -1,30 +1,21 @@
 #!/usr/bin/env bash
 
-set -e
+set -eu
 
-counterfeiter='/tmp/counterfeiter_test'
+cd "$(dirname "$0")/.."
 
-ln -fs $(pwd)/fixtures /tmp/symlinked_fixtures
+# counterfeit all the things
+scripts/make_fakes.sh
 
-go build -o $counterfeiter
+# counterfeit through a symlink
+symlinked_fixtures=/tmp/symlinked_fixtures
+trap "unlink $symlinked_fixtures" EXIT
+ln -fs $(pwd)/fixtures $symlinked_fixtures
+mkdir -p fixtures/symlinked_fixturesfakes
+go run main.go -o fixtures/symlinked_fixturesfakes/fake_something.go $symlinked_fixtures Something
 
-$counterfeiter fixtures Something >/dev/null
-$counterfeiter fixtures HasVarArgs >/dev/null
-$counterfeiter fixtures HasVarArgsWithLocalTypes >/dev/null
-$counterfeiter fixtures HasImports >/dev/null
-$counterfeiter fixtures HasOtherTypes >/dev/null
-$counterfeiter fixtures ReusesArgTypes >/dev/null
-$counterfeiter fixtures EmbedsInterfaces >/dev/null
-$counterfeiter fixtures unexportedInterface >/dev/null
-$counterfeiter fixtures/aliased_package InAliasedPackage >/dev/null
-$counterfeiter /tmp/symlinked_fixtures Something >/dev/null
+# check that the fakes compile
+find . -type d -name '*fakes' | xargs go build
 
-
-go build ./fixtures/...
-
+# run the tests using the fakes
 go test -race -v ./...
-
-rm /tmp/symlinked_fixtures
-rm -rf fixtures/fixturesfakes
-rm -rf fixtures/aliased_package/aliased_packagefakes
-rm -rf arguments/argumentsfakes
