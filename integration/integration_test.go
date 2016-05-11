@@ -27,7 +27,20 @@ var _ = Describe("The counterfeiter CLI", func() {
 		session := startCounterfeiter(pathToCLI, "typed_function.go", "SomethingFactory")
 
 		Eventually(session).Should(gexec.Exit(0))
-		Eventually(session).Should(gbytes.Say("Wrote `FakeSomethingFactory"))
+		Expect(session).To(gbytes.Say("Wrote `FakeSomethingFactory"))
+
+		generatedFakePath := filepath.Join(pathToCLI, "fixtures", "fixturesfakes", "fake_something_factory.go")
+		Expect(generatedFakePath).To(BeARegularFile())
+
+		expectedOutputPath := "../fixtures/expected_output/fake_something_factory.go"
+		expectedContents, err := ioutil.ReadFile(expectedOutputPath)
+		Expect(err).ToNot(HaveOccurred())
+
+		actualContents, err := ioutil.ReadFile(generatedFakePath)
+		Expect(err).ToNot(HaveOccurred())
+
+		// assert file content matches what we expect
+		Expect(string(actualContents)).To(Equal(string(expectedContents)))
 	})
 
 	Describe("when given a single argument", func() {
@@ -83,6 +96,7 @@ func tmpPath(destination string) string {
 }
 
 func copyIn(fixture string, destination string) {
+	destination = filepath.Join(destination, "fixtures")
 	err := os.MkdirAll(destination, 0777)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -105,11 +119,13 @@ func copyIn(fixture string, destination string) {
 	})
 }
 
-func startCounterfeiter(workingDir string, args ...string) *gexec.Session {
+func startCounterfeiter(workingDir string, fixtureName string, otherArgs ...string) *gexec.Session {
 	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
 	absPath, _ := filepath.Abs(fakeGoPathDir)
 	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
 
+	fixturePath := filepath.Join("fixtures", fixtureName)
+	args := append([]string{fixturePath}, otherArgs...)
 	cmd := exec.Command(pathToCounterfeiter, args...)
 	cmd.Dir = workingDir
 	cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
@@ -119,12 +135,13 @@ func startCounterfeiter(workingDir string, args ...string) *gexec.Session {
 	return session
 }
 
-func startCounterfeiterWithStdinPipe(workingDir string, stdin io.Reader, args ...string) *gexec.Session {
+func startCounterfeiterWithStdinPipe(workingDir string, stdin io.Reader, fixtureName string) *gexec.Session {
 	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
 	absPath, _ := filepath.Abs(fakeGoPathDir)
 	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
 
-	cmd := exec.Command(pathToCounterfeiter, args...)
+	fixturePath := filepath.Join("fixtures", fixtureName)
+	cmd := exec.Command(pathToCounterfeiter, fixturePath)
 	cmd.Stdin = stdin
 	cmd.Dir = workingDir
 	cmd.Env = []string{
