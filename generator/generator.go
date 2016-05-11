@@ -23,7 +23,7 @@ type CodeGenerator struct {
 
 func (gen CodeGenerator) GenerateFake() (string, error) {
 	buf := new(bytes.Buffer)
-	err := format.Node(buf, token.NewFileSet(), gen.sourceFile())
+	err := format.Node(buf, token.NewFileSet(), gen.buildASTForFake())
 	if err != nil {
 		return "", err
 	}
@@ -36,11 +36,10 @@ func (gen CodeGenerator) isExportedInterface() bool {
 	return unicode.IsUpper([]rune(gen.Model.Name)[0])
 }
 
-func (gen CodeGenerator) sourceFile() ast.Node {
-	declarations := []ast.Decl{
-		gen.imports(),
-		gen.fakeStructType(),
-	}
+func (gen CodeGenerator) buildASTForFake() ast.Node {
+	declarations := []ast.Decl{}
+	declarations = append(declarations, gen.imports())
+	declarations = append(declarations, gen.fakeStructDeclaration())
 
 	for _, method := range gen.Model.Methods {
 		methodType := method.Type.(*ast.FuncType)
@@ -65,6 +64,9 @@ func (gen CodeGenerator) sourceFile() ast.Node {
 			)
 		}
 	}
+
+	declarations = append(declarations, gen.recordedInvocationsMethod())
+	declarations = append(declarations, gen.guardAssigningInvocationsMethod())
 
 	if gen.isExportedInterface() {
 		declarations = append(
@@ -106,7 +108,7 @@ func (gen CodeGenerator) imports() ast.Decl {
 	}
 }
 
-func (gen CodeGenerator) fakeStructType() ast.Decl {
+func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
 	structFields := []*ast.Field{}
 
 	for _, method := range gen.Model.Methods {
@@ -146,6 +148,15 @@ func (gen CodeGenerator) fakeStructType() ast.Decl {
 			)
 		}
 	}
+
+	// include list of invocations
+	structFields = append(structFields, &ast.Field{
+		Names: []*ast.Ident{ast.NewIdent("invocations")},
+		Type: &ast.MapType{
+			Key:   ast.NewIdent("string"),
+			Value: ast.NewIdent("[][]interface{}"),
+		},
+	})
 
 	return &ast.GenDecl{
 		Tok: token.TYPE,
@@ -199,7 +210,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 					},
 				},
 				&ast.IfStmt{
-					Cond: nilCheck(ast.NewIdent(name)),
+					Cond: invertNilCheck(ast.NewIdent(name)),
 					Body: &ast.BlockStmt{List: []ast.Stmt{
 						&ast.AssignStmt{
 							Tok: token.ASSIGN,
@@ -257,7 +268,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		})
 
 		lastStatement = &ast.IfStmt{
-			Cond: nilCheck(stubFunc),
+			Cond: invertNilCheck(stubFunc),
 			Body: &ast.BlockStmt{List: []ast.Stmt{
 				&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
 			}},
@@ -267,7 +278,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		}
 	} else {
 		lastStatement = &ast.IfStmt{
-			Cond: nilCheck(stubFunc),
+			Cond: invertNilCheck(stubFunc),
 			Body: &ast.BlockStmt{List: []ast.Stmt{
 				&ast.ExprStmt{X: stubFuncCall},
 			}},
@@ -292,6 +303,45 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 					},
 					&ast.CompositeLit{
 						Type: argsStructTypeForMethod(methodType),
+						Elts: paramValuesToRecord,
+					},
+				},
+			}},
+		},
+
+		&ast.ExprStmt{
+			X: &ast.CallExpr{
+				Fun: &ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: ast.NewIdent("guard"),
+				},
+				Args: []ast.Expr{quotedMethodName(method)},
+			},
+		},
+
+		&ast.AssignStmt{
+			Tok: token.ASSIGN,
+			Lhs: []ast.Expr{
+				&ast.IndexExpr{
+					X: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("invocations"),
+					},
+					Index: quotedMethodName(method),
+				},
+			},
+			Rhs: []ast.Expr{&ast.CallExpr{
+				Fun: ast.NewIdent("append"),
+				Args: []ast.Expr{
+					&ast.IndexExpr{
+						X: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent("invocations"),
+						},
+						Index: quotedMethodName(method),
+					},
+					&ast.CompositeLit{
+						Type: ast.NewIdent("[]interface{}"),
 						Elts: paramValuesToRecord,
 					},
 				},
@@ -445,6 +495,92 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 					&ast.CompositeLit{
 						Type: returnStructTypeForMethod(methodType),
 						Elts: structFields,
+					},
+				},
+			},
+		}},
+	}
+}
+
+func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
+	return &ast.FuncDecl{
+		Name: ast.NewIdent("Invocations"),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{},
+			Results: &ast.FieldList{
+				List: []*ast.Field{{
+					Type: ast.NewIdent("map[string][][]interface{}"),
+				}},
+			},
+		},
+		Recv: gen.receiverFieldList(),
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("invocations"),
+					},
+				},
+			},
+		}},
+	}
+}
+
+func (gen CodeGenerator) guardAssigningInvocationsMethod() *ast.FuncDecl {
+	return &ast.FuncDecl{
+		Name: ast.NewIdent("guard"),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{
+				List: []*ast.Field{{
+					Names: []*ast.Ident{ast.NewIdent("key")},
+					Type:  ast.NewIdent("string"),
+				}},
+			},
+			Results: &ast.FieldList{},
+		},
+		Recv: gen.receiverFieldList(),
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.IfStmt{
+				Cond: nilCheck(&ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: ast.NewIdent("invocations"),
+				}),
+				Body: &ast.BlockStmt{
+					List: []ast.Stmt{
+						&ast.AssignStmt{
+							Tok: token.ASSIGN,
+							Lhs: []ast.Expr{&ast.SelectorExpr{
+								X:   receiverIdent(),
+								Sel: ast.NewIdent("invocations"),
+							}},
+							Rhs: []ast.Expr{ast.NewIdent("map[string][][]interface{}{}")},
+						},
+					},
+				},
+			},
+
+			&ast.IfStmt{
+				Cond: nilCheck(&ast.IndexExpr{
+					X: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("invocations"),
+					},
+					Index: ast.NewIdent("key"),
+				}),
+				Body: &ast.BlockStmt{
+					List: []ast.Stmt{
+						&ast.AssignStmt{
+							Tok: token.ASSIGN,
+							Lhs: []ast.Expr{&ast.IndexExpr{
+								X: &ast.SelectorExpr{
+									X:   receiverIdent(),
+									Sel: ast.NewIdent("invocations"),
+								},
+								Index: ast.NewIdent("key"),
+							}},
+							Rhs: []ast.Expr{ast.NewIdent("[][]interface{}{}")},
+						},
 					},
 				},
 			},
@@ -654,7 +790,7 @@ func privatize(input string) string {
 	return strings.ToLower(input[0:1]) + input[1:]
 }
 
-func nilCheck(x ast.Expr) ast.Expr {
+func invertNilCheck(x ast.Expr) ast.Expr {
 	return &ast.BinaryExpr{
 		X:  x,
 		Op: token.NEQ,
@@ -663,6 +799,21 @@ func nilCheck(x ast.Expr) ast.Expr {
 			Value: "nil",
 		},
 	}
+}
+
+func nilCheck(x ast.Expr) ast.Expr {
+	return &ast.BinaryExpr{
+		X:  x,
+		Op: token.EQL,
+		Y: &ast.BasicLit{
+			Kind:  token.STRING,
+			Value: "nil",
+		},
+	}
+}
+
+func quotedMethodName(method *ast.Field) *ast.Ident {
+	return ast.NewIdent(`"` + method.Names[0].Name + `"`)
 }
 
 func commentLine() string {

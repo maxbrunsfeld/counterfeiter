@@ -16,6 +16,7 @@ type FakeSomethingFactory struct {
 	returns struct {
 		result1 string
 	}
+	invocations map[string][][]interface{}
 }
 
 func (fake *FakeSomethingFactory) Spy(arg1 string, arg2 map[string]interface{}) string {
@@ -24,6 +25,8 @@ func (fake *FakeSomethingFactory) Spy(arg1 string, arg2 map[string]interface{}) 
 		arg1 string
 		arg2 map[string]interface{}
 	}{arg1, arg2})
+	fake.guard("SomethingFactory")
+	fake.invocations["SomethingFactory"] = append(fake.invocations["SomethingFactory"], []interface{}{arg1, arg2})
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		return fake.Stub(arg1, arg2)
@@ -49,6 +52,19 @@ func (fake *FakeSomethingFactory) Returns(result1 string) {
 	fake.returns = struct {
 		result1 string
 	}{result1}
+}
+
+func (fake *FakeSomethingFactory) Invocations() map[string][][]interface{} {
+	return fake.invocations
+}
+
+func (fake *FakeSomethingFactory) guard(key string) {
+	if fake.invocations == nil {
+		fake.invocations = map[string][][]interface{}{}
+	}
+	if fake.invocations[key] == nil {
+		fake.invocations[key] = [][]interface{}{}
+	}
 }
 
 var _ fixtures.SomethingFactory = new(FakeSomethingFactory).Spy
