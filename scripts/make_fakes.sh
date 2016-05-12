@@ -11,7 +11,7 @@ go build -o $counterfeiter
 
 # counterfeit all the interfaces we can find
 egrep --recursive --include '*.go' 'type [^ ]* interface {' . \
-      --exclude-dir 'expected_output' --exclude '*_test.go' \
+      --exclude 'fake_*.go' --exclude '*_test.go' \
   | sed 's#^./\(.*\)/[^/]*.go:type \([^ ]*\) interface {#\1 \2#' \
   | while read PACKAGE INTERFACE; do $counterfeiter $PACKAGE $INTERFACE; done
 

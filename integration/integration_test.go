@@ -32,7 +32,7 @@ var _ = Describe("The counterfeiter CLI", func() {
 		generatedFakePath := filepath.Join(pathToCLI, "fixtures", "fixturesfakes", "fake_something_factory.go")
 		Expect(generatedFakePath).To(BeARegularFile())
 
-		expectedOutputPath := "../fixtures/expected_output/fake_something_factory.go"
+		expectedOutputPath := "../fixtures/expected_output/fake_something_factory.example"
 		expectedContents, err := ioutil.ReadFile(expectedOutputPath)
 		Expect(err).ToNot(HaveOccurred())
 
