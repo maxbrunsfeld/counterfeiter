@@ -28,9 +28,8 @@ var _ = Describe("parsing arguments", func() {
 	var interfaceLocator *locatorfakes.FakeInterfaceLocator
 
 	var failWasCalled bool
-	// fake UI helper
 
-	var fakeUIBuffer = func() string {
+	fakeUIBuffer := func() string {
 		var output string
 		for i := 0; i < ui.WriteLineCallCount(); i++ {
 			output = output + ui.WriteLineArgsForCall(i)
@@ -143,6 +142,10 @@ var _ = Describe("parsing arguments", func() {
 			))
 		})
 
+		It("specifies the destination package name", func() {
+			Expect(parsedArgs.DestinationPackageName).To(Equal("mypackagefakes"))
+		})
+
 		Context("when the interface is unexported", func() {
 			BeforeEach(func() {
 				args = []string{"my/mypackage", "mySpecialInterface"}
@@ -249,6 +252,16 @@ var _ = Describe("parsing arguments", func() {
 			It("indicates to not print to stdout", func() {
 				Expect(parsedArgs.PrintToStdOut).To(BeFalse())
 			})
+		})
+	})
+
+	Context("when the output dir contains characters inappropriate for a package name", func() {
+		BeforeEach(func() {
+			args = []string{"@my-special-package[]{}", "MySpecialInterface"}
+		})
+
+		It("should choose a valid package name", func() {
+			Expect(parsedArgs.DestinationPackageName).To(Equal("myspecialpackagefakes"))
 		})
 	})
 })

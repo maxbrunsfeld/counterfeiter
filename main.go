@@ -36,9 +36,7 @@ func main() {
 	fakeName := parsedArgs.FakeImplName
 	sourceDir := parsedArgs.SourcePackageDir
 	outputPath := parsedArgs.OutputPath
-
-	outputDir := filepath.Dir(outputPath)
-	fakePackageName := filepath.Base(outputDir)
+	destinationPackage := parsedArgs.DestinationPackageName
 
 	iface, err := locator.GetInterfaceFromFilePath(interfaceName, sourceDir)
 	if err != nil {
@@ -48,7 +46,7 @@ func main() {
 	code, err := generator.CodeGenerator{
 		Model:       *iface,
 		StructName:  fakeName,
-		PackageName: fakePackageName,
+		PackageName: destinationPackage,
 	}.GenerateFake()
 
 	if err != nil {
@@ -61,7 +59,7 @@ func main() {
 	if parsedArgs.PrintToStdOut {
 		fmt.Println(code)
 	} else {
-		os.MkdirAll(outputDir, 0777)
+		os.MkdirAll(filepath.Dir(outputPath), 0777)
 		file, err := os.Create(outputPath)
 		if err != nil {
 			fail("Couldn't create fake file - %v", err)

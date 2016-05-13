@@ -53,12 +53,15 @@ func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments 
 		*outputPathFlag,
 	)
 
+	packageName := restrictToValidPackageName(filepath.Base(filepath.Dir(outputPath)))
+
 	return ParsedArguments{
 		SourcePackageDir: sourcePackageDir,
 		OutputPath:       outputPath,
 
-		InterfaceName: interfaceName,
-		FakeImplName:  fakeImplName,
+		InterfaceName:          interfaceName,
+		DestinationPackageName: packageName,
+		FakeImplName:           fakeImplName,
 
 		PrintToStdOut: any(args, "-"),
 	}
@@ -108,6 +111,8 @@ type argumentParser struct {
 type ParsedArguments struct {
 	SourcePackageDir string // abs path to the dir containing the interface to fake
 	OutputPath       string // path to write the fake file to
+
+	DestinationPackageName string // often the base-dir for OutputPath but must be a valid package name
 
 	InterfaceName string // the interface to counterfeit
 	FakeImplName  string // the name of the struct implementing the given interface
@@ -178,6 +183,16 @@ func any(slice []string, needle string) bool {
 	}
 
 	return false
+}
+
+func restrictToValidPackageName(input string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 65 && r <= 90) || (r >= 97 && r <= 122) {
+			return r
+		} else {
+			return -1
+		}
+	}, input)
 }
 
 type FailHandler func(string, ...interface{})
