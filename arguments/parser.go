@@ -187,7 +187,7 @@ func any(slice []string, needle string) bool {
 
 func restrictToValidPackageName(input string) string {
 	return strings.Map(func(r rune) rune {
-		if (r >= 65 && r <= 90) || (r >= 97 && r <= 122) {
+		if (r >= 65 && r <= 90) || (r >= 97 && r <= 122) || (r >= 48 && r <= 57) {
 			return r
 		} else {
 			return -1

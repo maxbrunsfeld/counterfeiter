@@ -117,7 +117,7 @@ var _ = Describe("parsing arguments", func() {
 
 	Describe("when two arguments are provided", func() {
 		BeforeEach(func() {
-			args = []string{"my/mypackage", "MySpecialInterface"}
+			args = []string{"my/my5package", "MySpecialInterface"}
 		})
 
 		It("indicates to not print to stdout", func() {
@@ -136,14 +136,14 @@ var _ = Describe("parsing arguments", func() {
 			Expect(parsedArgs.OutputPath).To(Equal(
 				filepath.Join(
 					parsedArgs.SourcePackageDir,
-					"mypackagefakes",
+					"my5packagefakes",
 					"fake_my_special_interface.go",
 				),
 			))
 		})
 
 		It("specifies the destination package name", func() {
-			Expect(parsedArgs.DestinationPackageName).To(Equal("mypackagefakes"))
+			Expect(parsedArgs.DestinationPackageName).To(Equal("my5packagefakes"))
 		})
 
 		Context("when the interface is unexported", func() {
