@@ -66,7 +66,7 @@ func (gen CodeGenerator) buildASTForFake() ast.Node {
 	}
 
 	declarations = append(declarations, gen.recordedInvocationsMethod())
-	declarations = append(declarations, gen.guardAssigningInvocationsMethod())
+	declarations = append(declarations, gen.recordInvocationMethod())
 
 	if gen.isExportedInterface() {
 		declarations = append(
@@ -155,6 +155,14 @@ func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
 		Type: &ast.MapType{
 			Key:   ast.NewIdent("string"),
 			Value: ast.NewIdent("[][]interface{}"),
+		},
+	})
+	// and mutex for recording invocations
+	structFields = append(structFields, &ast.Field{
+		Names: []*ast.Ident{ast.NewIdent("invocationsMutex")},
+		Type: &ast.SelectorExpr{
+			X:   ast.NewIdent("sync"),
+			Sel: ast.NewIdent("RWMutex"),
 		},
 	})
 
@@ -313,39 +321,14 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 			X: &ast.CallExpr{
 				Fun: &ast.SelectorExpr{
 					X:   receiverIdent(),
-					Sel: ast.NewIdent("guard"),
+					Sel: ast.NewIdent("recordInvocation"),
 				},
-				Args: []ast.Expr{quotedMethodName(method)},
-			},
-		},
-
-		&ast.AssignStmt{
-			Tok: token.ASSIGN,
-			Lhs: []ast.Expr{
-				&ast.IndexExpr{
-					X: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("invocations"),
-					},
-					Index: quotedMethodName(method),
+				Args: []ast.Expr{quotedMethodName(method), &ast.CompositeLit{
+					Type: ast.NewIdent("[]interface{}"),
+					Elts: paramValuesToRecord,
+				},
 				},
 			},
-			Rhs: []ast.Expr{&ast.CallExpr{
-				Fun: ast.NewIdent("append"),
-				Args: []ast.Expr{
-					&ast.IndexExpr{
-						X: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("invocations"),
-						},
-						Index: quotedMethodName(method),
-					},
-					&ast.CompositeLit{
-						Type: ast.NewIdent("[]interface{}"),
-						Elts: paramValuesToRecord,
-					},
-				},
-			}},
 		},
 
 		gen.callMutex(method, "Unlock"),
@@ -515,6 +498,28 @@ func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
 		},
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ExprStmt{
+				X: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent("invocationsMutex"),
+						},
+						Sel: ast.NewIdent("RLock"),
+					},
+				},
+			},
+			&ast.DeferStmt{
+				Call: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent("invocationsMutex"),
+						},
+						Sel: ast.NewIdent("RUnlock"),
+					},
+				},
+			},
 			&ast.ReturnStmt{
 				Results: []ast.Expr{
 					&ast.SelectorExpr{
@@ -527,20 +532,46 @@ func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
 	}
 }
 
-func (gen CodeGenerator) guardAssigningInvocationsMethod() *ast.FuncDecl {
+func (gen CodeGenerator) recordInvocationMethod() *ast.FuncDecl {
 	return &ast.FuncDecl{
-		Name: ast.NewIdent("guard"),
+		Name: ast.NewIdent("recordInvocation"),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{
 				List: []*ast.Field{{
 					Names: []*ast.Ident{ast.NewIdent("key")},
 					Type:  ast.NewIdent("string"),
-				}},
+				},
+					{
+						Names: []*ast.Ident{ast.NewIdent("args")},
+						Type:  ast.NewIdent("[]interface{}"),
+					}},
 			},
 			Results: &ast.FieldList{},
 		},
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ExprStmt{
+				X: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent("invocationsMutex"),
+						},
+						Sel: ast.NewIdent("Lock"),
+					},
+				},
+			},
+			&ast.DeferStmt{
+				Call: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent("invocationsMutex"),
+						},
+						Sel: ast.NewIdent("Unlock"),
+					},
+				},
+			},
 			&ast.IfStmt{
 				Cond: nilCheck(&ast.SelectorExpr{
 					X:   receiverIdent(),
@@ -583,6 +614,30 @@ func (gen CodeGenerator) guardAssigningInvocationsMethod() *ast.FuncDecl {
 						},
 					},
 				},
+			},
+
+			&ast.AssignStmt{
+				Tok: token.ASSIGN,
+				Lhs: []ast.Expr{&ast.IndexExpr{
+					X: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("invocations"),
+					},
+					Index: ast.NewIdent("key"),
+				}},
+				Rhs: []ast.Expr{&ast.CallExpr{
+					Fun: ast.NewIdent("append"),
+					Args: []ast.Expr{
+						&ast.IndexExpr{
+							X: &ast.SelectorExpr{
+								X:   receiverIdent(),
+								Sel: ast.NewIdent("invocations"),
+							},
+							Index: ast.NewIdent("key"),
+						},
+						ast.NewIdent("args"),
+					},
+				}},
 			},
 		}},
 	}

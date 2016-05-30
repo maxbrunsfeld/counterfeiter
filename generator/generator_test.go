@@ -67,7 +67,8 @@ type FakeSomething struct {
 	doAnArrayArgsForCall []struct {
 		arg1 [4]byte
 	}
-	invocations map[string][][]interface{}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
@@ -76,8 +77,7 @@ func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 		arg1 string
 		arg2 uint64
 	}{arg1, arg2})
-	fake.guard("DoThings")
-	fake.invocations["DoThings"] = append(fake.invocations["DoThings"], []interface{}{arg1, arg2})
+	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
 	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
@@ -109,8 +109,7 @@ func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 func (fake *FakeSomething) DoNothing() {
 	fake.doNothingMutex.Lock()
 	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct{}{})
-	fake.guard("DoNothing")
-	fake.invocations["DoNothing"] = append(fake.invocations["DoNothing"], []interface{}{})
+	fake.recordInvocation("DoNothing", []interface{}{})
 	fake.doNothingMutex.Unlock()
 	if fake.DoNothingStub != nil {
 		fake.DoNothingStub()
@@ -133,8 +132,7 @@ func (fake *FakeSomething) DoASlice(arg1 []byte) {
 	fake.doASliceArgsForCall = append(fake.doASliceArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
-	fake.guard("DoASlice")
-	fake.invocations["DoASlice"] = append(fake.invocations["DoASlice"], []interface{}{arg1Copy})
+	fake.recordInvocation("DoASlice", []interface{}{arg1Copy})
 	fake.doASliceMutex.Unlock()
 	if fake.DoASliceStub != nil {
 		fake.DoASliceStub(arg1)
@@ -158,8 +156,7 @@ func (fake *FakeSomething) DoAnArray(arg1 [4]byte) {
 	fake.doAnArrayArgsForCall = append(fake.doAnArrayArgsForCall, struct {
 		arg1 [4]byte
 	}{arg1})
-	fake.guard("DoAnArray")
-	fake.invocations["DoAnArray"] = append(fake.invocations["DoAnArray"], []interface{}{arg1})
+	fake.recordInvocation("DoAnArray", []interface{}{arg1})
 	fake.doAnArrayMutex.Unlock()
 	if fake.DoAnArrayStub != nil {
 		fake.DoAnArrayStub(arg1)
@@ -179,16 +176,21 @@ func (fake *FakeSomething) DoAnArrayArgsForCall(i int) [4]byte {
 }
 
 func (fake *FakeSomething) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
 	return fake.invocations
 }
 
-func (fake *FakeSomething) guard(key string) {
+func (fake *FakeSomething) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}
 	if fake.invocations[key] == nil {
 		fake.invocations[key] = [][]interface{}{}
 	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ fixtures.Something = new(FakeSomething)
@@ -236,7 +238,8 @@ type FakeRequestFactory struct {
 		result1 fixtures.Request
 		result2 error
 	}
-	invocations map[string][][]interface{}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeRequestFactory) Spy(arg1 fixtures.Params, arg2 map[string]interface{}) (fixtures.Request, error) {
@@ -245,8 +248,7 @@ func (fake *FakeRequestFactory) Spy(arg1 fixtures.Params, arg2 map[string]interf
 		arg1 fixtures.Params
 		arg2 map[string]interface{}
 	}{arg1, arg2})
-	fake.guard("RequestFactory")
-	fake.invocations["RequestFactory"] = append(fake.invocations["RequestFactory"], []interface{}{arg1, arg2})
+	fake.recordInvocation("RequestFactory", []interface{}{arg1, arg2})
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		return fake.Stub(arg1, arg2)
@@ -276,16 +278,21 @@ func (fake *FakeRequestFactory) Returns(result1 fixtures.Request, result2 error)
 }
 
 func (fake *FakeRequestFactory) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
 	return fake.invocations
 }
 
-func (fake *FakeRequestFactory) guard(key string) {
+func (fake *FakeRequestFactory) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}
 	if fake.invocations[key] == nil {
 		fake.invocations[key] = [][]interface{}{}
 	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ fixtures.RequestFactory = new(FakeRequestFactory).Spy
