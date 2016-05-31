@@ -486,7 +486,7 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 }
 
 func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
-	return &ast.FuncDecl{
+	funcNode := &ast.FuncDecl{
 		Name: ast.NewIdent("Invocations"),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{},
@@ -497,39 +497,74 @@ func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
 			},
 		},
 		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.ExprStmt{
-				X: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("invocationsMutex"),
-						},
-						Sel: ast.NewIdent("RLock"),
-					},
-				},
-			},
-			&ast.DeferStmt{
-				Call: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("invocationsMutex"),
-						},
-						Sel: ast.NewIdent("RUnlock"),
-					},
-				},
-			},
-			&ast.ReturnStmt{
-				Results: []ast.Expr{
-					&ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("invocations"),
-					},
-				},
-			},
-		}},
+		Body: &ast.BlockStmt{List: []ast.Stmt{}},
 	}
+
+	statements := []ast.Stmt{
+		&ast.ExprStmt{
+			X: &ast.CallExpr{
+				Fun: &ast.SelectorExpr{
+					X: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("invocationsMutex"),
+					},
+					Sel: ast.NewIdent("RLock"),
+				},
+			},
+		},
+		&ast.DeferStmt{
+			Call: &ast.CallExpr{
+				Fun: &ast.SelectorExpr{
+					X: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent("invocationsMutex"),
+					},
+					Sel: ast.NewIdent("RUnlock"),
+				},
+			},
+		},
+	}
+
+	returnStmt := &ast.ReturnStmt{
+		Results: []ast.Expr{
+			&ast.SelectorExpr{
+				X:   receiverIdent(),
+				Sel: ast.NewIdent("invocations"),
+			},
+		},
+	}
+
+	for _, method := range gen.Model.Methods {
+		methodMutexFieldName := gen.mutexFieldName(method)
+		lockStmt := &ast.ExprStmt{
+			X: &ast.CallExpr{
+				Fun: &ast.SelectorExpr{
+					X: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent(methodMutexFieldName),
+					},
+					Sel: ast.NewIdent("RLock"),
+				},
+			},
+		}
+		unlockStmt := &ast.DeferStmt{
+			Call: &ast.CallExpr{
+				Fun: &ast.SelectorExpr{
+					X: &ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent(methodMutexFieldName),
+					},
+					Sel: ast.NewIdent("RUnlock"),
+				},
+			},
+		}
+
+		statements = append(statements, lockStmt)
+		statements = append(statements, unlockStmt)
+	}
+
+	funcNode.Body.List = append(statements, returnStmt)
+	return funcNode
 }
 
 func (gen CodeGenerator) recordInvocationMethod() *ast.FuncDecl {

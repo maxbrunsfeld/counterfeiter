@@ -57,6 +57,8 @@ func (fake *FakeSomethingFactory) Returns(result1 string) {
 func (fake *FakeSomethingFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.mutex.RLock()
+	defer fake.mutex.RUnlock()
 	return fake.invocations
 }
 
