@@ -36,6 +36,20 @@ func (gen CodeGenerator) isExportedInterface() bool {
 	return unicode.IsUpper([]rune(gen.Model.Name)[0])
 }
 
+// The anatomy of a generated fake
+// FIXME: These would be good to break into separate builders
+//        (they could be individually unit tested, and this would just delegate)
+/*
+  imports
+  type MySpecialFake struct {}
+  MyMethod()
+  MyMethodCallCount()
+  MyMethodArgsForCall()
+  Invocations -> map[string][][]interfac{}
+  recordInvocation(string, []interface{})
+  var _ fixtures.SomeInterface = new(MySpecialFake)
+*/
+
 func (gen CodeGenerator) buildASTForFake() ast.Node {
 	declarations := []ast.Decl{}
 	declarations = append(declarations, gen.imports())
