@@ -264,6 +264,16 @@ var _ = Describe("parsing arguments", func() {
 			Expect(parsedArgs.DestinationPackageName).To(Equal("myspecialpackagefakes"))
 		})
 	})
+
+	Context("when the output dir contains underscores in package name", func() {
+		BeforeEach(func() {
+			args = []string{"fake_command_runner", "MySpecialInterface"}
+		})
+
+		It("should ensure underscores are in the package name", func() {
+			Expect(parsedArgs.DestinationPackageName).To(Equal("fake_command_runnerfakes"))
+		})
+	})
 })
 
 func fakeFileInfo(filename string, isDir bool) os.FileInfo {
