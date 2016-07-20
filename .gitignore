@@ -29,3 +29,8 @@ fixtures/fixturesfakes/
 fixtures/symlinked_fixturesfakes/
 locator/locatorfakes/
 terminal/terminalfakes/
+fixtures/dup_packages/a/afakes/
+fixtures/dup_packages/a/v1/v1fakes/
+fixtures/dup_packages/b/v1/v1fakes/
+fixtures/dup_packages/dup_packagesfakes/
+fixtures/dup_packages/v1/v1fakes/
