@@ -2,16 +2,19 @@ package locator
 
 import (
 	"go/ast"
+
+	"github.com/maxbrunsfeld/counterfeiter/astutil"
+	"github.com/maxbrunsfeld/counterfeiter/model"
 )
 
 func methodsForInterface(
 	iface *ast.InterfaceType,
 	importPath,
 	pkgName string,
-	importSpecs []*ast.ImportSpec,
-	typenamesNeedingPackageAlias map[string]bool,
-) ([]*ast.Field, error) {
-	result := []*ast.Field{}
+	importSpecs map[string]*ast.ImportSpec,
+	knownTypes map[string]bool,
+) ([]model.Method, error) {
+	result := []model.Method{}
 	for _, field := range iface.Methods.List {
 		switch t := field.Type.(type) {
 		case *ast.FuncType:
@@ -20,8 +23,12 @@ func methodsForInterface(
 			// it ensures func signatures have the correct package name for
 			// types that belong to the package we are generating code from
 			// e.g.: change "Param" to "foo.Param" when Param belongs to pkg "foo"
-			addPackagePrefixToTypesInGeneratedPackage(t, pkgName, typenamesNeedingPackageAlias)
-			result = append(result, field)
+			astutil.AddPackagePrefix(t, pkgName, knownTypes)
+			result = append(result,
+				model.Method{
+					Imports: importSpecs,
+					Field:   field,
+				})
 
 		case *ast.Ident:
 			iface, err := getInterfaceFromImportPath(t.Name, importPath)

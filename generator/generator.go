@@ -7,9 +7,10 @@ import (
 	"go/format"
 	"go/token"
 	"regexp"
+	"strconv"
 	"strings"
-	"unicode"
 
+	"github.com/maxbrunsfeld/counterfeiter/astutil"
 	"github.com/maxbrunsfeld/counterfeiter/model"
 
 	"golang.org/x/tools/imports"
@@ -19,6 +20,8 @@ type CodeGenerator struct {
 	Model       model.InterfaceToFake
 	StructName  string
 	PackageName string
+
+	packageAlias map[string]string
 }
 
 func (gen CodeGenerator) GenerateFake() (string, error) {
@@ -33,7 +36,7 @@ func (gen CodeGenerator) GenerateFake() (string, error) {
 }
 
 func (gen CodeGenerator) isExportedInterface() bool {
-	return unicode.IsUpper([]rune(gen.Model.Name)[0])
+	return ast.IsExported(gen.Model.Name)
 }
 
 // The anatomy of a generated fake
@@ -51,30 +54,34 @@ func (gen CodeGenerator) isExportedInterface() bool {
 */
 
 func (gen CodeGenerator) buildASTForFake() ast.Node {
+	gen.packageAlias = map[string]string{}
+
 	declarations := []ast.Decl{}
 	declarations = append(declarations, gen.imports())
+	gen.fixup()
+
 	declarations = append(declarations, gen.fakeStructDeclaration())
 
-	for _, method := range gen.Model.Methods {
-		methodType := method.Type.(*ast.FuncType)
+	for _, m := range gen.Model.Methods {
+		methodType := m.Field.Type.(*ast.FuncType)
 
 		declarations = append(
 			declarations,
-			gen.stubbedMethodImplementation(method),
-			gen.methodCallCountGetter(method),
+			gen.stubbedMethodImplementation(m.Field),
+			gen.methodCallCountGetter(m.Field),
 		)
 
 		if methodType.Params.NumFields() > 0 {
 			declarations = append(
 				declarations,
-				gen.methodCallArgsGetter(method),
+				gen.methodCallArgsGetter(m.Field),
 			)
 		}
 
 		if methodType.Results.NumFields() > 0 {
 			declarations = append(
 				declarations,
-				gen.methodReturnsSetter(method),
+				gen.methodReturnsSetter(m.Field),
 			)
 		}
 	}
@@ -96,23 +103,56 @@ func (gen CodeGenerator) buildASTForFake() ast.Node {
 }
 
 func (gen CodeGenerator) imports() ast.Decl {
-	specs := []ast.Spec{
-		&ast.ImportSpec{
-			Path: &ast.BasicLit{
-				Kind:  token.STRING,
-				Value: `"` + gen.Model.ImportPath + `"`,
-			},
-		},
-		&ast.ImportSpec{
-			Path: &ast.BasicLit{
-				Kind:  token.STRING,
-				Value: `"sync"`,
-			},
-		},
+	specs := []ast.Spec{}
+	allImports := map[string]bool{}
+	dotImports := map[string]bool{}
+
+	modelImportName := strconv.Quote(gen.Model.ImportPath)
+	allImports[modelImportName] = true
+
+	syncImportName := strconv.Quote("sync")
+	allImports[syncImportName] = true
+	gen.packageAlias[syncImportName] = "sync"
+
+	for _, m := range gen.Model.Methods {
+		for alias, importSpec := range m.Imports {
+			if alias == "." {
+				dotImports[importSpec.Name.Name] = true
+				gen.packageAlias[importSpec.Path.Value] = "."
+			}
+
+			allImports[importSpec.Path.Value] = true
+		}
 	}
 
-	for _, spec := range gen.Model.ImportSpecs {
-		specs = append(specs, spec)
+	aliases := map[string]bool{}
+	aliases[gen.Model.PackageName] = true
+	gen.packageAlias[modelImportName] = gen.Model.PackageName
+	for importName := range allImports {
+		if _, found := gen.packageAlias[importName]; found {
+			continue
+		}
+
+		alias := gen.generateAlias(importName, aliases)
+		if alias == "" {
+			panic("could not generate an alias for " + importName)
+		}
+		aliases[alias] = true
+		gen.packageAlias[importName] = alias
+	}
+
+	for importName, alias := range gen.packageAlias {
+		var name *ast.Ident
+		if !strings.HasSuffix(importName[:len(importName)-1], alias) {
+			name = &ast.Ident{Name: alias}
+		}
+		specs = append(specs, &ast.ImportSpec{
+			Name: name,
+			Path: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: importName,
+			},
+		})
 	}
 
 	return &ast.GenDecl{
@@ -122,18 +162,42 @@ func (gen CodeGenerator) imports() ast.Decl {
 	}
 }
 
+func (gen CodeGenerator) generateAlias(importName string, aliases map[string]bool) string {
+	unqoted, err := strconv.Unquote(importName)
+	if err != nil {
+		panic("cannot generate alias for " + importName)
+	}
+	paths := strings.Split(strings.Replace(unqoted, ".", "_", -1), "/")
+	alias := ""
+	for i := len(paths) - 1; i >= 0; i-- {
+		alias = alias + paths[i]
+		if aliases[alias] == false {
+			return alias
+		}
+	}
+
+	return ""
+}
+
+func (gen CodeGenerator) fixup() {
+	for _, m := range gen.Model.Methods {
+		typ := m.Field.Type.(*ast.FuncType)
+		astutil.InjectAlias(typ, m.Imports, gen.packageAlias)
+	}
+}
+
 func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
 	structFields := []*ast.Field{}
 
-	for _, method := range gen.Model.Methods {
-		methodType := method.Type.(*ast.FuncType)
+	for _, m := range gen.Model.Methods {
+		methodType := m.Field.Type.(*ast.FuncType)
 
 		structFields = append(
 			structFields,
 
 			&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent(gen.methodStubFuncName(method))},
-				Type:  method.Type,
+				Names: []*ast.Ident{ast.NewIdent(gen.methodStubFuncName(m.Field))},
+				Type:  m.Field.Type,
 			},
 
 			&ast.Field{
@@ -141,11 +205,11 @@ func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
 					X:   ast.NewIdent("sync"),
 					Sel: ast.NewIdent("RWMutex"),
 				},
-				Names: []*ast.Ident{ast.NewIdent(gen.mutexFieldName(method))},
+				Names: []*ast.Ident{ast.NewIdent(gen.mutexFieldName(m.Field))},
 			},
 
 			&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent(gen.callArgsFieldName(method))},
+				Names: []*ast.Ident{ast.NewIdent(gen.callArgsFieldName(m.Field))},
 				Type: &ast.ArrayType{
 					Elt: argsStructTypeForMethod(methodType),
 				},
@@ -156,7 +220,7 @@ func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
 			structFields = append(
 				structFields,
 				&ast.Field{
-					Names: []*ast.Ident{ast.NewIdent(gen.returnStructFieldName(method))},
+					Names: []*ast.Ident{ast.NewIdent(gen.returnStructFieldName(m.Field))},
 					Type:  returnStructTypeForMethod(methodType),
 				},
 			)
@@ -548,8 +612,8 @@ func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
 		},
 	}
 
-	for _, method := range gen.Model.Methods {
-		methodMutexFieldName := gen.mutexFieldName(method)
+	for _, m := range gen.Model.Methods {
+		methodMutexFieldName := gen.mutexFieldName(m.Field)
 		lockStmt := &ast.ExprStmt{
 			X: &ast.CallExpr{
 				Fun: &ast.SelectorExpr{
@@ -704,6 +768,7 @@ func (gen CodeGenerator) receiverFieldList() *ast.FieldList {
 }
 
 func (gen CodeGenerator) ensureInterfaceIsUsed() *ast.GenDecl {
+	packageName := gen.packageAlias[strconv.Quote(gen.Model.ImportPath)]
 	if gen.Model.RepresentedByInterface {
 		return &ast.GenDecl{
 			Tok: token.VAR,
@@ -711,7 +776,7 @@ func (gen CodeGenerator) ensureInterfaceIsUsed() *ast.GenDecl {
 				&ast.ValueSpec{
 					Names: []*ast.Ident{ast.NewIdent("_")},
 					Type: &ast.SelectorExpr{
-						X:   ast.NewIdent(gen.Model.PackageName),
+						X:   ast.NewIdent(packageName),
 						Sel: ast.NewIdent(gen.Model.Name),
 					},
 					Values: []ast.Expr{
@@ -723,28 +788,28 @@ func (gen CodeGenerator) ensureInterfaceIsUsed() *ast.GenDecl {
 				},
 			},
 		}
-	} else {
-		return &ast.GenDecl{
-			Tok: token.VAR,
-			Specs: []ast.Spec{
-				&ast.ValueSpec{
-					Names: []*ast.Ident{ast.NewIdent("_")},
-					Type: &ast.SelectorExpr{
-						X:   ast.NewIdent(gen.Model.PackageName),
-						Sel: ast.NewIdent(gen.Model.Name),
-					},
-					Values: []ast.Expr{
-						&ast.SelectorExpr{
-							Sel: ast.NewIdent("Spy"),
-							X: &ast.CallExpr{
-								Fun:  ast.NewIdent("new"),
-								Args: []ast.Expr{ast.NewIdent(gen.StructName)},
-							},
+	}
+
+	return &ast.GenDecl{
+		Tok: token.VAR,
+		Specs: []ast.Spec{
+			&ast.ValueSpec{
+				Names: []*ast.Ident{ast.NewIdent("_")},
+				Type: &ast.SelectorExpr{
+					X:   ast.NewIdent(packageName),
+					Sel: ast.NewIdent(gen.Model.Name),
+				},
+				Values: []ast.Expr{
+					&ast.SelectorExpr{
+						Sel: ast.NewIdent("Spy"),
+						X: &ast.CallExpr{
+							Fun:  ast.NewIdent("new"),
+							Args: []ast.Expr{ast.NewIdent(gen.StructName)},
 						},
 					},
 				},
 			},
-		}
+		},
 	}
 }
 

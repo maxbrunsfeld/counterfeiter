@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -102,20 +103,24 @@ func getInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 			return nil, err
 		}
 
-		typeNames := getTypeNames(pkg)
-
 		if iface != nil {
-			var methods []*ast.Field
-			var err error
-			var imports []*ast.ImportSpec = getImports(file)
+			typesFound := getTypeNames(pkg)
+			importSpecs := getImports(file)
 
+			pkgImport := pkg.Name
+			if strings.HasSuffix(importPath, pkg.Name) {
+				pkgImport = "xyz123"
+			}
+
+			var methods []model.Method
+			var err error
 			switch iface.(type) {
 			case *ast.InterfaceType:
 				interfaceNode := iface.(*ast.InterfaceType)
-				methods, err = methodsForInterface(interfaceNode, importPath, pkg.Name, imports, typeNames)
+				methods, err = methodsForInterface(interfaceNode, importPath, pkgImport, importSpecs, typesFound)
 			case *ast.FuncType:
 				funcNode := iface.(*ast.FuncType)
-				methods, err = methodsForFunction(funcNode, interfaceName, pkg.Name, typeNames)
+				methods, err = methodsForFunction(funcNode, interfaceName, pkgImport, importSpecs, typesFound)
 			default:
 				err = fmt.Errorf("cannot generate a counterfeit for a '%T'", iface)
 			}
@@ -124,11 +129,18 @@ func getInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 				return nil, err
 			}
 
+			importSpecs[pkgImport] = &ast.ImportSpec{
+				Name: &ast.Ident{Name: pkgImport},
+				Path: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: strconv.Quote(importPath),
+				},
+			}
+
 			return &model.InterfaceToFake{
 				Name:                   interfaceName,
 				Methods:                methods,
 				ImportPath:             importPath,
-				ImportSpecs:            imports,
 				PackageName:            pkg.Name,
 				RepresentedByInterface: !isFunction,
 			}, nil
@@ -136,38 +148,6 @@ func getInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 	}
 
 	return nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
-}
-
-func addPackagePrefixToTypesInGeneratedPackage(t *ast.FuncType, pkgName string, typeNames map[string]bool) {
-	ast.Inspect(t, func(node ast.Node) bool {
-		switch node := node.(type) {
-		case *ast.Field:
-			addPackagePrefixToNode(&node.Type, pkgName, typeNames)
-		case *ast.StarExpr:
-			addPackagePrefixToNode(&node.X, pkgName, typeNames)
-		case *ast.MapType:
-			addPackagePrefixToNode(&node.Key, pkgName, typeNames)
-			addPackagePrefixToNode(&node.Value, pkgName, typeNames)
-		case *ast.ArrayType:
-			addPackagePrefixToNode(&node.Elt, pkgName, typeNames)
-		case *ast.ChanType:
-			addPackagePrefixToNode(&node.Value, pkgName, typeNames)
-		case *ast.Ellipsis:
-			addPackagePrefixToNode(&node.Elt, pkgName, typeNames)
-		}
-		return true
-	})
-}
-
-func addPackagePrefixToNode(node *ast.Expr, pkgName string, typeNames map[string]bool) {
-	if typeIdent, ok := (*node).(*ast.Ident); ok {
-		if _, ok := typeNames[typeIdent.Name]; ok {
-			*node = &ast.SelectorExpr{
-				X:   ast.NewIdent(pkgName),
-				Sel: typeIdent,
-			}
-		}
-	}
 }
 
 func getDir(path string) (string, error) {
@@ -183,12 +163,9 @@ func getDir(path string) (string, error) {
 	return path, nil
 }
 
-func findImportPath(importSpecs []*ast.ImportSpec, alias string) string {
-	for _, spec := range importSpecs {
-		importPath := strings.Trim(spec.Path.Value, `"`)
-		if path.Base(importPath) == alias {
-			return importPath
-		}
+func findImportPath(importSpecs map[string]*ast.ImportSpec, alias string) string {
+	if importSpec, ok := importSpecs[alias]; ok {
+		return strings.Trim(importSpec.Path.Value, `"`)
 	}
 	return ""
 }
@@ -268,11 +245,17 @@ func findInterface(pkg *ast.Package, interfaceName string) (ast.Node, *ast.File,
 	return iface, file, isFunction, err
 }
 
-func getImports(file *ast.File) []*ast.ImportSpec {
-	result := []*ast.ImportSpec{}
+func getImports(file *ast.File) map[string]*ast.ImportSpec {
+	result := map[string]*ast.ImportSpec{}
 	ast.Inspect(file, func(node ast.Node) bool {
 		if importSpec, ok := node.(*ast.ImportSpec); ok {
-			result = append(result, importSpec)
+			var alias string
+			if importSpec.Name == nil {
+				alias = path.Base(strings.Trim(importSpec.Path.Value, `"`))
+			} else {
+				alias = importSpec.Name.Name
+			}
+			result[alias] = importSpec
 		}
 		return true
 	})
