@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"go/format"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
@@ -32,25 +34,30 @@ func main() {
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
 
-	interfaceName := parsedArgs.InterfaceName
-	fakeName := parsedArgs.FakeImplName
-	sourceDir := parsedArgs.SourcePackageDir
-	importPath := parsedArgs.ImportPath
 	outputPath := parsedArgs.OutputPath
 	destinationPackage := parsedArgs.DestinationPackageName
 
+	if parsedArgs.GenerateInterfaceAndShimFromPackageDirectory {
+		generateInterfaceAndShim(parsedArgs.SourcePackageDir, outputPath, destinationPackage, parsedArgs.PrintToStdOut)
+	} else {
+		generateFake(parsedArgs.InterfaceName, parsedArgs.SourcePackageDir, parsedArgs.ImportPath, outputPath, destinationPackage, parsedArgs.FakeImplName, parsedArgs.PrintToStdOut)
+	}
+}
+
+func generateFake(interfaceName, sourcePackageDir, importPath, outputPath, destinationPackage, fakeName string, printToStdOut bool) {
 	var err error
 	var iface *model.InterfaceToFake
-	if sourceDir == "" {
+	if sourcePackageDir == "" {
 		iface, err = locator.GetInterfaceFromImportPath(interfaceName, importPath)
 	} else {
-		iface, err = locator.GetInterfaceFromFilePath(interfaceName, sourceDir)
+		iface, err = locator.GetInterfaceFromFilePath(interfaceName, sourcePackageDir)
 	}
 	if err != nil {
 		fail("%v", err)
 	}
 
-	code, err := generator.CodeGenerator{
+	var code string
+	code, err = generator.CodeGenerator{
 		Model:       *iface,
 		StructName:  fakeName,
 		PackageName: destinationPackage,
@@ -60,10 +67,69 @@ func main() {
 		fail("%v", err)
 	}
 
+	printCode(code, outputPath, printToStdOut)
+	reportDone(outputPath, fakeName)
+}
+
+func generateInterfaceAndShim(sourceDir string, outputPath string, outPackage string, printToStdOut bool) {
+	var code string
+	functions, err := locator.GetFunctionsFromDirectory(path.Base(sourceDir), sourceDir)
+	if err != nil {
+		fail("%v", err)
+	}
+
+	interfaceName := strings.ToUpper(path.Base(sourceDir))[:1] + path.Base(sourceDir)[1:]
+
+	code, err = generator.InterfaceGenerator{
+		Model:                  functions,
+		Package:                sourceDir,
+		DestinationInterface:   interfaceName,
+		DestinationPackageName: outPackage,
+	}.GenerateInterface()
+
+	if err != nil {
+		fail("%v", err)
+	}
+	interfacePath := path.Join(outputPath, path.Base(sourceDir)+".go")
+	interfaceDir := path.Dir(interfacePath)
+
+	printCode(code, interfacePath, printToStdOut)
+
+	reportDone(interfacePath, interfaceName)
+
+	sourcePackage := path.Base(sourceDir)
+
+	iface, err := locator.GetInterfaceFromFilePath(interfaceName, interfaceDir)
+	if err != nil {
+		fail("%v", err)
+	}
+
+	code, err = generator.ShimGenerator{
+		Model:         *iface,
+		StructName:    interfaceName + "Shim",
+		PackageName:   outPackage,
+		SourcePackage: sourcePackage,
+	}.GenerateReal()
+
+	if err != nil {
+		fail("%v", err)
+	}
+
+	realPath := path.Join(interfaceDir, outPackage+".go")
+
+	printCode(code, realPath, printToStdOut)
+	reportDone(realPath, interfaceName+"Shim")
+}
+
+func printCode(code, outputPath string, printToStdOut bool) {
 	newCode, err := format.Source([]byte(code))
+	if err != nil {
+		fail("%v", err)
+	}
+
 	code = string(newCode)
 
-	if parsedArgs.PrintToStdOut {
+	if printToStdOut {
 		fmt.Println(code)
 	} else {
 		os.MkdirAll(filepath.Dir(outputPath), 0777)
@@ -76,14 +142,16 @@ func main() {
 		if err != nil {
 			fail("Couldn't write to fake file - %v", err)
 		}
-
-		rel, err := filepath.Rel(cwd(), outputPath)
-		if err != nil {
-			fail("%v", err)
-		}
-
-		fmt.Printf("Wrote `%s` to `%s`\n", fakeName, rel)
 	}
+}
+
+func reportDone(outputPath, fakeName string) {
+	rel, err := filepath.Rel(cwd(), outputPath)
+	if err != nil {
+		fail("%v", err)
+	}
+
+	fmt.Printf("Wrote `%s` to `%s`\n", fakeName, rel)
 }
 
 func cwd() string {
@@ -102,16 +170,20 @@ func fail(s string, args ...interface{}) {
 var usage = `
 USAGE
 	counterfeiter
-		[-o <output-path>] [--fake-name <fake-name>]
+		[-o <output-path>] [-p] [--fake-name <fake-name>]
 		[<source-path>] <interface> [-]
 
 ARGUMENTS
 	source-path
-		Path to the file or directory containing the interface to fake
+		Path to the file or directory containing the interface to fake.
+		In package mode (-p), source-path should instead specify the path
+		of the input package; alternatively you can use the package name
+		(e.g. "os") and the path will be inferred from your GOROOT.
 
 	interface
 		If source-path is specified: Name of the interface to fake.
 		If no source-path is specified: Fully qualified interface path of the interface to fake.
+    If -p is specified, this will be the name of the interface to generate.
 
 	example:
 		# writes "FakeStdInterface" to ./fakes/fake_std_interface.go
@@ -132,9 +204,23 @@ OPTIONS
 		# writes "FakeMyInterface" to ./fakes/fake_my_interface.go
 		counterfeiter -o ./fakes MyInterface ./mypackage
 
+	-p
+		Package mode:  When invoked in package mode, counterfeiter
+		will generate an interface and shim implementation from a
+		package in your GOPATH.  Counterfeiter finds the public methods
+		in the package <source-path> and adds those method signatures
+		to the generated interface <interface-name>.
+
+	example:
+		# generates os.go (interface) and osshim.go (shim) in ${PWD}/osshim
+		counterfeiter -p os
+		# now generate fake in ${PWD}/osshim/os_fake (fake_os.go)
+		go generate osshim/...
+
 	--fake-name
 		Name of the fake struct to generate. By default, 'Fake' will
-		be prepended to the name of the original interface.
+		be prepended to the name of the original interface. (ignored in
+		-p mode)
 
 	example:
 		# writes "CoolThing" to ./fakes/cool_thing.go

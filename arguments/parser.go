@@ -1,8 +1,10 @@
 package arguments
 
 import (
+	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"unicode"
 
@@ -30,6 +32,14 @@ func NewArgumentParser(
 }
 
 func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments {
+	if *packageFlag {
+		return argParser.parsePackageArgs(args...)
+	} else {
+		return argParser.parseInterfaceArgs(args...)
+	}
+}
+
+func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArguments {
 	var interfaceName string
 	var outputPathFlagValue string
 	var rootDestinationDir string
@@ -59,13 +69,38 @@ func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments 
 	packageName := restrictToValidPackageName(filepath.Base(filepath.Dir(outputPath)))
 
 	return ParsedArguments{
-		SourcePackageDir: sourcePackageDir,
-		ImportPath:       importPath,
-		OutputPath:       outputPath,
+		GenerateInterfaceAndShimFromPackageDirectory: false,
+		SourcePackageDir:                             sourcePackageDir,
+		OutputPath:                                   outputPath,
+		ImportPath:                                   importPath,
 
 		InterfaceName:          interfaceName,
 		DestinationPackageName: packageName,
 		FakeImplName:           fakeImplName,
+
+		PrintToStdOut: any(args, "-"),
+	}
+}
+
+func (argParser *argumentParser) parsePackageArgs(args ...string) ParsedArguments {
+	dir := argParser.getPackageDir(args[0])
+
+	packageName := path.Base(dir) + "shim"
+
+	var outputPath string
+	if *outputPathFlag != "" {
+		// TODO: sensible checking of dirs and symlinks
+		outputPath = *outputPathFlag
+	} else {
+		outputPath = path.Join(argParser.currentWorkingDir(), packageName)
+	}
+
+	return ParsedArguments{
+		GenerateInterfaceAndShimFromPackageDirectory: true,
+		SourcePackageDir:                             dir,
+		OutputPath:                                   outputPath,
+
+		DestinationPackageName: packageName,
 
 		PrintToStdOut: any(args, "-"),
 	}
@@ -80,6 +115,8 @@ type argumentParser struct {
 }
 
 type ParsedArguments struct {
+	GenerateInterfaceAndShimFromPackageDirectory bool
+
 	SourcePackageDir string // abs path to the dir containing the interface to fake
 	ImportPath       string // import path to the package containing the interface to fake
 	OutputPath       string // path to write the fake file to
@@ -127,6 +164,24 @@ func (argParser *argumentParser) getOutputPath(rootDestinationDir, fakeName, arg
 func packageNameForPath(pathToPackage string) string {
 	_, packageName := filepath.Split(pathToPackage)
 	return packageName + "fakes"
+}
+
+func (argParser *argumentParser) getPackageDir(arg string) string {
+	if filepath.IsAbs(arg) {
+		return arg
+	}
+
+	pathToCheck := path.Join(runtime.GOROOT(), "src", arg)
+
+	stat, err := argParser.fileStatReader(pathToCheck)
+	if err != nil {
+		argParser.failHandler("No such file or directory '%s'", arg)
+	}
+	if !stat.IsDir() {
+		argParser.failHandler("No such file or directory '%s'", arg) // TODO: for now?
+	}
+
+	return pathToCheck
 }
 
 func (argParser *argumentParser) getSourceDir(arg string) string {

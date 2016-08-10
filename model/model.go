@@ -1,6 +1,8 @@
 package model
 
-import "go/ast"
+import (
+	"go/ast"
+)
 
 type Method struct {
 	Imports map[string]*ast.ImportSpec
@@ -13,4 +15,10 @@ type InterfaceToFake struct {
 	ImportPath             string
 	PackageName            string
 	RepresentedByInterface bool
+}
+
+type PackageToInterfacify struct {
+	Name       string
+	ImportPath string
+	Funcs      []*ast.FuncDecl
 }
