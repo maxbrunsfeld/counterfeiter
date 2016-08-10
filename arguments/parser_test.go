@@ -1,15 +1,16 @@
-package arguments_test
+package arguments
 
 import (
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/maxbrunsfeld/counterfeiter/locator/locatorfakes"
 	"github.com/maxbrunsfeld/counterfeiter/terminal/terminalfakes"
 
-	. "github.com/maxbrunsfeld/counterfeiter/arguments"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -50,6 +51,7 @@ var _ = Describe("parsing arguments", func() {
 	})
 
 	BeforeEach(func() {
+		*packageFlag = false
 		failWasCalled = false
 		fail = func(_ string, _ ...interface{}) { failWasCalled = true }
 		cwd = func() string {
@@ -65,6 +67,28 @@ var _ = Describe("parsing arguments", func() {
 		fileStatReader = func(filename string) (os.FileInfo, error) {
 			return fakeFileInfo(filename, true), nil
 		}
+	})
+
+	Describe("when the -p flag is provided", func() {
+		BeforeEach(func() {
+			args = []string{"os"}
+			*packageFlag = true
+		})
+
+		It("doesn't parse extraneous arguments", func() {
+			Expect(parsedArgs.InterfaceName).To(Equal(""))
+			Expect(parsedArgs.FakeImplName).To(Equal(""))
+		})
+
+		Context("given a stdlib package", func() {
+			It("sets arguments as expected", func() {
+				Expect(parsedArgs.SourcePackageDir).To(Equal(path.Join(runtime.GOROOT(), "src/os")))
+				Expect(parsedArgs.OutputPath).To(Equal(path.Join(cwd(), "osshim")))
+				Expect(parsedArgs.DestinationPackageName).To(Equal("osshim"))
+			})
+		})
+
+		Context("given a relative path to a path to a package", func() {})
 	})
 
 	Describe("when a single argument is provided", func() {

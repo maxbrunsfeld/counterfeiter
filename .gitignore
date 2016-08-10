@@ -21,6 +21,7 @@ _testmain.go
 
 *.exe
 *.test
+*.iml
 
 arguments/argumentsfakes/
 fixtures/aliased_package/aliased_packagefakes/
