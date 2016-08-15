@@ -835,8 +835,17 @@ func eachMethodParam(methodType *ast.FuncType, cb func(string, ast.Expr, int)) {
 }
 
 func eachMethodResult(methodType *ast.FuncType, cb func(string, ast.Expr)) {
-	for i, field := range methodType.Results.List {
-		cb(fmt.Sprintf("result%d", i+1), field.Type)
+	i := 1
+	for _, field := range methodType.Results.List {
+		if len(field.Names) == 0 {
+			cb(fmt.Sprintf("result%d", i), field.Type)
+			i++
+		} else {
+			for _ = range field.Names {
+				cb(fmt.Sprintf("result%d", i), field.Type)
+				i++
+			}
+		}
 	}
 }
 
