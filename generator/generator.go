@@ -162,15 +162,21 @@ func (gen CodeGenerator) imports() ast.Decl {
 	}
 }
 
+var identifierRegex = regexp.MustCompile(`[^[:alnum:]]`)
+
 func (gen CodeGenerator) generateAlias(importName string, aliases map[string]bool) string {
-	unqoted, err := strconv.Unquote(importName)
+	unquoted, err := strconv.Unquote(importName)
 	if err != nil {
 		panic("cannot generate alias for " + importName)
 	}
-	paths := strings.Split(strings.Replace(unqoted, ".", "_", -1), "/")
+
+	paths := strings.Split(unquoted, "/")
 	alias := ""
 	for i := len(paths) - 1; i >= 0; i-- {
-		alias = alias + paths[i]
+		safePath := identifierRegex.ReplaceAllString(paths[i], "_")
+
+		alias = alias + safePath
+
 		if aliases[alias] == false {
 			return alias
 		}
