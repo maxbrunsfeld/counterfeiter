@@ -1,6 +1,8 @@
 package arguments
 
-import "flag"
+import (
+	"flag"
+)
 
 var (
 	fakeNameFlag = flag.String(
@@ -13,5 +15,11 @@ var (
 		"o",
 		"",
 		"The file or directory to which the generated fake will be written",
+	)
+
+	packageFlag = flag.Bool(
+		"p",
+		false,
+		"whether or not to generate a package shim",
 	)
 )
