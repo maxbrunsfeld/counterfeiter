@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eu
+set -eux
 
 cd "$(dirname "$0")/.."
 
@@ -19,4 +19,4 @@ go run main.go -o fixtures/symlinked_fixturesfakes/fake_something.go $symlinked_
 find . -type d -name '*fakes' | xargs go build
 
 # run the tests using the fakes
-go test -race -v ./...
+go test -v ./...

@@ -1,15 +1,12 @@
 package arguments
 
 import (
-	"fmt"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode"
 
-	"github.com/maxbrunsfeld/counterfeiter/locator"
-	"github.com/maxbrunsfeld/counterfeiter/terminal"
+	"code.cloudfoundry.org/cli/cf/terminal"
 )
 
 type ArgumentParser interface {
@@ -22,7 +19,6 @@ func NewArgumentParser(
 	symlinkEvaler SymlinkEvaler,
 	fileStatReader FileStatReader,
 	ui terminal.UI,
-	interfaceLocator locator.InterfaceLocator,
 ) ArgumentParser {
 	return &argumentParser{
 		ui:                ui,
@@ -30,33 +26,41 @@ func NewArgumentParser(
 		currentWorkingDir: currentWorkingDir,
 		symlinkEvaler:     symlinkEvaler,
 		fileStatReader:    fileStatReader,
-		interfaceLocator:  interfaceLocator,
 	}
 }
 
 func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments {
-	sourcePackageDir := argParser.getSourceDir(args[0])
-
 	var interfaceName string
+	var outputPathFlagValue string
+	var rootDestinationDir string
+	var sourcePackageDir string
+	var importPath string
 
 	if len(args) > 1 {
 		interfaceName = args[1]
+		outputPathFlagValue = *outputPathFlag
+		sourcePackageDir = argParser.getSourceDir(args[0])
+		rootDestinationDir = sourcePackageDir
 	} else {
-		interfaceName = argParser.PromptUserForInterfaceName(sourcePackageDir)
+		fullyQualifiedInterface := strings.Split(args[0], ".")
+		interfaceName = fullyQualifiedInterface[len(fullyQualifiedInterface)-1]
+		rootDestinationDir = argParser.currentWorkingDir()
+		importPath = strings.Join(fullyQualifiedInterface[:len(fullyQualifiedInterface)-1], "/")
 	}
 
 	fakeImplName := getFakeName(interfaceName, *fakeNameFlag)
 
 	outputPath := argParser.getOutputPath(
-		sourcePackageDir,
+		rootDestinationDir,
 		fakeImplName,
-		*outputPathFlag,
+		outputPathFlagValue,
 	)
 
 	packageName := restrictToValidPackageName(filepath.Base(filepath.Dir(outputPath)))
 
 	return ParsedArguments{
 		SourcePackageDir: sourcePackageDir,
+		ImportPath:       importPath,
 		OutputPath:       outputPath,
 
 		InterfaceName:          interfaceName,
@@ -67,41 +71,8 @@ func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments 
 	}
 }
 
-func (parser *argumentParser) PromptUserForInterfaceName(filepath string) string {
-	if !(parser.ui.TerminalIsTTY()) {
-		parser.ui.WriteLine("Cowardly refusing to prompt user for an interface name in a non-tty environment")
-		parser.failHandler("Perhaps you meant to invoke counterfeiter with more than one argument?")
-		return ""
-	}
-
-	parser.ui.WriteLine("Which interface to counterfeit?")
-
-	interfacesInPackage := parser.interfaceLocator.GetInterfacesFromFilePath(filepath)
-
-	for i, interfaceName := range interfacesInPackage {
-		parser.ui.WriteLine(fmt.Sprintf("%d. %s", i+1, interfaceName))
-	}
-	parser.ui.WriteLine("")
-
-	response := parser.ui.ReadLineFromStdin()
-	parsedResponse, err := strconv.ParseInt(response, 10, 64)
-	if err != nil {
-		parser.failHandler("Unknown option '%s'", response)
-		return ""
-	}
-
-	option := int(parsedResponse - 1)
-	if option < 0 || option >= len(interfacesInPackage) {
-		parser.failHandler("Unknown option '%s'", response)
-		return ""
-	}
-
-	return interfacesInPackage[option]
-}
-
 type argumentParser struct {
 	ui                terminal.UI
-	interfaceLocator  locator.InterfaceLocator
 	failHandler       FailHandler
 	currentWorkingDir CurrentWorkingDir
 	symlinkEvaler     SymlinkEvaler
@@ -110,6 +81,7 @@ type argumentParser struct {
 
 type ParsedArguments struct {
 	SourcePackageDir string // abs path to the dir containing the interface to fake
+	ImportPath       string // import path to the package containing the interface to fake
 	OutputPath       string // path to write the fake file to
 
 	DestinationPackageName string // often the base-dir for OutputPath but must be a valid package name
@@ -140,10 +112,10 @@ func getFakeName(interfaceName, arg string) string {
 
 var camelRegexp = regexp.MustCompile("([a-z])([A-Z])")
 
-func (argParser *argumentParser) getOutputPath(sourceDir, fakeName, arg string) string {
+func (argParser *argumentParser) getOutputPath(rootDestinationDir, fakeName, arg string) string {
 	if arg == "" {
 		snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(fakeName, "${1}_${2}"))
-		return filepath.Join(sourceDir, packageNameForPath(sourceDir), snakeCaseName+".go")
+		return filepath.Join(rootDestinationDir, packageNameForPath(rootDestinationDir), snakeCaseName+".go")
 	} else {
 		if !filepath.IsAbs(arg) {
 			arg = filepath.Join(argParser.currentWorkingDir(), arg)
