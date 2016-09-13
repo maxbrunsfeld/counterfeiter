@@ -45,16 +45,17 @@ var _ = Describe("The counterfeiter CLI", func() {
 
 	Describe("when given a single argument", func() {
 		BeforeEach(func() {
-			_ = generateDestination(pathToCLI)
+			copyIn("other_types.go", pathToCLI)
+			copyIn("something.go", tmpPath("otherrepo"))
 		})
 
 		It("writes a fake for the fully qualified interface that is provided in the argument", func() {
-			session := StartCounterfeiterSingleArg(pathToCLI, "io.Closer")
+			session := startCounterfeiterWithoutFixture(pathToCLI, "otherrepo/fixtures.Something")
 
 			Eventually(session).Should(gexec.Exit(0))
 			output := string(session.Out.Contents())
 
-			Expect(output).To(ContainSubstring("Wrote `FakeCloser`"))
+			Expect(output).To(ContainSubstring("Wrote `FakeSomething`"))
 		})
 	})
 
@@ -95,15 +96,10 @@ func tmpPath(destination string) string {
 	return filepath.Join(tmpDir, "src", destination)
 }
 
-func generateDestination(destination string) string {
+func copyIn(fixture string, destination string) {
 	destination = filepath.Join(destination, "fixtures")
 	err := os.MkdirAll(destination, 0777)
 	Expect(err).ToNot(HaveOccurred())
-	return destination
-}
-
-func copyIn(fixture string, destination string) {
-	destination = generateDestination(destination)
 	filepath.Walk(filepath.Join("..", "fixtures", fixture), func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -139,7 +135,7 @@ func startCounterfeiter(workingDir string, fixtureName string, otherArgs ...stri
 	return session
 }
 
-func StartCounterfeiterSingleArg(workingDir string, arg string) *gexec.Session {
+func startCounterfeiterWithoutFixture(workingDir string, arg string) *gexec.Session {
 	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
 	absPath, _ := filepath.Abs(fakeGoPathDir)
 	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
