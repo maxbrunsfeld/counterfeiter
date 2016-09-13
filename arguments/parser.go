@@ -45,7 +45,7 @@ func (argParser *argumentParser) ParseArguments(args ...string) ParsedArguments 
 		fullyQualifiedInterface := strings.Split(args[0], ".")
 		interfaceName = fullyQualifiedInterface[len(fullyQualifiedInterface)-1]
 		rootDestinationDir = argParser.currentWorkingDir()
-		importPath = strings.Join(fullyQualifiedInterface[:len(fullyQualifiedInterface)-1], "/")
+		importPath = strings.Join(fullyQualifiedInterface[:len(fullyQualifiedInterface)-1], ".")
 	}
 
 	fakeImplName := getFakeName(interfaceName, *fakeNameFlag)

@@ -46,11 +46,11 @@ var _ = Describe("The counterfeiter CLI", func() {
 	Describe("when given a single argument", func() {
 		BeforeEach(func() {
 			copyIn("other_types.go", pathToCLI)
-			copyIn("something.go", tmpPath("otherrepo"))
+			copyIn("something.go", tmpPath("otherrepo.com"))
 		})
 
 		It("writes a fake for the fully qualified interface that is provided in the argument", func() {
-			session := startCounterfeiterWithoutFixture(pathToCLI, "otherrepo/fixtures.Something")
+			session := startCounterfeiterWithoutFixture(pathToCLI, "otherrepo.com/fixtures.Something")
 
 			Eventually(session).Should(gexec.Exit(0))
 			output := string(session.Out.Contents())
