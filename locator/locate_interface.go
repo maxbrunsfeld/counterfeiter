@@ -31,7 +31,7 @@ func methodsForInterface(
 				})
 
 		case *ast.Ident:
-			iface, err := getInterfaceFromImportPath(t.Name, importPath)
+			iface, err := GetInterfaceFromImportPath(t.Name, importPath)
 			if err != nil {
 				return nil, err
 			}
@@ -39,7 +39,7 @@ func methodsForInterface(
 		case *ast.SelectorExpr:
 			pkgAlias := t.X.(*ast.Ident).Name
 			pkgImportPath := findImportPath(importSpecs, pkgAlias)
-			iface, err := getInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
+			iface, err := GetInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
 			if err != nil {
 				return nil, err
 			}

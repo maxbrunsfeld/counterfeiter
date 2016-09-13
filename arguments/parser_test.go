@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/maxbrunsfeld/counterfeiter/locator/locatorfakes"
 	"github.com/maxbrunsfeld/counterfeiter/terminal/terminalfakes"
 
 	. "github.com/maxbrunsfeld/counterfeiter/arguments"
@@ -25,17 +24,8 @@ var _ = Describe("parsing arguments", func() {
 	var fileStatReader FileStatReader
 
 	var ui *terminalfakes.FakeUI
-	var interfaceLocator *locatorfakes.FakeInterfaceLocator
 
 	var failWasCalled bool
-
-	fakeUIBuffer := func() string {
-		var output string
-		for i := 0; i < ui.WriteLineCallCount(); i++ {
-			output = output + ui.WriteLineArgsForCall(i)
-		}
-		return output
-	}
 
 	JustBeforeEach(func() {
 		subject = NewArgumentParser(
@@ -44,7 +34,6 @@ var _ = Describe("parsing arguments", func() {
 			symlinkEvaler,
 			fileStatReader,
 			ui,
-			interfaceLocator,
 		)
 		parsedArgs = subject.ParseArguments(args...)
 	})
@@ -57,7 +46,6 @@ var _ = Describe("parsing arguments", func() {
 		}
 
 		ui = new(terminalfakes.FakeUI)
-		interfaceLocator = new(locatorfakes.FakeInterfaceLocator)
 
 		symlinkEvaler = func(input string) (string, error) {
 			return input, nil
@@ -69,49 +57,33 @@ var _ = Describe("parsing arguments", func() {
 
 	Describe("when a single argument is provided", func() {
 		BeforeEach(func() {
-			args = []string{"my/mypackage"}
-
-			interfaceLocator.GetInterfacesFromFilePathReturns([]string{"Foo", "Bar"})
-			ui.ReadLineFromStdinReturns("1")
-			ui.TerminalIsTTYReturns(true)
+			args = []string{"someonesinterfaces.AnInterface"}
 		})
 
-		Context("but the connecting terminal is not a TTY", func() {
-			BeforeEach(func() {
-				ui.TerminalIsTTYReturns(false)
-			})
-
-			It("should invoke the fail handler", func() {
-				Expect(failWasCalled).To(BeTrue())
-			})
+		It("indicates to not print to stdout", func() {
+			Expect(parsedArgs.PrintToStdOut).To(BeFalse())
 		})
 
-		It("prompts the user for which interface they want", func() {
-			Expect(fakeUIBuffer()).To(ContainSubstring("Which interface to counterfeit?"))
+		It("provides a name for the fake implementing the interface", func() {
+			Expect(parsedArgs.FakeImplName).To(Equal("FakeAnInterface"))
 		})
 
-		It("shows the user each interface found in the given filepath", func() {
-			Expect(fakeUIBuffer()).To(ContainSubstring("1. Foo"))
-			Expect(fakeUIBuffer()).To(ContainSubstring("2. Bar"))
+		It("provides a path for the interface source", func() {
+			Expect(parsedArgs.ImportPath).To(Equal("someonesinterfaces"))
 		})
 
-		It("asks its interface locator for valid interfaces", func() {
-			Expect(interfaceLocator.GetInterfacesFromFilePathCallCount()).To(Equal(1))
-			Expect(interfaceLocator.GetInterfacesFromFilePathArgsForCall(0)).To(Equal("/home/test-user/workspace/my/mypackage"))
+		It("treats the last segment as the interface to counterfeit", func() {
+			Expect(parsedArgs.InterfaceName).To(Equal("AnInterface"))
 		})
 
-		It("yields the interface name the user chose", func() {
-			Expect(parsedArgs.InterfaceName).To(Equal("Foo"))
-		})
-
-		Describe("when the user types an invalid option", func() {
-			BeforeEach(func() {
-				ui.ReadLineFromStdinReturns("garbage")
-			})
-
-			It("invokes its fail handler", func() {
-				Expect(failWasCalled).To(BeTrue())
-			})
+		It("snake cases the filename for the output directory", func() {
+			Expect(parsedArgs.OutputPath).To(Equal(
+				filepath.Join(
+					cwd(),
+					"workspacefakes",
+					"fake_an_interface.go",
+				),
+			))
 		})
 	})
 
