@@ -36,6 +36,16 @@ Wrote `FakeSomething` to `path/to/foo/foofakes/fake_something.go`
 
 You can customize the location of the ouptut using the `-o` flag, or write the code to standard out by providing `-` as a third argument.
 
+If you'd like a fake implementation for an interface you do not own you can do that too by providing only a fully qualified import path:
+
+```shell
+$ counterfeiter some/imported/package.Something
+```
+
+```
+Wrote `FakeSomething` to `current/directory/fakes/fake_something.go`
+```
+
 ### Using the fake in your tests
 
 Instantiate fakes with `new`:

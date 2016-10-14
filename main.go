@@ -10,6 +10,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
 	"github.com/maxbrunsfeld/counterfeiter/locator"
+	"github.com/maxbrunsfeld/counterfeiter/model"
 	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
@@ -28,17 +29,23 @@ func main() {
 		filepath.EvalSymlinks,
 		os.Stat,
 		terminal.NewUI(),
-		locator.NewInterfaceLocator(),
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
 
 	interfaceName := parsedArgs.InterfaceName
 	fakeName := parsedArgs.FakeImplName
 	sourceDir := parsedArgs.SourcePackageDir
+	importPath := parsedArgs.ImportPath
 	outputPath := parsedArgs.OutputPath
 	destinationPackage := parsedArgs.DestinationPackageName
 
-	iface, err := locator.GetInterfaceFromFilePath(interfaceName, sourceDir)
+	var err error
+	var iface *model.InterfaceToFake
+	if sourceDir == "" {
+		iface, err = locator.GetInterfaceFromImportPath(interfaceName, importPath)
+	} else {
+		iface, err = locator.GetInterfaceFromFilePath(interfaceName, sourceDir)
+	}
 	if err != nil {
 		fail("%v", err)
 	}
@@ -96,14 +103,19 @@ var usage = `
 USAGE
 	counterfeiter
 		[-o <output-path>] [--fake-name <fake-name>]
-		<source-path> <interface-name> [-]
+		[<source-path>] <interface> [-]
 
 ARGUMENTS
 	source-path
 		Path to the file or directory containing the interface to fake
 
-	interface-name
-		Name of the interface to fake
+	interface
+		If source-path is specified: Name of the interface to fake.
+		If no source-path is specified: Fully qualified interface path of the interface to fake.
+
+	example:
+		# writes "FakeStdInterface" to ./fakes/fake_std_interface.go
+		counterfeiter package/subpackage.StdInterface
 
 	'-' argument
 		Write code to standard out instead of to a file

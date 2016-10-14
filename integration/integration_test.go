@@ -44,17 +44,18 @@ var _ = Describe("The counterfeiter CLI", func() {
 	})
 
 	Describe("when given a single argument", func() {
-		It("interactively prompts the user for the interface they want to counterfeit", func() {
-			reader, writer := io.Pipe()
+		BeforeEach(func() {
+			copyIn("other_types.go", pathToCLI)
+			copyIn("something.go", tmpPath("otherrepo.com"))
+		})
 
-			copyIn("multiple_interfaces.go", pathToCLI)
-			session := startCounterfeiterWithStdinPipe(pathToCLI, reader, "multiple_interfaces.go")
-
-			writer.Write([]byte("1\n"))
-			writer.Close()
+		It("writes a fake for the fully qualified interface that is provided in the argument", func() {
+			session := startCounterfeiterWithoutFixture(pathToCLI, "otherrepo.com/fixtures.Something")
 
 			Eventually(session).Should(gexec.Exit(0))
-			Expect(string(session.Out.Contents())).To(ContainSubstring("Wrote `FakeFirstInterface`"))
+			output := string(session.Out.Contents())
+
+			Expect(output).To(ContainSubstring("Wrote `FakeSomething`"))
 		})
 	})
 
@@ -99,7 +100,6 @@ func copyIn(fixture string, destination string) {
 	destination = filepath.Join(destination, "fixtures")
 	err := os.MkdirAll(destination, 0777)
 	Expect(err).ToNot(HaveOccurred())
-
 	filepath.Walk(filepath.Join("..", "fixtures", fixture), func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -135,19 +135,14 @@ func startCounterfeiter(workingDir string, fixtureName string, otherArgs ...stri
 	return session
 }
 
-func startCounterfeiterWithStdinPipe(workingDir string, stdin io.Reader, fixtureName string) *gexec.Session {
+func startCounterfeiterWithoutFixture(workingDir string, arg string) *gexec.Session {
 	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
 	absPath, _ := filepath.Abs(fakeGoPathDir)
 	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
 
-	fixturePath := filepath.Join("fixtures", fixtureName)
-	cmd := exec.Command(pathToCounterfeiter, fixturePath)
-	cmd.Stdin = stdin
+	cmd := exec.Command(pathToCounterfeiter, arg)
 	cmd.Dir = workingDir
-	cmd.Env = []string{
-		"GOPATH=" + absPathWithSymlinks,
-		"COUNTERFEITER_INTERACTIVE=1",
-	}
+	cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
 
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
