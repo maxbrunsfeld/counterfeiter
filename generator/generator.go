@@ -116,8 +116,11 @@ func (gen CodeGenerator) imports() ast.Decl {
 	gen.packageAlias[modelImportName] = gen.Model.PackageName
 
 	for _, m := range gen.Model.Methods {
-		for _, importSpec := range m.Imports {
+		for alias, importSpec := range m.Imports {
 			allImports = append(allImports, importSpec.Path.Value)
+			if alias != "" && alias != "xyz123" && alias != gen.Model.PackageName {
+				gen.packageAlias[importSpec.Path.Value] = alias
+			}
 		}
 	}
 
