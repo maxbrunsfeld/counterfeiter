@@ -103,26 +103,26 @@ func (gen CodeGenerator) buildASTForFake() ast.Node {
 }
 
 func (gen CodeGenerator) imports() ast.Decl {
-	specs := []ast.Spec{}
-	allImports := map[string]bool{}
-
-	modelImportName := strconv.Quote(gen.Model.ImportPath)
-	allImports[modelImportName] = true
-
 	syncImportName := strconv.Quote("sync")
-	allImports[syncImportName] = true
+	modelImportName := strconv.Quote(gen.Model.ImportPath)
+
+	allImports := []string{
+		modelImportName, // package containing the interface to be faked
+		syncImportName,  // always required
+	}
+
 	gen.packageAlias[syncImportName] = "sync"
+	gen.packageAlias[modelImportName] = gen.Model.PackageName
 
 	for _, m := range gen.Model.Methods {
 		for _, importSpec := range m.Imports {
-			allImports[importSpec.Path.Value] = true
+			allImports = append(allImports, importSpec.Path.Value)
 		}
 	}
 
 	aliases := map[string]bool{}
 	aliases[gen.Model.PackageName] = true
-	gen.packageAlias[modelImportName] = gen.Model.PackageName
-	for importName := range allImports {
+	for _, importName := range allImports {
 		if _, found := gen.packageAlias[importName]; found {
 			continue
 		}
@@ -135,6 +135,7 @@ func (gen CodeGenerator) imports() ast.Decl {
 		gen.packageAlias[importName] = alias
 	}
 
+	specs := []ast.Spec{}
 	for importName, alias := range gen.packageAlias {
 		var name *ast.Ident
 		if !strings.HasSuffix(importName[:len(importName)-1], alias) {
