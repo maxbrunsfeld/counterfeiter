@@ -128,11 +128,7 @@ func (gen CodeGenerator) imports() ast.Decl {
 			continue
 		}
 
-		alias := gen.generateAlias(importName, aliases)
-		if alias == "" {
-			panic("could not generate an alias for " + importName)
-		}
-		gen.packageAlias[importName] = alias
+		gen.packageAlias[importName] = gen.generateAlias(importName, aliases)
 	}
 
 	specs := []ast.Spec{}
@@ -166,19 +162,21 @@ func (gen CodeGenerator) generateAlias(importName string, aliases map[string]str
 	}
 
 	paths := strings.Split(unquoted, string(os.PathSeparator))
-	alias := ""
+	var alias string
 	for i := len(paths) - 1; i >= 0; i-- {
 		safePath := identifierRegex.ReplaceAllString(paths[i], "_")
 
 		alias = alias + safePath
 
-		if _, found := aliases[alias]; !found {
-			aliases[alias] = struct{}{}
-			return alias
+		if _, found := aliases[alias]; found {
+			continue
 		}
+
+		aliases[alias] = struct{}{}
+		return alias
 	}
 
-	return ""
+	panic("could not generate an alias for " + importName)
 }
 
 func (gen CodeGenerator) fixup() {
