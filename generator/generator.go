@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -120,8 +121,8 @@ func (gen CodeGenerator) imports() ast.Decl {
 		}
 	}
 
-	aliases := map[string]bool{}
-	aliases[gen.Model.PackageName] = true
+	aliases := map[string]struct{}{}
+	aliases[gen.Model.PackageName] = struct{}{}
 	for _, importName := range allImports {
 		if _, found := gen.packageAlias[importName]; found {
 			continue
@@ -131,7 +132,6 @@ func (gen CodeGenerator) imports() ast.Decl {
 		if alias == "" {
 			panic("could not generate an alias for " + importName)
 		}
-		aliases[alias] = true
 		gen.packageAlias[importName] = alias
 	}
 
@@ -159,20 +159,21 @@ func (gen CodeGenerator) imports() ast.Decl {
 
 var identifierRegex = regexp.MustCompile(`[^[:alnum:]]`)
 
-func (gen CodeGenerator) generateAlias(importName string, aliases map[string]bool) string {
+func (gen CodeGenerator) generateAlias(importName string, aliases map[string]struct{}) string {
 	unquoted, err := strconv.Unquote(importName)
 	if err != nil {
 		panic("cannot generate alias for " + importName)
 	}
 
-	paths := strings.Split(unquoted, "/")
+	paths := strings.Split(unquoted, string(os.PathSeparator))
 	alias := ""
 	for i := len(paths) - 1; i >= 0; i-- {
 		safePath := identifierRegex.ReplaceAllString(paths[i], "_")
 
 		alias = alias + safePath
 
-		if aliases[alias] == false {
+		if _, found := aliases[alias]; !found {
+			aliases[alias] = struct{}{}
 			return alias
 		}
 	}
