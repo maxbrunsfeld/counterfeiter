@@ -105,7 +105,6 @@ func (gen CodeGenerator) buildASTForFake() ast.Node {
 func (gen CodeGenerator) imports() ast.Decl {
 	specs := []ast.Spec{}
 	allImports := map[string]bool{}
-	dotImports := map[string]bool{}
 
 	modelImportName := strconv.Quote(gen.Model.ImportPath)
 	allImports[modelImportName] = true
@@ -115,12 +114,7 @@ func (gen CodeGenerator) imports() ast.Decl {
 	gen.packageAlias[syncImportName] = "sync"
 
 	for _, m := range gen.Model.Methods {
-		for alias, importSpec := range m.Imports {
-			if alias == "." {
-				dotImports[importSpec.Name.Name] = true
-				gen.packageAlias[importSpec.Path.Value] = "."
-			}
-
+		for _, importSpec := range m.Imports {
 			allImports[importSpec.Path.Value] = true
 		}
 	}
