@@ -346,7 +346,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		Ellipsis: ellipsisPos,
 	}
 
-	var lastStatement ast.Stmt
+	var lastStatements []ast.Stmt
 	if methodType.Results.NumFields() > 0 {
 		returnValues := []ast.Expr{}
 		eachMethodResult(methodType, func(name string, t ast.Expr) {
@@ -359,22 +359,22 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 			})
 		})
 
-		lastStatement = &ast.IfStmt{
-			Cond: invertNilCheck(stubFunc),
-			Body: &ast.BlockStmt{List: []ast.Stmt{
-				&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
-			}},
-			Else: &ast.BlockStmt{List: []ast.Stmt{
-				&ast.ReturnStmt{Results: returnValues},
-			}},
+		lastStatements = []ast.Stmt{
+			&ast.IfStmt{
+				Cond: invertNilCheck(stubFunc),
+				Body: &ast.BlockStmt{List: []ast.Stmt{
+					&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
+				}},
+			},
+			&ast.ReturnStmt{Results: returnValues},
 		}
 	} else {
-		lastStatement = &ast.IfStmt{
+		lastStatements = []ast.Stmt{&ast.IfStmt{
 			Cond: invertNilCheck(stubFunc),
 			Body: &ast.BlockStmt{List: []ast.Stmt{
 				&ast.ExprStmt{X: stubFuncCall},
 			}},
-		}
+		}}
 	}
 
 	bodyStatements = append(bodyStatements,
@@ -416,9 +416,8 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		},
 
 		gen.callMutex(method, "Unlock"),
-
-		lastStatement,
 	)
+	bodyStatements = append(bodyStatements, lastStatements...)
 
 	var methodName *ast.Ident
 	if gen.Model.RepresentedByInterface {
