@@ -154,9 +154,8 @@ func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
-	} else {
-		return fake.doThingsReturns.result1, fake.doThingsReturns.result2
 	}
+	return fake.doThingsReturns.result1, fake.doThingsReturns.result2
 }
 
 func (fake *FakeSomething) DoThingsCallCount() int {
@@ -311,9 +310,8 @@ func (fake *FakeRequestFactory) Spy(arg1 fixtures.Params, arg2 map[string]interf
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		return fake.Stub(arg1, arg2)
-	} else {
-		return fake.returns.result1, fake.returns.result2
 	}
+	return fake.returns.result1, fake.returns.result2
 }
 
 func (fake *FakeRequestFactory) CallCount() int {
@@ -387,9 +385,8 @@ func (fake *FakeSomeInterface) CreateThing() some_packagehyphen_ated.Thing {
 	fake.createThingMutex.Unlock()
 	if fake.CreateThingStub != nil {
 		return fake.CreateThingStub()
-	} else {
-		return fake.createThingReturns.result1
 	}
+	return fake.createThingReturns.result1
 }
 
 func (fake *FakeSomeInterface) CreateThingCallCount() int {
@@ -456,9 +453,8 @@ func (fake *FakeSomethingElse) ReturnStuff() (a, b int) {
 	fake.returnStuffMutex.Unlock()
 	if fake.ReturnStuffStub != nil {
 		return fake.ReturnStuffStub()
-	} else {
-		return fake.returnStuffReturns.result1, fake.returnStuffReturns.result2
 	}
+	return fake.returnStuffReturns.result1, fake.returnStuffReturns.result2
 }
 
 func (fake *FakeSomethingElse) ReturnStuffCallCount() int {

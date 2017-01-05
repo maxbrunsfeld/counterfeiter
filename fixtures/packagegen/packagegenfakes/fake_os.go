@@ -86,9 +86,8 @@ func (fake *FakeOs) FindProcess(pid int) (*os.Process, error) {
 	fake.findProcessMutex.Unlock()
 	if fake.FindProcessStub != nil {
 		return fake.FindProcessStub(pid)
-	} else {
-		return fake.findProcessReturns.result1, fake.findProcessReturns.result2
 	}
+	return fake.findProcessReturns.result1, fake.findProcessReturns.result2
 }
 
 func (fake *FakeOs) FindProcessCallCount() int {
@@ -118,9 +117,8 @@ func (fake *FakeOs) Hostname() (name string, err error) {
 	fake.hostnameMutex.Unlock()
 	if fake.HostnameStub != nil {
 		return fake.HostnameStub()
-	} else {
-		return fake.hostnameReturns.result1, fake.hostnameReturns.result2
 	}
+	return fake.hostnameReturns.result1, fake.hostnameReturns.result2
 }
 
 func (fake *FakeOs) HostnameCallCount() int {
@@ -147,9 +145,8 @@ func (fake *FakeOs) Expand(s string, mapping func(string) string) string {
 	fake.expandMutex.Unlock()
 	if fake.ExpandStub != nil {
 		return fake.ExpandStub(s, mapping)
-	} else {
-		return fake.expandReturns.result1
 	}
+	return fake.expandReturns.result1
 }
 
 func (fake *FakeOs) ExpandCallCount() int {
@@ -194,9 +191,8 @@ func (fake *FakeOs) Environ() []string {
 	fake.environMutex.Unlock()
 	if fake.EnvironStub != nil {
 		return fake.EnvironStub()
-	} else {
-		return fake.environReturns.result1
 	}
+	return fake.environReturns.result1
 }
 
 func (fake *FakeOs) EnvironCallCount() int {
@@ -223,9 +219,8 @@ func (fake *FakeOs) Chtimes(name string, atime time.Time, mtime time.Time) error
 	fake.chtimesMutex.Unlock()
 	if fake.ChtimesStub != nil {
 		return fake.ChtimesStub(name, atime, mtime)
-	} else {
-		return fake.chtimesReturns.result1
 	}
+	return fake.chtimesReturns.result1
 }
 
 func (fake *FakeOs) ChtimesCallCount() int {
@@ -257,9 +252,8 @@ func (fake *FakeOs) MkdirAll(path string, perm os.FileMode) error {
 	fake.mkdirAllMutex.Unlock()
 	if fake.MkdirAllStub != nil {
 		return fake.MkdirAllStub(path, perm)
-	} else {
-		return fake.mkdirAllReturns.result1
 	}
+	return fake.mkdirAllReturns.result1
 }
 
 func (fake *FakeOs) MkdirAllCallCount() int {
