@@ -2,6 +2,7 @@ package locator
 
 import (
 	"go/ast"
+	"strings"
 
 	"github.com/maxbrunsfeld/counterfeiter/astutil"
 	"github.com/maxbrunsfeld/counterfeiter/model"
@@ -38,7 +39,12 @@ func methodsForInterface(
 			result = append(result, iface.Methods...)
 		case *ast.SelectorExpr:
 			pkgAlias := t.X.(*ast.Ident).Name
-			pkgImportPath := findImportPath(importSpecs, pkgAlias)
+
+			var pkgImportPath string
+			if importSpec, ok := importSpecs[pkgAlias]; ok {
+				pkgImportPath = strings.Trim(importSpec.Path.Value, `"`)
+			}
+
 			iface, err := GetInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
 			if err != nil {
 				return nil, err
