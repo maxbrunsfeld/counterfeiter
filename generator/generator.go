@@ -106,6 +106,7 @@ func (gen CodeGenerator) imports() ast.Decl {
 	specs := []ast.Spec{}
 	allImports := map[string]bool{}
 	dotImports := map[string]bool{}
+	aliasImportNames := map[string]string{}
 
 	modelImportName := strconv.Quote(gen.Model.ImportPath)
 	allImports[modelImportName] = true
@@ -115,13 +116,19 @@ func (gen CodeGenerator) imports() ast.Decl {
 	gen.packageAlias[syncImportName] = "sync"
 
 	for _, m := range gen.Model.Methods {
-		for alias, importSpec := range m.Imports {
-			if alias == "." {
+		for packageName, importSpec := range m.Imports {
+			if packageName == "." {
 				dotImports[importSpec.Name.Name] = true
 				gen.packageAlias[importSpec.Path.Value] = "."
 			}
 
 			allImports[importSpec.Path.Value] = true
+
+			var importAlias = ""
+			if importSpec.Name != nil && importSpec.Name.Name != "xyz123" {
+				importAlias = importSpec.Name.Name
+			}
+			aliasImportNames[importSpec.Path.Value] = importAlias
 		}
 	}
 
@@ -133,9 +140,12 @@ func (gen CodeGenerator) imports() ast.Decl {
 			continue
 		}
 
-		alias := gen.generateAlias(importName, aliases)
+		alias := aliasImportNames[importName]
 		if alias == "" {
-			panic("could not generate an alias for " + importName)
+			alias = gen.generateAlias(importName, aliases)
+			if alias == "" {
+				panic("could not generate an alias for " + importName)
+			}
 		}
 		aliases[alias] = true
 		gen.packageAlias[importName] = alias
