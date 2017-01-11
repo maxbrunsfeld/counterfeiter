@@ -106,7 +106,6 @@ func (gen CodeGenerator) imports() ast.Decl {
 	specs := []ast.Spec{}
 	allImports := map[string]bool{}
 	dotImports := map[string]bool{}
-	aliasImportNames := map[string]string{}
 
 	modelImportName := strconv.Quote(gen.Model.ImportPath)
 	allImports[modelImportName] = true
@@ -123,7 +122,6 @@ func (gen CodeGenerator) imports() ast.Decl {
 			}
 
 			allImports[importSpec.Path.Value] = true
-			aliasImportNames[importSpec.Path.Value] = alias
 		}
 	}
 
@@ -135,12 +133,9 @@ func (gen CodeGenerator) imports() ast.Decl {
 			continue
 		}
 
-		alias := aliasImportNames[importName]
+		alias := gen.generateAlias(importName, aliases)
 		if alias == "" {
-			alias = gen.generateAlias(importName, aliases)
-			if alias == "" {
-				panic("could not generate an alias for " + importName)
-			}
+			panic("could not generate an alias for " + importName)
 		}
 		aliases[alias] = true
 		gen.packageAlias[importName] = alias
