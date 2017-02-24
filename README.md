@@ -78,6 +78,20 @@ Expect(num).To(Equal(3))
 Expect(err).To(Equal(errors.New("the-error")))
 ```
 
+You can set the return value of one or more specific calls:
+
+```go
+fake.DoThingsReturnsOnCall(1, 3, errors.New("the-error"))
+
+num, err := fake.DoThings("stuff", 5)
+Expect(num).To(Equal(0))
+Expect(err).NotTo(HaveOccurred())
+
+num, err = fake.DoThings("stuff", 5)
+Expect(num).To(Equal(3))
+Expect(err).To(Equal(errors.New("the-error")))
+```
+
 You can also supply them with stub functions:
 
 ```go

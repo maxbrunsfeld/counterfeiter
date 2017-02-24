@@ -16,12 +16,16 @@ type FakeSomethingFactory struct {
 	returns struct {
 		result1 string
 	}
+	returnsOnCall map[int]struct {
+		result1 string
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeSomethingFactory) Spy(arg1 string, arg2 map[string]interface{}) string {
 	fake.mutex.Lock()
+	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	fake.argsForCall = append(fake.argsForCall, struct {
 		arg1 string
 		arg2 map[string]interface{}
@@ -30,6 +34,9 @@ func (fake *FakeSomethingFactory) Spy(arg1 string, arg2 map[string]interface{}) 
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		return fake.Stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.returns.result1
 }
@@ -49,6 +56,18 @@ func (fake *FakeSomethingFactory) ArgsForCall(i int) (string, map[string]interfa
 func (fake *FakeSomethingFactory) Returns(result1 string) {
 	fake.Stub = nil
 	fake.returns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeSomethingFactory) ReturnsOnCall(i int, result1 string) {
+	fake.Stub = nil
+	if fake.returnsOnCall == nil {
+		fake.returnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.returnsOnCall[i] = struct {
 		result1 string
 	}{result1}
 }

@@ -19,10 +19,18 @@ type FakeOs struct {
 		result1 *os.Process
 		result2 error
 	}
+	findProcessReturnsOnCall map[int]struct {
+		result1 *os.Process
+		result2 error
+	}
 	HostnameStub        func() (name string, err error)
 	hostnameMutex       sync.RWMutex
 	hostnameArgsForCall []struct{}
 	hostnameReturns     struct {
+		result1 string
+		result2 error
+	}
+	hostnameReturnsOnCall map[int]struct {
 		result1 string
 		result2 error
 	}
@@ -35,6 +43,9 @@ type FakeOs struct {
 	expandReturns struct {
 		result1 string
 	}
+	expandReturnsOnCall map[int]struct {
+		result1 string
+	}
 	ClearenvStub        func()
 	clearenvMutex       sync.RWMutex
 	clearenvArgsForCall []struct{}
@@ -42,6 +53,9 @@ type FakeOs struct {
 	environMutex        sync.RWMutex
 	environArgsForCall  []struct{}
 	environReturns      struct {
+		result1 []string
+	}
+	environReturnsOnCall map[int]struct {
 		result1 []string
 	}
 	ChtimesStub        func(name string, atime time.Time, mtime time.Time) error
@@ -54,6 +68,9 @@ type FakeOs struct {
 	chtimesReturns struct {
 		result1 error
 	}
+	chtimesReturnsOnCall map[int]struct {
+		result1 error
+	}
 	MkdirAllStub        func(path string, perm os.FileMode) error
 	mkdirAllMutex       sync.RWMutex
 	mkdirAllArgsForCall []struct {
@@ -61,6 +78,9 @@ type FakeOs struct {
 		perm os.FileMode
 	}
 	mkdirAllReturns struct {
+		result1 error
+	}
+	mkdirAllReturnsOnCall map[int]struct {
 		result1 error
 	}
 	ExitStub        func(code int)
@@ -79,6 +99,7 @@ type FakeOs struct {
 
 func (fake *FakeOs) FindProcess(pid int) (*os.Process, error) {
 	fake.findProcessMutex.Lock()
+	ret, specificReturn := fake.findProcessReturnsOnCall[len(fake.findProcessArgsForCall)]
 	fake.findProcessArgsForCall = append(fake.findProcessArgsForCall, struct {
 		pid int
 	}{pid})
@@ -86,6 +107,9 @@ func (fake *FakeOs) FindProcess(pid int) (*os.Process, error) {
 	fake.findProcessMutex.Unlock()
 	if fake.FindProcessStub != nil {
 		return fake.FindProcessStub(pid)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.findProcessReturns.result1, fake.findProcessReturns.result2
 }
@@ -110,13 +134,31 @@ func (fake *FakeOs) FindProcessReturns(result1 *os.Process, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeOs) FindProcessReturnsOnCall(i int, result1 *os.Process, result2 error) {
+	fake.FindProcessStub = nil
+	if fake.findProcessReturnsOnCall == nil {
+		fake.findProcessReturnsOnCall = make(map[int]struct {
+			result1 *os.Process
+			result2 error
+		})
+	}
+	fake.findProcessReturnsOnCall[i] = struct {
+		result1 *os.Process
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeOs) Hostname() (name string, err error) {
 	fake.hostnameMutex.Lock()
+	ret, specificReturn := fake.hostnameReturnsOnCall[len(fake.hostnameArgsForCall)]
 	fake.hostnameArgsForCall = append(fake.hostnameArgsForCall, struct{}{})
 	fake.recordInvocation("Hostname", []interface{}{})
 	fake.hostnameMutex.Unlock()
 	if fake.HostnameStub != nil {
 		return fake.HostnameStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.hostnameReturns.result1, fake.hostnameReturns.result2
 }
@@ -135,8 +177,23 @@ func (fake *FakeOs) HostnameReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeOs) HostnameReturnsOnCall(i int, result1 string, result2 error) {
+	fake.HostnameStub = nil
+	if fake.hostnameReturnsOnCall == nil {
+		fake.hostnameReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.hostnameReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeOs) Expand(s string, mapping func(string) string) string {
 	fake.expandMutex.Lock()
+	ret, specificReturn := fake.expandReturnsOnCall[len(fake.expandArgsForCall)]
 	fake.expandArgsForCall = append(fake.expandArgsForCall, struct {
 		s       string
 		mapping func(string) string
@@ -145,6 +202,9 @@ func (fake *FakeOs) Expand(s string, mapping func(string) string) string {
 	fake.expandMutex.Unlock()
 	if fake.ExpandStub != nil {
 		return fake.ExpandStub(s, mapping)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.expandReturns.result1
 }
@@ -168,6 +228,18 @@ func (fake *FakeOs) ExpandReturns(result1 string) {
 	}{result1}
 }
 
+func (fake *FakeOs) ExpandReturnsOnCall(i int, result1 string) {
+	fake.ExpandStub = nil
+	if fake.expandReturnsOnCall == nil {
+		fake.expandReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.expandReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
 func (fake *FakeOs) Clearenv() {
 	fake.clearenvMutex.Lock()
 	fake.clearenvArgsForCall = append(fake.clearenvArgsForCall, struct{}{})
@@ -186,11 +258,15 @@ func (fake *FakeOs) ClearenvCallCount() int {
 
 func (fake *FakeOs) Environ() []string {
 	fake.environMutex.Lock()
+	ret, specificReturn := fake.environReturnsOnCall[len(fake.environArgsForCall)]
 	fake.environArgsForCall = append(fake.environArgsForCall, struct{}{})
 	fake.recordInvocation("Environ", []interface{}{})
 	fake.environMutex.Unlock()
 	if fake.EnvironStub != nil {
 		return fake.EnvironStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.environReturns.result1
 }
@@ -208,8 +284,21 @@ func (fake *FakeOs) EnvironReturns(result1 []string) {
 	}{result1}
 }
 
+func (fake *FakeOs) EnvironReturnsOnCall(i int, result1 []string) {
+	fake.EnvironStub = nil
+	if fake.environReturnsOnCall == nil {
+		fake.environReturnsOnCall = make(map[int]struct {
+			result1 []string
+		})
+	}
+	fake.environReturnsOnCall[i] = struct {
+		result1 []string
+	}{result1}
+}
+
 func (fake *FakeOs) Chtimes(name string, atime time.Time, mtime time.Time) error {
 	fake.chtimesMutex.Lock()
+	ret, specificReturn := fake.chtimesReturnsOnCall[len(fake.chtimesArgsForCall)]
 	fake.chtimesArgsForCall = append(fake.chtimesArgsForCall, struct {
 		name  string
 		atime time.Time
@@ -219,6 +308,9 @@ func (fake *FakeOs) Chtimes(name string, atime time.Time, mtime time.Time) error
 	fake.chtimesMutex.Unlock()
 	if fake.ChtimesStub != nil {
 		return fake.ChtimesStub(name, atime, mtime)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.chtimesReturns.result1
 }
@@ -242,8 +334,21 @@ func (fake *FakeOs) ChtimesReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeOs) ChtimesReturnsOnCall(i int, result1 error) {
+	fake.ChtimesStub = nil
+	if fake.chtimesReturnsOnCall == nil {
+		fake.chtimesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.chtimesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeOs) MkdirAll(path string, perm os.FileMode) error {
 	fake.mkdirAllMutex.Lock()
+	ret, specificReturn := fake.mkdirAllReturnsOnCall[len(fake.mkdirAllArgsForCall)]
 	fake.mkdirAllArgsForCall = append(fake.mkdirAllArgsForCall, struct {
 		path string
 		perm os.FileMode
@@ -252,6 +357,9 @@ func (fake *FakeOs) MkdirAll(path string, perm os.FileMode) error {
 	fake.mkdirAllMutex.Unlock()
 	if fake.MkdirAllStub != nil {
 		return fake.MkdirAllStub(path, perm)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.mkdirAllReturns.result1
 }
@@ -271,6 +379,18 @@ func (fake *FakeOs) MkdirAllArgsForCall(i int) (string, os.FileMode) {
 func (fake *FakeOs) MkdirAllReturns(result1 error) {
 	fake.MkdirAllStub = nil
 	fake.mkdirAllReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeOs) MkdirAllReturnsOnCall(i int, result1 error) {
+	fake.MkdirAllStub = nil
+	if fake.mkdirAllReturnsOnCall == nil {
+		fake.mkdirAllReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.mkdirAllReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

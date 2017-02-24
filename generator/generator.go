@@ -82,6 +82,7 @@ func (gen CodeGenerator) buildASTForFake() ast.Node {
 			declarations = append(
 				declarations,
 				gen.methodReturnsSetter(m.Field),
+				gen.methodReturnsOnCallSetter(m.Field),
 			)
 		}
 	}
@@ -239,6 +240,10 @@ func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
 					Names: []*ast.Ident{ast.NewIdent(gen.returnStructFieldName(m.Field))},
 					Type:  returnStructTypeForMethod(methodType),
 				},
+				&ast.Field{
+					Names: []*ast.Ident{ast.NewIdent(gen.returnMapFieldName(m.Field))},
+					Type:  returnMapTypeForMethod(methodType),
+				},
 			)
 		}
 	}
@@ -359,12 +364,17 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 	var lastStatements []ast.Stmt
 	if methodType.Results.NumFields() > 0 {
 		returnValues := []ast.Expr{}
+		specificReturnValues := []ast.Expr{}
 		eachMethodResult(methodType, func(name string, t ast.Expr) {
 			returnValues = append(returnValues, &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
 					X:   receiverIdent(),
 					Sel: ast.NewIdent(gen.returnStructFieldName(method)),
 				},
+				Sel: ast.NewIdent(name),
+			})
+			specificReturnValues = append(specificReturnValues, &ast.SelectorExpr{
+				X:   ast.NewIdent("ret"),
 				Sel: ast.NewIdent(name),
 			})
 		})
@@ -374,6 +384,12 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 				Cond: invertNilCheck(stubFunc),
 				Body: &ast.BlockStmt{List: []ast.Stmt{
 					&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
+				}},
+			},
+			&ast.IfStmt{
+				Cond: ast.NewIdent("specificReturn"),
+				Body: &ast.BlockStmt{List: []ast.Stmt{
+					&ast.ReturnStmt{Results: specificReturnValues},
 				}},
 			},
 			&ast.ReturnStmt{Results: returnValues},
@@ -389,7 +405,38 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 
 	bodyStatements = append(bodyStatements,
 		gen.callMutex(method, "Lock"),
+	)
 
+	if methodType.Results.NumFields() > 0 {
+		bodyStatements = append(bodyStatements,
+			&ast.AssignStmt{
+				Tok: token.DEFINE,
+				Lhs: []ast.Expr{
+					ast.NewIdent("ret"),
+					ast.NewIdent("specificReturn"),
+				},
+				Rhs: []ast.Expr{
+					&ast.IndexExpr{
+						X: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent(gen.returnMapFieldName(method)),
+						},
+						Index: &ast.CallExpr{
+							Fun: ast.NewIdent("len"),
+							Args: []ast.Expr{
+								&ast.SelectorExpr{
+									X:   receiverIdent(),
+									Sel: ast.NewIdent(gen.callArgsFieldName(method)),
+								},
+							},
+						},
+					},
+				},
+			},
+		)
+	}
+
+	bodyStatements = append(bodyStatements,
 		&ast.AssignStmt{
 			Tok: token.ASSIGN,
 			Lhs: []ast.Expr{&ast.SelectorExpr{
@@ -427,6 +474,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 
 		gen.callMutex(method, "Unlock"),
 	)
+
 	bodyStatements = append(bodyStatements, lastStatements...)
 
 	var methodName *ast.Ident
@@ -565,6 +613,99 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 					&ast.SelectorExpr{
 						X:   receiverIdent(),
 						Sel: ast.NewIdent(gen.returnStructFieldName(method)),
+					},
+				},
+				Rhs: []ast.Expr{
+					&ast.CompositeLit{
+						Type: returnStructTypeForMethod(methodType),
+						Elts: structFields,
+					},
+				},
+			},
+		}},
+	}
+}
+
+func (gen CodeGenerator) methodReturnsOnCallSetter(method *ast.Field) *ast.FuncDecl {
+	methodType := method.Type.(*ast.FuncType)
+
+	params := []*ast.Field{}
+	structFields := []ast.Expr{}
+	eachMethodResult(methodType, func(name string, t ast.Expr) {
+		params = append(params, &ast.Field{
+			Names: []*ast.Ident{ast.NewIdent(name)},
+			Type:  t,
+		})
+
+		structFields = append(structFields, ast.NewIdent(name))
+	})
+
+	return &ast.FuncDecl{
+		Name: ast.NewIdent(gen.returnSetterOnCallMethodName(method)),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{List: append([]*ast.Field{&ast.Field{
+				Names: []*ast.Ident{ast.NewIdent("i")},
+				Type:  ast.NewIdent("int"),
+			}}, params...)},
+		},
+		Recv: gen.receiverFieldList(),
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.AssignStmt{
+				Tok: token.ASSIGN,
+				Lhs: []ast.Expr{
+					&ast.SelectorExpr{
+						X:   receiverIdent(),
+						Sel: ast.NewIdent(gen.methodStubFuncName(method)),
+					},
+				},
+				Rhs: []ast.Expr{
+					&ast.BasicLit{
+						Kind:  token.STRING,
+						Value: "nil",
+					},
+				},
+			},
+			&ast.IfStmt{
+				Cond: nilCheck(&ast.SelectorExpr{
+					X:   receiverIdent(),
+					Sel: ast.NewIdent(gen.returnMapFieldName(method)),
+				}),
+				Body: &ast.BlockStmt{List: []ast.Stmt{
+					&ast.AssignStmt{
+						Tok: token.ASSIGN,
+						Lhs: []ast.Expr{
+							&ast.SelectorExpr{
+								X:   receiverIdent(),
+								Sel: ast.NewIdent(gen.returnMapFieldName(method)),
+							},
+						},
+						Rhs: []ast.Expr{
+							&ast.CallExpr{
+								Fun: ast.NewIdent("make"),
+								Args: []ast.Expr{
+									&ast.MapType{
+										Key: ast.NewIdent("int"),
+										Value: &ast.StructType{
+											Fields: &ast.FieldList{
+												List: params,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}},
+			},
+			&ast.AssignStmt{
+				Tok: token.ASSIGN,
+				Lhs: []ast.Expr{
+					&ast.IndexExpr{
+						X: &ast.SelectorExpr{
+							X:   receiverIdent(),
+							Sel: ast.NewIdent(gen.returnMapFieldName(method)),
+						},
+						Index: ast.NewIdent("i"),
 					},
 				},
 				Rhs: []ast.Expr{
@@ -887,6 +1028,25 @@ func returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
 	}
 }
 
+func returnMapTypeForMethod(methodType *ast.FuncType) *ast.MapType {
+	resultFields := []*ast.Field{}
+	eachMethodResult(methodType, func(name string, t ast.Expr) {
+		resultFields = append(resultFields, &ast.Field{
+			Type:  t,
+			Names: []*ast.Ident{ast.NewIdent(name)},
+		})
+	})
+
+	return &ast.MapType{
+		Key: ast.NewIdent("int"),
+		Value: &ast.StructType{
+			Fields: &ast.FieldList{
+				List: resultFields,
+			},
+		},
+	}
+}
+
 func storedTypeForType(t ast.Expr) ast.Expr {
 	if ellipsis, ok := t.(*ast.Ellipsis); ok {
 		return &ast.ArrayType{Elt: ellipsis.Elt}
@@ -937,6 +1097,18 @@ func (gen CodeGenerator) returnSetterMethodName(method *ast.Field) string {
 	} else {
 		return "Returns"
 	}
+}
+
+func (gen CodeGenerator) returnSetterOnCallMethodName(method *ast.Field) string {
+	if gen.Model.RepresentedByInterface {
+		return method.Names[0].Name + "ReturnsOnCall"
+	} else {
+		return "ReturnsOnCall"
+	}
+}
+
+func (gen CodeGenerator) returnMapFieldName(method *ast.Field) string {
+	return privatize(gen.returnSetterOnCallMethodName(method))
 }
 
 func (gen CodeGenerator) returnStructFieldName(method *ast.Field) string {

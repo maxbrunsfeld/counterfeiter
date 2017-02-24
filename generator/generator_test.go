@@ -151,6 +151,10 @@ type FakeSomething struct {
 		result1 int
 		result2 error
 	}
+	doThingsReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	DoNothingStub        func()
 	doNothingMutex       sync.RWMutex
 	doNothingArgsForCall []struct{}
@@ -170,6 +174,7 @@ type FakeSomething struct {
 
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.doThingsMutex.Lock()
+	ret, specificReturn := fake.doThingsReturnsOnCall[len(fake.doThingsArgsForCall)]
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 string
 		arg2 uint64
@@ -178,6 +183,9 @@ func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.doThingsReturns.result1, fake.doThingsReturns.result2
 }
@@ -197,6 +205,20 @@ func (fake *FakeSomething) DoThingsArgsForCall(i int) (string, uint64) {
 func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {
 	fake.DoThingsStub = nil
 	fake.doThingsReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSomething) DoThingsReturnsOnCall(i int, result1 int, result2 error) {
+	fake.DoThingsStub = nil
+	if fake.doThingsReturnsOnCall == nil {
+		fake.doThingsReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.doThingsReturnsOnCall[i] = struct {
 		result1 int
 		result2 error
 	}{result1, result2}
@@ -320,12 +342,17 @@ type FakeRequestFactory struct {
 		result1 fixtures.Request
 		result2 error
 	}
+	returnsOnCall map[int]struct {
+		result1 fixtures.Request
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeRequestFactory) Spy(arg1 fixtures.Params, arg2 map[string]interface{}) (fixtures.Request, error) {
 	fake.mutex.Lock()
+	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	fake.argsForCall = append(fake.argsForCall, struct {
 		arg1 fixtures.Params
 		arg2 map[string]interface{}
@@ -334,6 +361,9 @@ func (fake *FakeRequestFactory) Spy(arg1 fixtures.Params, arg2 map[string]interf
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		return fake.Stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.returns.result1, fake.returns.result2
 }
@@ -353,6 +383,20 @@ func (fake *FakeRequestFactory) ArgsForCall(i int) (fixtures.Params, map[string]
 func (fake *FakeRequestFactory) Returns(result1 fixtures.Request, result2 error) {
 	fake.Stub = nil
 	fake.returns = struct {
+		result1 fixtures.Request
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRequestFactory) ReturnsOnCall(i int, result1 fixtures.Request, result2 error) {
+	fake.Stub = nil
+	if fake.returnsOnCall == nil {
+		fake.returnsOnCall = make(map[int]struct {
+			result1 fixtures.Request
+			result2 error
+		})
+	}
+	fake.returnsOnCall[i] = struct {
 		result1 fixtures.Request
 		result2 error
 	}{result1, result2}
@@ -398,17 +442,24 @@ type FakeSomeInterface struct {
 	createThingReturns struct {
 		result1 some_packagehyphen_ated.Thing
 	}
+	createThingReturnsOnCall map[int]struct {
+		result1 some_packagehyphen_ated.Thing
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeSomeInterface) CreateThing() some_packagehyphen_ated.Thing {
 	fake.createThingMutex.Lock()
+	ret, specificReturn := fake.createThingReturnsOnCall[len(fake.createThingArgsForCall)]
 	fake.createThingArgsForCall = append(fake.createThingArgsForCall, struct{}{})
 	fake.recordInvocation("CreateThing", []interface{}{})
 	fake.createThingMutex.Unlock()
 	if fake.CreateThingStub != nil {
 		return fake.CreateThingStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.createThingReturns.result1
 }
@@ -422,6 +473,18 @@ func (fake *FakeSomeInterface) CreateThingCallCount() int {
 func (fake *FakeSomeInterface) CreateThingReturns(result1 some_packagehyphen_ated.Thing) {
 	fake.CreateThingStub = nil
 	fake.createThingReturns = struct {
+		result1 some_packagehyphen_ated.Thing
+	}{result1}
+}
+
+func (fake *FakeSomeInterface) CreateThingReturnsOnCall(i int, result1 some_packagehyphen_ated.Thing) {
+	fake.CreateThingStub = nil
+	if fake.createThingReturnsOnCall == nil {
+		fake.createThingReturnsOnCall = make(map[int]struct {
+			result1 some_packagehyphen_ated.Thing
+		})
+	}
+	fake.createThingReturnsOnCall[i] = struct {
 		result1 some_packagehyphen_ated.Thing
 	}{result1}
 }
@@ -466,17 +529,25 @@ type FakeSomethingElse struct {
 		result1 int
 		result2 int
 	}
+	returnStuffReturnsOnCall map[int]struct {
+		result1 int
+		result2 int
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeSomethingElse) ReturnStuff() (a, b int) {
 	fake.returnStuffMutex.Lock()
+	ret, specificReturn := fake.returnStuffReturnsOnCall[len(fake.returnStuffArgsForCall)]
 	fake.returnStuffArgsForCall = append(fake.returnStuffArgsForCall, struct{}{})
 	fake.recordInvocation("ReturnStuff", []interface{}{})
 	fake.returnStuffMutex.Unlock()
 	if fake.ReturnStuffStub != nil {
 		return fake.ReturnStuffStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.returnStuffReturns.result1, fake.returnStuffReturns.result2
 }
@@ -490,6 +561,20 @@ func (fake *FakeSomethingElse) ReturnStuffCallCount() int {
 func (fake *FakeSomethingElse) ReturnStuffReturns(result1 int, result2 int) {
 	fake.ReturnStuffStub = nil
 	fake.returnStuffReturns = struct {
+		result1 int
+		result2 int
+	}{result1, result2}
+}
+
+func (fake *FakeSomethingElse) ReturnStuffReturnsOnCall(i int, result1 int, result2 int) {
+	fake.ReturnStuffStub = nil
+	if fake.returnStuffReturnsOnCall == nil {
+		fake.returnStuffReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 int
+		})
+	}
+	fake.returnStuffReturnsOnCall[i] = struct {
 		result1 int
 		result2 int
 	}{result1, result2}
