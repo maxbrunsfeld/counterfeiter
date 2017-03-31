@@ -26,11 +26,16 @@ func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceT
 		return nil, err
 	}
 
-	return GetInterfaceFromImportPath(interfaceName, importPath)
+	vendorPaths, err := vendorPathsForDirPath(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return GetInterfaceFromImportPath(interfaceName, importPath, vendorPaths...)
 }
 
-func GetInterfaceFromImportPath(interfaceName, importPath string) (*model.InterfaceToFake, error) {
-	dirPath, err := dirPathForImportPath(importPath)
+func GetInterfaceFromImportPath(interfaceName, importPath string, vendorPaths ...string) (*model.InterfaceToFake, error) {
+	dirPath, err := dirPathForImportPath(importPath, vendorPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +65,7 @@ func GetInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 			switch iface.(type) {
 			case *ast.InterfaceType:
 				interfaceNode := iface.(*ast.InterfaceType)
-				methods, err = methodsForInterface(interfaceNode, importPath, pkgImport, importSpecs, typesFound)
+				methods, err = methodsForInterface(interfaceNode, importPath, pkgImport, importSpecs, typesFound, vendorPaths)
 			case *ast.FuncType:
 				funcNode := iface.(*ast.FuncType)
 				methods, err = methodsForFunction(funcNode, interfaceName, pkgImport, importSpecs, typesFound)
@@ -113,9 +118,9 @@ func findImportPath(importSpecs map[string]*ast.ImportSpec, alias string) string
 	return ""
 }
 
-func dirPathForImportPath(importPath string) (string, error) {
-	for _, goSrcPath := range goSourcePaths() {
-		dirPath := filepath.Join(goSrcPath, filepath.Clean(importPath))
+func dirPathForImportPath(importPath string, vendorPaths []string) (string, error) {
+	for _, srcPath := range append(vendorPaths, goSourcePaths()...) {
+		dirPath := filepath.Join(srcPath, filepath.Clean(importPath))
 		stat, err := os.Stat(dirPath)
 		if err == nil && stat.IsDir() {
 			return dirPath, nil
@@ -138,6 +143,27 @@ func importPathForDirPath(sourcePath string) (string, error) {
 	}
 
 	return "", fmt.Errorf("Path '%s' is not on GOPATH", sourcePath)
+}
+
+func vendorPathsForDirPath(dirPath string) ([]string, error) {
+	dirPath, err := filepath.Abs(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	vendorPaths := []string{}
+	for _, goSrcPath := range goSourcePaths() {
+		for strings.HasPrefix(dirPath, goSrcPath) {
+			vendorPath := filepath.Join(dirPath, "vendor")
+			stat, err := os.Stat(vendorPath)
+			if err == nil && stat.IsDir() {
+				vendorPaths = append(vendorPaths, vendorPath)
+			}
+			dirPath = filepath.Dir(dirPath)
+		}
+	}
+
+	return vendorPaths, nil
 }
 
 func goSourcePaths() []string {

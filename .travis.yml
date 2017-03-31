@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.5
+  - 1.7
 sudo : false # uses new containerized infrastructure
 install:
   - go get -v -t . ./arguments ./locator
