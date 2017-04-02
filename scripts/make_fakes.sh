@@ -13,6 +13,7 @@ go build -o $counterfeiter
 egrep --recursive --include '*.go' 'type [^ ]* interface {' . \
       --exclude 'fake_*.go' --exclude '*_test.go' \
   | sed 's#^./\(.*\)/[^/]*.go:type \([^ ]*\) interface {#\1 \2#' \
+  | grep -v 'vendor/' \
   | while read PACKAGE INTERFACE; do $counterfeiter $PACKAGE $INTERFACE; done
 
 # fix an import oddity in the UI fake

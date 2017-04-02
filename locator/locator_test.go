@@ -189,6 +189,62 @@ var _ = Describe("Locator", func() {
 			// Expect(model.Methods[0].Names[0].Name).To(Equal("DoThings"))
 		})
 	})
+
+	Describe("finding an interface in vendored code", func() {
+		var model *model.InterfaceToFake
+		var err error
+
+		Context("when the vendor dir is in the same directory", func() {
+			JustBeforeEach(func() {
+				model, err = GetInterfaceFromFilePath("FooInterface", "../fixtures/vendored/foo.go")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns a model representing the named function alias", func() {
+				Expect(model.Name).To(Equal("FooInterface"))
+				Expect(model.RepresentedByInterface).To(BeTrue())
+			})
+
+			It("should have a single method", func() {
+				Expect(model.Methods).To(HaveLen(1))
+				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("FooVendor"))
+			})
+		})
+
+		Context("when the vendor dir is in a parent directory", func() {
+			JustBeforeEach(func() {
+				model, err = GetInterfaceFromFilePath("BazInterface", "../fixtures/vendored/baz/baz.go")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns a model representing the named function alias", func() {
+				Expect(model.Name).To(Equal("BazInterface"))
+				Expect(model.RepresentedByInterface).To(BeTrue())
+			})
+
+			It("should have a single method", func() {
+				Expect(model.Methods).To(HaveLen(1))
+				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("FooVendor"))
+			})
+		})
+
+		Context("when the vendor code shadows a higher level", func() {
+			JustBeforeEach(func() {
+				model, err = GetInterfaceFromFilePath("BarInterface", "../fixtures/vendored/bar/bar.go")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns a model representing the named function alias", func() {
+				Expect(model.Name).To(Equal("BarInterface"))
+				Expect(model.RepresentedByInterface).To(BeTrue())
+			})
+
+			It("should have a single method", func() {
+				Expect(model.Methods).To(HaveLen(1))
+				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("BarVendor"))
+			})
+		})
+	})
 })
 
 func collectImports(specs map[string]*ast.ImportSpec) []string {

@@ -13,6 +13,7 @@ func methodsForInterface(
 	pkgName string,
 	importSpecs map[string]*ast.ImportSpec,
 	knownTypes map[string]bool,
+	vendorPaths []string,
 ) ([]model.Method, error) {
 	result := []model.Method{}
 	for _, field := range iface.Methods.List {
@@ -31,7 +32,7 @@ func methodsForInterface(
 				})
 
 		case *ast.Ident:
-			iface, err := GetInterfaceFromImportPath(t.Name, importPath)
+			iface, err := GetInterfaceFromImportPath(t.Name, importPath, vendorPaths...)
 			if err != nil {
 				return nil, err
 			}
@@ -39,7 +40,7 @@ func methodsForInterface(
 		case *ast.SelectorExpr:
 			pkgAlias := t.X.(*ast.Ident).Name
 			pkgImportPath := findImportPath(importSpecs, pkgAlias)
-			iface, err := GetInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
+			iface, err := GetInterfaceFromImportPath(t.Sel.Name, pkgImportPath, vendorPaths...)
 			if err != nil {
 				return nil, err
 			}
