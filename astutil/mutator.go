@@ -26,7 +26,11 @@ func InjectAlias(t *ast.FuncType, importedSpecs map[string]*ast.ImportSpec, alia
 func convertAlias(node *ast.Expr, importedSpecs map[string]*ast.ImportSpec, aliases map[string]string) {
 	if typeSel, ok := (*node).(*ast.SelectorExpr); ok {
 		prefixIdent := typeSel.X.(*ast.Ident)
-		spec := importedSpecs[prefixIdent.Name]
+		spec, found := importedSpecs[prefixIdent.Name]
+		if !found {
+			return
+		}
+
 		newAlias := aliases[spec.Path.Value]
 		if newAlias == "." {
 			*node = typeSel.Sel
