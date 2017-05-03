@@ -1,6 +1,7 @@
 package locator_test
 
 import (
+	"go/ast"
 	"path"
 	"runtime"
 
@@ -13,41 +14,47 @@ import (
 
 var _ = Describe("Locator", func() {
 	Describe("finding functions in a package", func() {
-		var model *model.PackageToInterfacify
-		// var err error
+		var packageToInterfacify *model.PackageToInterfacify
+		var err error
 
 		JustBeforeEach(func() {
-			model, _ = GetFunctionsFromDirectory("os", path.Join(runtime.GOROOT(), "src/os"))
+			packageToInterfacify, err = GetFunctionsFromDirectory("os", path.Join(runtime.GOROOT(), "src/os"))
 		})
 
 		Context("when the package exists", func() {
 			It("should have the correct name", func() {
-				Expect(model.Name).To(Equal("os"))
+				Expect(packageToInterfacify.Name).To(Equal("os"))
 			})
 
-			// It("should have the correct package name", func() {
-			// 	Expect(model.PackageName).To(Equal("fixtures"))
-			// })
-
 			It("should have the correct import path", func() {
-				Expect(model.ImportPath).To(HavePrefix(runtime.GOROOT()))
-				Expect(model.ImportPath).To(HaveSuffix("src/os"))
+				Expect(packageToInterfacify.ImportPath).To(HavePrefix(runtime.GOROOT()))
+				Expect(packageToInterfacify.ImportPath).To(HaveSuffix("src/os"))
 			})
 
 			It("should have the correct methods", func() {
-				Expect(model.Funcs).To(HaveLen(49))
-				Expect(model.Funcs[0].Name.Name).To(Equal("FindProcess"))
-				// Expect(model.Methods[1].Field.Names[0].Name).To(Equal("DoNothing"))
-				// Expect(model.Methods[1].Imports).To(HaveLen(1))
-				// Expect(model.Methods[2].Field.Names[0].Name).To(Equal("DoASlice"))
-				// Expect(model.Methods[2].Imports).To(HaveLen(1))
-				// Expect(model.Methods[3].Field.Names[0].Name).To(Equal("DoAnArray"))
-				// Expect(model.Methods[3].Imports).To(HaveLen(1))
+				Expect(len(packageToInterfacify.Funcs)).To(BeNumerically(">", 0))
+
+				var findProcessMethod *ast.FuncDecl
+				for _, funcNode := range packageToInterfacify.Funcs {
+					if funcNode.Name.Name == "FindProcess" {
+						findProcessMethod = funcNode
+						break
+					}
+				}
+
+				Expect(findProcessMethod).ToNot(BeNil())
+
+				// Expect(packageToInterfacify.Methods[1].Field.Names[0].Name).To(Equal("DoNothing"))
+				// Expect(packageToInterfacify.Methods[1].Imports).To(HaveLen(1))
+				// Expect(packageToInterfacify.Methods[2].Field.Names[0].Name).To(Equal("DoASlice"))
+				// Expect(packageToInterfacify.Methods[2].Imports).To(HaveLen(1))
+				// Expect(packageToInterfacify.Methods[3].Field.Names[0].Name).To(Equal("DoAnArray"))
+				// Expect(packageToInterfacify.Methods[3].Imports).To(HaveLen(1))
 			})
 
-			// It("does not return an error", func() {
-			// 	Expect(err).ToNot(HaveOccurred())
-			// })
+			It("does not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
 		})
 
 		// Context("when it does not exist", func() {

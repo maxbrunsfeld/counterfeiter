@@ -186,7 +186,7 @@ ARGUMENTS
     If -p is specified, this will be the name of the interface to generate.
 
 	example:
-		# writes "FakeStdInterface" to ./fakes/fake_std_interface.go
+		# writes "FakeStdInterface" to ./packagefakes/fake_std_interface.go
 		counterfeiter package/subpackage.StdInterface
 
 	'-' argument
@@ -201,8 +201,8 @@ OPTIONS
 		where "xyz" is the name of referenced package.
 
 	example:
-		# writes "FakeMyInterface" to ./fakes/fake_my_interface.go
-		counterfeiter -o ./fakes MyInterface ./mypackage
+		# writes "FakeMyInterface" to ./mySpecialFakesDir/specialFake.go
+		counterfeiter -o ./mySpecialFakesDir/specialFake.go ./mypackage MyInterface
 
 	-p
 		Package mode:  When invoked in package mode, counterfeiter
@@ -223,6 +223,6 @@ OPTIONS
 		-p mode)
 
 	example:
-		# writes "CoolThing" to ./fakes/cool_thing.go
-		counterfeiter --fake-name CoolThing MyInterface ./mypackage
+		# writes "CoolThing" to ./mypackagefakes/cool_thing.go
+		counterfeiter --fake-name CoolThing ./mypackage MyInterface
 `
