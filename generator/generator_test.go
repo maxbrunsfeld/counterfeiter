@@ -328,7 +328,11 @@ func (fake *FakeSomething) Invocations() map[string][][]interface{} {
 	defer fake.doASliceMutex.RUnlock()
 	fake.doAnArrayMutex.RLock()
 	defer fake.doAnArrayMutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *FakeSomething) recordInvocation(key string, args []interface{}) {
@@ -431,7 +435,11 @@ func (fake *FakeRequestFactory) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *FakeRequestFactory) recordInvocation(key string, args []interface{}) {
@@ -518,7 +526,11 @@ func (fake *FakeSomeInterface) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.createThingMutex.RLock()
 	defer fake.createThingMutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *FakeSomeInterface) recordInvocation(key string, args []interface{}) {
@@ -609,7 +621,11 @@ func (fake *FakeSomethingElse) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.returnStuffMutex.RLock()
 	defer fake.returnStuffMutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *FakeSomethingElse) recordInvocation(key string, args []interface{}) {
@@ -676,7 +692,11 @@ func (fake *FakePotato) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.tomatoMutex.RLock()
 	defer fake.tomatoMutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *FakePotato) recordInvocation(key string, args []interface{}) {
@@ -743,7 +763,11 @@ func (fake *FakeImportsGoHyphenPackage) Invocations() map[string][][]interface{}
 	defer fake.invocationsMutex.RUnlock()
 	fake.useHyphenTypeMutex.RLock()
 	defer fake.useHyphenTypeMutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *FakeImportsGoHyphenPackage) recordInvocation(key string, args []interface{}) {

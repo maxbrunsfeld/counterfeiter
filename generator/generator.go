@@ -734,7 +734,7 @@ func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
 		Body: &ast.BlockStmt{List: []ast.Stmt{}},
 	}
 
-	statements := []ast.Stmt{
+	acquireLocks := []ast.Stmt{
 		&ast.ExprStmt{
 			X: &ast.CallExpr{
 				Fun: &ast.SelectorExpr{
@@ -755,15 +755,6 @@ func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
 					},
 					Sel: ast.NewIdent("RUnlock"),
 				},
-			},
-		},
-	}
-
-	returnStmt := &ast.ReturnStmt{
-		Results: []ast.Expr{
-			&ast.SelectorExpr{
-				X:   receiverIdent(),
-				Sel: ast.NewIdent("invocations"),
 			},
 		},
 	}
@@ -793,11 +784,55 @@ func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
 			},
 		}
 
-		statements = append(statements, lockStmt)
-		statements = append(statements, unlockStmt)
+		acquireLocks = append(acquireLocks, lockStmt)
+		acquireLocks = append(acquireLocks, unlockStmt)
 	}
 
-	funcNode.Body.List = append(statements, returnStmt)
+	// create copied invocations
+	createCopy := &ast.AssignStmt{
+		Tok: token.DEFINE,
+		Lhs: []ast.Expr{
+			ast.NewIdent("copiedInvocations"),
+		},
+		Rhs: []ast.Expr{ast.NewIdent("map[string][][]interface{}{}")},
+	}
+
+	// iterate over fake.invocations
+	iterateKeysCopyingValues := &ast.RangeStmt{
+		Tok:   token.DEFINE,
+		Key:   ast.NewIdent("key"),
+		Value: ast.NewIdent("value"),
+		X: &ast.SelectorExpr{
+			X:   receiverIdent(),
+			Sel: ast.NewIdent("invocations"),
+		},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{
+				&ast.AssignStmt{
+					Tok: token.ASSIGN,
+					Lhs: []ast.Expr{&ast.IndexExpr{
+						X:     ast.NewIdent("copiedInvocations"),
+						Index: ast.NewIdent("key"),
+					}},
+					Rhs: []ast.Expr{ast.NewIdent("value")},
+				},
+			},
+		},
+	}
+
+	// return the copied invocations map
+	returnCopy := &ast.ReturnStmt{
+		Results: []ast.Expr{
+			ast.NewIdent("copiedInvocations"),
+		},
+	}
+
+	funcNode.Body.List = append(
+		acquireLocks,
+		createCopy,
+		iterateKeysCopyingValues,
+		returnCopy,
+	)
 	return funcNode
 }
 
