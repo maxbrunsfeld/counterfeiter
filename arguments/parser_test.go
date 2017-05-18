@@ -42,6 +42,7 @@ var _ = Describe("parsing arguments", func() {
 	BeforeEach(func() {
 		*packageFlag = false
 		failWasCalled = false
+		*outputPathFlag = ""
 		fail = func(_ string, _ ...interface{}) { failWasCalled = true }
 		cwd = func() string {
 			return "/home/test-user/workspace"
@@ -108,6 +109,33 @@ var _ = Describe("parsing arguments", func() {
 					"fake_an_interface.go",
 				),
 			))
+		})
+	})
+
+	Describe("when a single argument is provided with the output directory", func() {
+		BeforeEach(func() {
+			*outputPathFlag = "/tmp/foo"
+			args = []string{"io.Writer"}
+		})
+
+		It("indicates to not print to stdout", func() {
+			Expect(parsedArgs.PrintToStdOut).To(BeFalse())
+		})
+
+		It("provides a name for the fake implementing the interface", func() {
+			Expect(parsedArgs.FakeImplName).To(Equal("FakeWriter"))
+		})
+
+		It("provides a path for the interface source", func() {
+			Expect(parsedArgs.ImportPath).To(Equal("io"))
+		})
+
+		It("treats the last segment as the interface to counterfeit", func() {
+			Expect(parsedArgs.InterfaceName).To(Equal("Writer"))
+		})
+
+		It("snake cases the filename for the output directory", func() {
+			Expect(parsedArgs.OutputPath).To(Equal("/tmp/foo"))
 		})
 	})
 

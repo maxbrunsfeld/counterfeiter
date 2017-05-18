@@ -46,9 +46,12 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 	var sourcePackageDir string
 	var importPath string
 
+	if outputPathFlag != nil {
+		outputPathFlagValue = *outputPathFlag
+	}
+
 	if len(args) > 1 {
 		interfaceName = args[1]
-		outputPathFlagValue = *outputPathFlag
 		sourcePackageDir = argParser.getSourceDir(args[0])
 		rootDestinationDir = sourcePackageDir
 	} else {
