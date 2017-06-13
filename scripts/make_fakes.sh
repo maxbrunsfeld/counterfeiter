@@ -6,6 +6,8 @@ cd "$(dirname "$0")/.."
 
 # build counterfeiter itself
 counterfeiter='/tmp/counterfeiter_test'
+# shellcheck disable=SC2064
+# we want to use the current value
 trap "rm $counterfeiter" EXIT
 go build -o $counterfeiter
 
@@ -14,7 +16,7 @@ egrep --recursive --include '*.go' 'type [^ ]* interface {' . \
       --exclude 'fake_*.go' --exclude '*_test.go' \
   | sed 's#^./\(.*\)/[^/]*.go:type \([^ ]*\) interface {#\1 \2#' \
   | grep -v 'vendor/' \
-  | while read PACKAGE INTERFACE; do $counterfeiter $PACKAGE $INTERFACE; done
+  | while read -r PACKAGE INTERFACE; do $counterfeiter "$PACKAGE" "$INTERFACE"; done
 
 # fix an import oddity in the UI fake
 sed -i.bak '/"golang.org\/x\/crypto\/ssh\/terminal"/d' terminal/terminalfakes/fake_ui.go
