@@ -39,4 +39,4 @@ fixtures/dup_packages/v1/v1fakes/
 fixtures/hyphenated_package_same_name/some_package/some_packagefakes/
 fixtures/alias_import_name/test/testfakes/
 fixtures/vendored
-
+fixtures/packagegen/packagegenfakes
