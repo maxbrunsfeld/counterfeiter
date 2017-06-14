@@ -2,6 +2,6 @@ language: go
 go:
   - 1.7
 sudo : false # uses new containerized infrastructure
-install:
-  - go get -v -t . ./arguments ./locator
+go_import_path: github.com/maxbrunsfeld/counterfeiter
+install: scripts/deps.sh
 script: scripts/test.sh
