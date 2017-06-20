@@ -721,23 +721,23 @@ import (
 	"sync"
 
 	"github.com/maxbrunsfeld/counterfeiter/fixtures"
-	hyphenpackage "github.com/maxbrunsfeld/counterfeiter/fixtures/go-hyphenpackage"
+	go_hyphenpackage "github.com/maxbrunsfeld/counterfeiter/fixtures/go-hyphenpackage"
 )
 
 type FakeImportsGoHyphenPackage struct {
-	UseHyphenTypeStub        func(hyphenpackage.HyphenType)
+	UseHyphenTypeStub        func(go_hyphenpackage.HyphenType)
 	useHyphenTypeMutex       sync.RWMutex
 	useHyphenTypeArgsForCall []struct {
-		arg1 hyphenpackage.HyphenType
+		arg1 go_hyphenpackage.HyphenType
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeImportsGoHyphenPackage) UseHyphenType(arg1 hyphenpackage.HyphenType) {
+func (fake *FakeImportsGoHyphenPackage) UseHyphenType(arg1 go_hyphenpackage.HyphenType) {
 	fake.useHyphenTypeMutex.Lock()
 	fake.useHyphenTypeArgsForCall = append(fake.useHyphenTypeArgsForCall, struct {
-		arg1 hyphenpackage.HyphenType
+		arg1 go_hyphenpackage.HyphenType
 	}{arg1})
 	fake.recordInvocation("UseHyphenType", []interface{}{arg1})
 	fake.useHyphenTypeMutex.Unlock()
@@ -752,7 +752,7 @@ func (fake *FakeImportsGoHyphenPackage) UseHyphenTypeCallCount() int {
 	return len(fake.useHyphenTypeArgsForCall)
 }
 
-func (fake *FakeImportsGoHyphenPackage) UseHyphenTypeArgsForCall(i int) hyphenpackage.HyphenType {
+func (fake *FakeImportsGoHyphenPackage) UseHyphenTypeArgsForCall(i int) go_hyphenpackage.HyphenType {
 	fake.useHyphenTypeMutex.RLock()
 	defer fake.useHyphenTypeMutex.RUnlock()
 	return fake.useHyphenTypeArgsForCall[i].arg1
