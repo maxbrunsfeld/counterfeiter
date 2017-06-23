@@ -26,7 +26,7 @@ func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceT
 		return nil, err
 	}
 
-	vendorPaths, err := vendorPathsForDirPath(dirPath)
+	vendorPaths, err := VendorPathsForDirPath(dirPath)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func importPathForDirPath(sourcePath string) (string, error) {
 	return "", fmt.Errorf("Path '%s' is not on GOPATH", sourcePath)
 }
 
-func vendorPathsForDirPath(dirPath string) ([]string, error) {
+func VendorPathsForDirPath(dirPath string) ([]string, error) {
 	dirPath, err := filepath.Abs(dirPath)
 	if err != nil {
 		return nil, err
