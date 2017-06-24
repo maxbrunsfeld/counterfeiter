@@ -12,8 +12,10 @@ scripts/make_fakes.sh
 
 # counterfeit through a symlink
 symlinked_fixtures=/tmp/symlinked_fixtures
+# shellcheck disable=SC2064
+# we want to use the current value
 trap "unlink $symlinked_fixtures" EXIT
-ln -fs $(pwd)/fixtures $symlinked_fixtures
+ln -fs "$(pwd)"/fixtures $symlinked_fixtures
 mkdir -p fixtures/symlinked_fixturesfakes
 
 go run main.go -o fixtures/symlinked_fixturesfakes/fake_something.go $symlinked_fixtures Something
@@ -24,7 +26,7 @@ sleep 1
 echo
 echo "Ensuring generated fakes compile..."
 echo
-find ./fixtures/ -type d -name '*fakes' | xargs go build
+find ./fixtures/ -type d -name '*fakes' -print0 | xargs -0 go build
 
 # run the tests using the fakes
 echo
@@ -42,7 +44,7 @@ go test  -v -race ./...
 echo
 echo "Removing generated files..."
 echo
-find ./fixtures/ -type d -name '*fakes/fake*.go' | xargs rm -rf
+find ./fixtures/ -path '*fakes/fake*.go' -print0 | xargs -0 rm -rf
 
 echo "
  _______  _     _  _______  _______  _______                   
