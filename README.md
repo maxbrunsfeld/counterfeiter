@@ -107,6 +107,30 @@ Expect(num).To(Equal(3))
 Expect(err).To(Equal(errors.New("the-error")))
 ```
 
+### Running counterfeiter's tests
+
+If you want to run counterfeiter's internal tests (perhaps, because you want to contribute a PR), all you have to do is run `scripts/test.sh`.
+
+### Contributions
+
+So you want to contribute to counterfeiter! That's great, here's exactly what you should do:
+
+* open a new github issue, describing your problem, or use case
+* help us understand how you want to fix or extend counterfeiter
+* write one or more unit tests for the behavior you want
+* write the simplest code you can for the feature you're working on
+* try to find any opportunities to refactor
+* avoid writing code that isn't covered by unit tests
+
+Counterfeiter has a few high level goals for contributors to keep in mind
+
+* keep unit-level test coverage as high as possible
+* keep `main.go` as simple as possible
+* avoid making the command line options any more complicated
+* avoid making the internals of counterfeiter any more complicated
+
+If you have any questions about how to contribute, rest assured that @tjarratt and other maintainers will work with you to ensure we make counterfeiter better, together. This project has largely been maintained by the community, and we greatly appreciate any PR (whether big or small).
+
 ### License
 
 Counterfeiter is MIT-licensed.
