@@ -43,6 +43,27 @@ var _ = Describe("The counterfeiter CLI", func() {
 		Expect(string(actualContents)).To(Equal(string(expectedContents)))
 	})
 
+	It("can generate a fake for a internal interface, on a provided path", func() {
+		os.MkdirAll(filepath.Join(pathToCLI, "src", "counterfeiter"), 0777)
+
+		session := startCounterfeiterWithoutFixture(pathToCLI, "-o", pathToCLI+"/custom/fake_write_closer.go", "io.WriteCloser")
+		Eventually(session).Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Wrote `FakeWriteCloser`"))
+
+		generatedFakePath := filepath.Join(pathToCLI, "custom", "fake_write_closer.go")
+		Expect(generatedFakePath).To(BeARegularFile())
+
+		expectedOutputPath := "../fixtures/expected_output/fake_write_closer.example"
+		expectedContents, err := ioutil.ReadFile(expectedOutputPath)
+		Expect(err).ToNot(HaveOccurred())
+
+		actualContents, err := ioutil.ReadFile(generatedFakePath)
+		Expect(err).ToNot(HaveOccurred())
+
+		// assert file content matches what we expect
+		Expect(string(actualContents)).To(Equal(string(expectedContents)))
+	})
+
 	Describe("when given a single argument", func() {
 		BeforeEach(func() {
 			copyIn("other_types.go", pathToCLI)
@@ -135,14 +156,17 @@ func startCounterfeiter(workingDir string, fixtureName string, otherArgs ...stri
 	return session
 }
 
-func startCounterfeiterWithoutFixture(workingDir string, arg string) *gexec.Session {
+func startCounterfeiterWithoutFixture(workingDir string, args ...string) *gexec.Session {
 	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
 	absPath, _ := filepath.Abs(fakeGoPathDir)
 	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
 
-	cmd := exec.Command(pathToCounterfeiter, arg)
+	cmd := exec.Command(pathToCounterfeiter, args...)
 	cmd.Dir = workingDir
-	cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
+	cmd.Env = []string{
+		"GOPATH=" + absPathWithSymlinks,
+		"GOROOT=" + os.Getenv("GOROOT"),
+	}
 
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
