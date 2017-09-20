@@ -168,7 +168,8 @@ func vendorPathsForDirPath(dirPath string) ([]string, error) {
 
 func goSourcePaths() []string {
 	result := []string{}
-	for _, path := range strings.Split(os.Getenv("GOPATH"), ":") {
+	separator := string(os.PathListSeparator)
+	for _, path := range strings.Split(os.Getenv("GOPATH"), separator) {
 		result = append(result, filepath.Join(path, "src"))
 	}
 	result = append(result, filepath.Join(runtime.GOROOT(), "src"))
