@@ -35,8 +35,11 @@ var _ = Describe("Locator", func() {
 			})
 
 			It("should have the correct import path", func() {
-				Expect(model.ImportPath).To(HavePrefix("github.com"))
-				Expect(model.ImportPath).To(HaveSuffix("counterfeiter/fixtures"))
+				// Make the code testable even in forked repos :)
+				// e.g.: you fork counterfeiter to make a change,
+				//       the repo is now github.com/pizzabandit/counterfeiter
+				//       you should expect these assertions to still pass
+				Expect(model.ImportPath).To(MatchRegexp("^github\\.com/[^/]+/counterfeiter/fixtures$"))
 			})
 
 			It("should have the correct methods", func() {
