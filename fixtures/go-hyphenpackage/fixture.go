@@ -1,4 +1,3 @@
 package hyphenpackage
 
-type HyphenType struct { }
-
+type HyphenType struct{}
