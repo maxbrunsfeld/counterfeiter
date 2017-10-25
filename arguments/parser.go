@@ -181,27 +181,31 @@ func (argParser *argumentParser) getPackageDir(arg string) string {
 		argParser.failHandler("No such file or directory '%s'", arg)
 	}
 	if !stat.IsDir() {
-		argParser.failHandler("No such file or directory '%s'", arg) // TODO: for now?
+		argParser.failHandler("No such file or directory '%s'", arg)
 	}
 
 	return pathToCheck
 }
 
-func (argParser *argumentParser) getSourceDir(arg string) string {
-	if !filepath.IsAbs(arg) {
-		arg = filepath.Join(argParser.currentWorkingDir(), arg)
+func (argParser *argumentParser) getSourceDir(path string) string {
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(argParser.currentWorkingDir(), path)
 	}
 
-	arg, _ = argParser.symlinkEvaler(arg)
-	stat, err := argParser.fileStatReader(arg)
+	evaluatedPath, err := argParser.symlinkEvaler(path)
 	if err != nil {
-		argParser.failHandler("No such file or directory '%s'", arg)
+		argParser.failHandler("No such file/directory/package: '%s'", path)
+	}
+
+	stat, err := argParser.fileStatReader(evaluatedPath)
+	if err != nil {
+		argParser.failHandler("No such file/directory/package: '%s'", path)
 	}
 
 	if !stat.IsDir() {
-		return filepath.Dir(arg)
+		return filepath.Dir(path)
 	} else {
-		return arg
+		return path
 	}
 }
 

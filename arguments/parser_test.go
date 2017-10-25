@@ -27,6 +27,8 @@ var _ = Describe("parsing arguments", func() {
 	var ui *terminalfakes.FakeUI
 
 	var failWasCalled bool
+	var failWasCalledWithMessage string
+	var failWasCalledWithArgs []interface{}
 
 	JustBeforeEach(func() {
 		subject = NewArgumentParser(
@@ -43,7 +45,12 @@ var _ = Describe("parsing arguments", func() {
 		*packageFlag = false
 		failWasCalled = false
 		*outputPathFlag = ""
-		fail = func(_ string, _ ...interface{}) { failWasCalled = true }
+		fail = func(msg string, args ...interface{}) {
+			failWasCalled = true
+			failWasCalledWithMessage = msg
+			failWasCalledWithArgs = args
+
+		}
 		cwd = func() string {
 			return "/home/test-user/workspace"
 		}
@@ -207,6 +214,24 @@ var _ = Describe("parsing arguments", func() {
 				})
 			})
 
+			Context("when evaluating symlinks fails", func() {
+				BeforeEach(func() {
+					symlinkEvaler = func(input string) (string, error) {
+						return "", errors.New("aww shucks")
+					}
+				})
+
+				It("should have a reasonably useful message", func() {
+					Expect(failWasCalled).To(BeTrue())
+					Expect(failWasCalledWithMessage).To(Equal("No such file/directory/package: '%s'"))
+
+					Expect(failWasCalledWithArgs).To(HaveLen(1))
+
+					arg := failWasCalledWithArgs[0]
+					Expect(arg).To(Equal(path.Join(cwd(), "my/my5package")))
+				})
+			})
+
 			Context("when the file stat cannot be read", func() {
 				BeforeEach(func() {
 					fileStatReader = func(_ string) (os.FileInfo, error) {
@@ -214,8 +239,14 @@ var _ = Describe("parsing arguments", func() {
 					}
 				})
 
-				It("should call its fail handler", func() {
+				It("should call its fail handler with a useful message", func() {
 					Expect(failWasCalled).To(BeTrue())
+					Expect(failWasCalledWithMessage).To(Equal("No such file/directory/package: '%s'"))
+
+					Expect(failWasCalledWithArgs).To(HaveLen(1))
+
+					arg := failWasCalledWithArgs[0]
+					Expect(arg).To(Equal(path.Join(cwd(), "my/my5package")))
 				})
 			})
 		})
