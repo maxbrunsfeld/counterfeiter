@@ -11,14 +11,17 @@ echo
 scripts/make_fakes.sh
 
 # counterfeit through a symlink
-symlinked_fixtures=/tmp/symlinked_fixtures
+symlinked_fixtures=/tmp/counterfeiter/src/github.com/maxbrunsfeld/counterfeiter/fixtures
+mkdir -p /tmp/counterfeiter/src/github.com/maxbrunsfeld/counterfeiter
+GOPATH=$GOPATH:/tmp/counterfeiter
+
 # shellcheck disable=SC2064
 # we want to use the current value
 trap "unlink $symlinked_fixtures" EXIT
 ln -fs "$(pwd)"/fixtures $symlinked_fixtures
 mkdir -p fixtures/symlinked_fixturesfakes
 
-go run main.go -o fixtures/symlinked_fixturesfakes/fake_something.go $symlinked_fixtures Something
+go run main.go -o ./fixtures/symlinked_fixturesfakes/fake_something.go $symlinked_fixtures/something.go Something
 
 sleep 1
 
