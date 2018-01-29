@@ -1,0 +1,19 @@
+platform: x64
+
+clone_folder: c:\gopath\src\github.com\maxbrunsfeld\counterfeiter
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - echo %PATH%
+  - echo %GOPATH%
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
+  - go version
+  - go env
+
+build: false
+deploy: false
+
+test_script:
+  - ps: scripts/ci_build_windows.ps1
