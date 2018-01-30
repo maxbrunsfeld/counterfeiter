@@ -11,6 +11,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
+//go:generate counterfeiter . ArgumentParser
 type ArgumentParser interface {
 	ParseArguments(...string) ParsedArguments
 }

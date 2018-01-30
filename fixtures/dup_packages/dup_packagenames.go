@@ -5,6 +5,7 @@ import (
 	bv1 "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/v1"
 )
 
+//go:generate counterfeiter . AB
 type AB interface {
 	A() v1.S
 	v1.I

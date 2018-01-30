@@ -5,9 +5,9 @@ import (
 	bv1 "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/v1"
 )
 
-type S struct {
-}
+type S struct {}
 
+//go:generate counterfeiter . MultiAB
 type MultiAB interface {
 	Mine() S
 	v1.I

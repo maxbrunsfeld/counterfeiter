@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+//go:generate counterfeiter . UI
 type UI interface {
 	TerminalIsTTY() bool
 	ReadLineFromStdin() string
