@@ -138,7 +138,7 @@ func importPathForDirPath(sourcePath string) (string, error) {
 
 	for _, goSrcPath := range goSourcePaths() {
 		if strings.HasPrefix(sourcePath, goSrcPath) {
-			return sourcePath[len(goSrcPath)+1:], nil
+			return filepath.ToSlash(sourcePath[len(goSrcPath)+1:]), nil
 		}
 	}
 
