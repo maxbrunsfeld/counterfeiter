@@ -6,7 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/maxbrunsfeld/counterfeiter/astutil"
@@ -42,13 +42,13 @@ func GetFuncDecls(packageName, directory string) ([]*ast.FuncDecl, error) {
 	fset := token.NewFileSet()
 	funcSet := map[string]struct{}{}
 	funcs := []*ast.FuncDecl{}
-	for _, file := range files {
 
+	for _, file := range files {
 		if file.IsDir() || strings.HasSuffix(file.Name(), "_test.go") {
 			continue
 		}
 
-		astFile, err := parser.ParseFile(fset, path.Join(directory, file.Name()), nil, parser.AllErrors)
+		astFile, err := parser.ParseFile(fset, filepath.Join(directory, file.Name()), nil, parser.AllErrors)
 		if err != nil {
 			return nil, errors.New("failed to parse files in package: " + err.Error())
 		}
@@ -56,7 +56,7 @@ func GetFuncDecls(packageName, directory string) ([]*ast.FuncDecl, error) {
 		for _, decl := range astFile.Decls {
 			switch fun := decl.(type) {
 			case *ast.FuncDecl:
-				// ignore functions with reciever types
+				// ignore functions with receiver types
 				if fun.Recv != nil {
 					continue
 				}
@@ -68,7 +68,7 @@ func GetFuncDecls(packageName, directory string) ([]*ast.FuncDecl, error) {
 				// strip function body
 				fun.Body = nil
 
-				// unambiguate packages
+				// disambiguate packages
 				astutil.AddPackagePrefix(fun.Type, packageName, types)
 
 				// just an ordinary function
@@ -81,27 +81,4 @@ func GetFuncDecls(packageName, directory string) ([]*ast.FuncDecl, error) {
 	}
 
 	return funcs, nil
-}
-
-func simpleImporter(imports map[string]*ast.Object, path string) (*ast.Object, error) {
-	pkg := imports[path]
-	if pkg == nil {
-		// Guess the package name without importing it. Start with the last
-		// element of the path.
-		name := path[strings.LastIndex(path, "/")+1:]
-		// Trim commonly used prefixes and suffixes containing illegal name
-		// runes.
-		name = strings.TrimSuffix(name, ".go")
-		name = strings.TrimSuffix(name, "-go")
-		name = strings.TrimPrefix(name, "go.")
-		name = strings.TrimPrefix(name, "go-")
-		name = strings.TrimPrefix(name, "biogo.")
-		// It's also common for the last element of the path to contain an
-		// extra "go" prefix, but not always. TODO: examine unresolved ids to
-		// detect when trimming the "go" prefix is appropriate.
-		pkg = ast.NewObj(ast.Pkg, name)
-		pkg.Data = ast.NewScope(nil)
-		imports[path] = pkg
-	}
-	return pkg, nil
 }

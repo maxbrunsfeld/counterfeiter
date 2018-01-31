@@ -33,7 +33,7 @@ func (gen ShimGenerator) GenerateReal() (string, error) {
 		return "", err
 	}
 
-	code, err := imports.Process("", buf.Bytes(), nil)
+	code, err := imports.Process(tempProcessFilename(), buf.Bytes(), nil)
 	return commentLine() + "// with command: counterfeiter " + strings.Join(os.Args[1:], " ") + "\n" + prettifyCode(string(code)), err
 }
 

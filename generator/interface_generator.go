@@ -5,14 +5,12 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
-
 	"os"
 	"strings"
 
-	"path/filepath"
-
 	"github.com/maxbrunsfeld/counterfeiter/model"
 	"golang.org/x/tools/imports"
+	"path"
 )
 
 type InterfaceGenerator struct {
@@ -23,13 +21,12 @@ type InterfaceGenerator struct {
 }
 
 func (ig InterfaceGenerator) GenerateInterface() (string, error) {
-
 	buf := new(bytes.Buffer)
 	err := format.Node(buf, token.NewFileSet(), ig.outputAST())
 	if err != nil {
 		return "", err
 	}
-	code, err := imports.Process("", buf.Bytes(), nil)
+	code, err := imports.Process(tempProcessFilename(), buf.Bytes(), nil)
 	if err != nil {
 		return "", err
 	}
@@ -38,22 +35,17 @@ func (ig InterfaceGenerator) GenerateInterface() (string, error) {
 }
 
 func (ig InterfaceGenerator) outputAST() *ast.File {
-
-	declarations := []ast.Decl{}
-
-	declarations = append(declarations, ig.interfaceDecl())
-
 	return &ast.File{
 		Name:  &ast.Ident{Name: ig.DestinationPackageName},
-		Decls: declarations,
+		Decls: []ast.Decl{ig.interfaceDecl()},
 	}
 }
 
 func (ig InterfaceGenerator) interfaceDecl() *ast.GenDecl {
-	fakeFilePath := filepath.Join(strings.ToLower(ig.Model.Name)+"_fake", "fake_"+strings.ToLower(ig.Model.Name)+".go")
+
 	return &ast.GenDecl{
 		Tok: token.TYPE,
-		Doc: &ast.CommentGroup{[]*ast.Comment{{Text: "//go:generate counterfeiter -o " + fakeFilePath + " . " + ig.DestinationInterface}}},
+		Doc: &ast.CommentGroup{[]*ast.Comment{{Text: "//go:generate counterfeiter -o " + ig.pathToInterface() + " . " + ig.DestinationInterface}}},
 		Specs: []ast.Spec{
 			&ast.TypeSpec{
 				Name: &ast.Ident{Name: ig.DestinationInterface},
@@ -63,6 +55,9 @@ func (ig InterfaceGenerator) interfaceDecl() *ast.GenDecl {
 			},
 		},
 	}
+}
+func (ig InterfaceGenerator) pathToInterface() string {
+	return path.Join(strings.ToLower(ig.Model.Name)+"_fake", "fake_"+strings.ToLower(ig.Model.Name)+".go")
 }
 
 func (ig InterfaceGenerator) methods() *ast.FieldList {
