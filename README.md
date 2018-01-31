@@ -20,13 +20,17 @@ Given a path to a package and an interface name, you can generate a test double.
 
 ```shell
 $ cat path/to/foo/file.go
+```
 
+```go
 package foo
 
 type MySpecialInterface interface {
     DoThings(string, uint64) (int, error)
 }
+```
 
+```shell
 $ counterfeiter path/to/foo MySpecialInterface
 Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
 ```
@@ -71,14 +75,18 @@ It can be frustrating when you change your interface declaration and suddenly al
 
 ```shell
 $ cat path/to/foo/file.go
+```
 
+```go
 package foo
 
 //go:generate counterfeiter . MySpecialInterface
 type MySpecialInterface interface {
     DoThings(string, uint64) (int, error)
 }
+```
 
+```shell
 $ go generate ./...
 Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
 ```
