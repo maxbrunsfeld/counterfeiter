@@ -10,15 +10,25 @@ Build Status
 
 When writing unit-tests for an object, it is often useful to have fake implementations
 of the object's collaborators. In go, such fake implementations cannot be generated
-automatically at runtime. This tool allows you to generate them before compilation.
+automatically at runtime, and writing them by hand can be quite arduous.
+
+Counterfeiter allows you to simply generate test doubles for a given interface.
 
 ### Generating test doubles
 
-Quickly generate code for an interface in a file:
+Given a path to a package and an interface name, you can generate a test double.
 
 ```shell
-$ counterfeiter path/to/foo Something
-Wrote `FakeSomething` to `path/to/foo/foofakes/fake_something.go`
+$ cat path/to/foo/file.go
+
+package foo
+
+type MySpecialInterface interface {
+    DoThings(string, uint64) (int, error)
+}
+
+$ counterfeiter path/to/foo MySpecialInterface
+Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
 ```
 
 ### Using test doubles in your tests
@@ -28,7 +38,7 @@ Instantiate fakes with `new`:
 ```go
 import "my-repo/path/to/foo/foofakes"
 
-var fake = new(foofakes.FakeSomething)
+var fake = new(foofakes.FakeMySpecialInterface)
 ```
 
 Fakes record the arguments they were called with:
@@ -54,6 +64,24 @@ Expect(err).To(Equal(errors.New("the-error")))
 ```
 
 For more examples of using counterfeiter's API, look at [some of the provided examples](https://github.com/maxbrunsfeld/counterfeiter/blob/master/counterfeiter_test.go).
+
+### Using go generate
+
+It can be frustrating when you change your interface declaration and suddenly all of your generated code is suddenly out-of-date. The best practice here is to use golang's ["go generate" command](https://blog.golang.org/generate) to make it easier to keep your test doubles up to date.
+
+```shell
+$ cat path/to/foo/file.go
+
+package foo
+
+//go:generate counterfeiter . MySpecialInterface
+type MySpecialInterface interface {
+    DoThings(string, uint64) (int, error)
+}
+
+$ go generate ./...
+Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
+```
 
 ### Running counterfeiter's tests
 
