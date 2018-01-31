@@ -12,46 +12,16 @@ When writing unit-tests for an object, it is often useful to have fake implement
 of the object's collaborators. In go, such fake implementations cannot be generated
 automatically at runtime. This tool allows you to generate them before compilation.
 
-### Generating fakes
+### Generating test doubles
 
-Choose an interface for which you would like a fake implementation:
-
-```shell
-$ cat path/to/foo/something.go
-```
-
-```go
-package foo
-
-type Something interface {
-	DoThings(string, uint64) (int, error)
-	DoNothing()
-}
-```
-
-Run counterfeiter like this:
+Quickly generate code for an interface in a file:
 
 ```shell
 $ counterfeiter path/to/foo Something
-```
-
-```
 Wrote `FakeSomething` to `path/to/foo/foofakes/fake_something.go`
 ```
 
-You can customize the location of the ouptut using the `-o` flag, or write the code to standard out by providing `-` as a third argument.
-
-If you'd like a fake implementation for an interface you do not own you can do that too by providing only a fully qualified import path:
-
-```shell
-$ counterfeiter some/imported/package.Something
-```
-
-```
-Wrote `FakeSomething` to `current/directory/fakes/fake_something.go`
-```
-
-### Using the fake in your tests
+### Using test doubles in your tests
 
 Instantiate fakes with `new`:
 
@@ -73,7 +43,7 @@ Expect(str).To(Equal("stuff"))
 Expect(num).To(Equal(uint64(5)))
 ```
 
-You can set their return values:
+You can stub their return values:
 
 ```go
 fake.DoThingsReturns(3, errors.New("the-error"))
@@ -83,34 +53,7 @@ Expect(num).To(Equal(3))
 Expect(err).To(Equal(errors.New("the-error")))
 ```
 
-You can set the return value of one or more specific calls:
-
-```go
-fake.DoThingsReturnsOnCall(1, 3, errors.New("the-error"))
-
-num, err := fake.DoThings("stuff", 5)
-Expect(num).To(Equal(0))
-Expect(err).NotTo(HaveOccurred())
-
-num, err = fake.DoThings("stuff", 5)
-Expect(num).To(Equal(3))
-Expect(err).To(Equal(errors.New("the-error")))
-```
-
-You can also supply them with stub functions:
-
-```go
-fake.DoThingsStub = func(arg1 string, arg2 uint64) (int, error) {
-	Expect(arg1).To(Equal("stuff"))
-	Expect(arg2).To(Equal(uint64(5)))
-	return 3, errors.New("the-error")
-}
-
-num, err := fake.DoThings("stuff", 5)
-
-Expect(num).To(Equal(3))
-Expect(err).To(Equal(errors.New("the-error")))
-```
+For more examples of using counterfeiter's API, look at [some of the provided examples](https://github.com/maxbrunsfeld/counterfeiter/blob/master/counterfeiter_test.go).
 
 ### Running counterfeiter's tests
 
