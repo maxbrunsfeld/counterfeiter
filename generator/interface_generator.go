@@ -31,7 +31,6 @@ func (ig InterfaceGenerator) GenerateInterface() (string, error) {
 	}
 	code, err := imports.Process("", buf.Bytes(), nil)
 	if err != nil {
-		panic(err)
 		return "", err
 	}
 
