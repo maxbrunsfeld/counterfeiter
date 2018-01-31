@@ -153,15 +153,15 @@ func getFakeName(interfaceName, arg string) string {
 
 var camelRegexp = regexp.MustCompile("([a-z])([A-Z])")
 
-func (argParser *argumentParser) getOutputPath(rootDestinationDir, fakeName, arg string) string {
-	if arg == "" {
+func (argParser *argumentParser) getOutputPath(rootDestinationDir, fakeName, outputPathFlagValue string) string {
+	if outputPathFlagValue == "" {
 		snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(fakeName, "${1}_${2}"))
 		return filepath.Join(rootDestinationDir, packageNameForPath(rootDestinationDir), snakeCaseName+".go")
 	} else {
-		if !filepath.IsAbs(arg) {
-			arg = filepath.Join(argParser.currentWorkingDir(), arg)
+		if !filepath.IsAbs(outputPathFlagValue) {
+			outputPathFlagValue = filepath.Join(argParser.currentWorkingDir(), outputPathFlagValue)
 		}
-		return arg
+		return outputPathFlagValue
 	}
 }
 
