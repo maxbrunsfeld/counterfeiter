@@ -141,7 +141,7 @@ var _ = Describe("parsing arguments", func() {
 			Expect(parsedArgs.InterfaceName).To(Equal("Writer"))
 		})
 
-		It("snake cases the filename for the output directory", func() {
+		It("copies the provided output path into the result", func() {
 			Expect(parsedArgs.OutputPath).To(Equal("/tmp/foo"))
 		})
 	})
