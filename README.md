@@ -1,8 +1,12 @@
 Counterfeiter
 =============
 
-[![Build Status](https://travis-ci.org/maxbrunsfeld/counterfeiter.svg?branch=master)](https://travis-ci.org/maxbrunsfeld/counterfeiter)
-[![Build status](https://ci.appveyor.com/api/projects/status/4eyf89oug1skgn9l?retina=true)](https://ci.appveyor.com/project/tjarratt/counterfeiter)
+Build Status
+------------
+|OS|Status|
+|---|---|
+|OS X / Linux|[![Build Status](https://travis-ci.org/maxbrunsfeld/counterfeiter.svg?branch=master)](https://travis-ci.org/maxbrunsfeld/counterfeiter)|
+|Windows|[![Build status](https://ci.appveyor.com/api/projects/status/4eyf89oug1skgn9l?retina=true)](https://ci.appveyor.com/project/tjarratt/counterfeiter)|
 
 When writing unit-tests for an object, it is often useful to have fake implementations
 of the object's collaborators. In go, such fake implementations cannot be generated
