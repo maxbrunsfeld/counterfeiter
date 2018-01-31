@@ -117,10 +117,11 @@ func tmpPath(destination string) string {
 	return filepath.Join(tmpDir, "src", destination)
 }
 
-func copyIn(fixture string, destination string) {
-	destination = filepath.Join(destination, "fixtures")
-	err := os.MkdirAll(destination, 0777)
+func copyIn(fixture string, directory string) {
+	fixturesPath := filepath.Join(directory, "fixtures")
+	err := os.MkdirAll(fixturesPath, 0777)
 	Expect(err).ToNot(HaveOccurred())
+
 	filepath.Walk(filepath.Join("..", "fixtures", fixture), func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -131,7 +132,7 @@ func copyIn(fixture string, destination string) {
 		src, err := os.Open(path)
 		Expect(err).ToNot(HaveOccurred())
 
-		dst, err := os.Create(filepath.Join(destination, base))
+		dst, err := os.Create(filepath.Join(fixturesPath, base))
 		Expect(err).ToNot(HaveOccurred())
 
 		_, err = io.Copy(dst, src)
