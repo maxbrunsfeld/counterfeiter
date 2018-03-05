@@ -35,7 +35,7 @@ find ./fixtures/ -type d -name '*fakes' -print0 | xargs -0 go build
 echo
 echo "Running tests..."
 echo
-go test  -v -race ./...
+GOCACHE=off go test  -v -race ./...
 
 # remove any generated fakes
 # this is important because users may have the repo
