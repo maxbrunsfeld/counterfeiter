@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
+	"go/build"
 )
 
 func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceToFake, error) {
@@ -169,7 +170,7 @@ func vendorPathsForDirPath(dirPath string) ([]string, error) {
 func goSourcePaths() []string {
 	result := []string{}
 	separator := string(os.PathListSeparator)
-	for _, path := range strings.Split(os.Getenv("GOPATH"), separator) {
+	for _, path := range strings.Split(build.Default.GOPATH, separator) {
 		result = append(result, filepath.Join(path, "src"))
 	}
 	result = append(result, filepath.Join(runtime.GOROOT(), "src"))
