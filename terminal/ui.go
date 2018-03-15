@@ -3,8 +3,8 @@ package terminal
 import (
 	"bufio"
 	"os"
-
-	"golang.org/x/crypto/ssh/terminal"
+	"syscall"
+	"unsafe"
 )
 
 //go:generate counterfeiter . UI
@@ -22,8 +22,15 @@ func NewUI() UI {
 
 type ui struct{}
 
+// borrowed from github.com/golang/crypto
+func isTerminal(fd int) bool {
+	var termios syscall.Termios
+	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(fd), ioctlReadTermios, uintptr(unsafe.Pointer(&termios)), 0, 0, 0)
+	return err == 0
+}
+
 func (ui *ui) TerminalIsTTY() bool {
-	isTTY := terminal.IsTerminal(int(os.Stdin.Fd()))
+	isTTY := isTerminal(int(os.Stdin.Fd()))
 	hasOverride := os.Getenv("COUNTERFEITER_INTERACTIVE") == "1"
 	return isTTY || hasOverride
 }
