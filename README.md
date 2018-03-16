@@ -14,6 +14,12 @@ automatically at runtime, and writing them by hand can be quite arduous.
 
 Counterfeiter allows you to simply generate test doubles for a given interface.
 
+### Install with go get
+
+```shell
+go get github.com/maxbrunsfeld/counterfeiter
+```
+
 ### Generating test doubles
 
 Given a path to a package and an interface name, you can generate a test double.
