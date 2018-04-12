@@ -278,6 +278,7 @@ func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
 	}
 }
 
+// This generates the stub that actually fakes the standard method
 func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.FuncDecl {
 	methodType := method.Type.(*ast.FuncType)
 
@@ -292,6 +293,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 	var ellipsisPos token.Pos
 	var bodyStatements []ast.Stmt
 
+	// Generate the parameters to the stub
 	eachMethodParam(methodType, func(name string, t ast.Expr, i int) {
 		paramFields = append(paramFields, &ast.Field{
 			Names: []*ast.Ident{ast.NewIdent(name)},
@@ -355,16 +357,21 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		paramValuesToPassToStub = append(paramValuesToPassToStub, ast.NewIdent(name))
 	})
 
+	// Generate the function name and argument list
 	stubFuncCall := &ast.CallExpr{
 		Fun:      stubFunc,
 		Args:     paramValuesToPassToStub,
 		Ellipsis: ellipsisPos,
 	}
 
+	// Precalculate all return handling before emitting anything else
 	var lastStatements []ast.Stmt
 	if methodType.Results.NumFields() > 0 {
 		returnValues := []ast.Expr{}
 		specificReturnValues := []ast.Expr{}
+		defaultReturnValues := []ast.Expr{}
+		// For each return value, iteratively call our unnamed func with "resultN" and an ast.Expr
+		// that we throw away
 		eachMethodResult(methodType, func(name string, t ast.Expr) {
 			returnValues = append(returnValues, &ast.SelectorExpr{
 				X: &ast.SelectorExpr{
@@ -377,24 +384,47 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 				X:   ast.NewIdent("ret"),
 				Sel: ast.NewIdent(name),
 			})
+			defaultReturnValues = append(defaultReturnValues, &ast.SelectorExpr{
+				X:   ast.NewIdent("default"),
+				Sel: ast.NewIdent(name),
+			})
 		})
 
+		localReturnValues := []ast.Expr{}
+		eachMethodNamedResult(methodType, "r", func(name string, t ast.Expr) {
+			localReturnValues = append(localReturnValues, ast.NewIdent(name))
+		})
 		lastStatements = []ast.Stmt{
-			&ast.IfStmt{
-				Cond: invertNilCheck(stubFunc),
-				Body: &ast.BlockStmt{List: []ast.Stmt{
-					&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
-				}},
-			},
+			// if specificReturn {
+			//	  return <rets>
+			// }
 			&ast.IfStmt{
 				Cond: ast.NewIdent("specificReturn"),
 				Body: &ast.BlockStmt{List: []ast.Stmt{
 					&ast.ReturnStmt{Results: specificReturnValues},
 				}},
 			},
+			// if fake.BlahStub != nil {
+			//     <rs> := fake.BlahStub(args)
+			//     fake.BlahMutex.Unlock()
+			//     return <rs>
+			// }
+			&ast.IfStmt{
+				Cond: invertNilCheck(stubFunc),
+				Body: &ast.BlockStmt{List: []ast.Stmt{
+					&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
+				}},
+			},
+			// fake.BlahMutex.Unlock()
+			// Default fallthrough
+			// return fake.BlahReturns.result
 			&ast.ReturnStmt{Results: returnValues},
 		}
 	} else {
+		// For method with no returns
+		// if fake.BlahStub != nil {
+		//   fake.BlahStub(<args>)
+		// }
 		lastStatements = []ast.Stmt{&ast.IfStmt{
 			Cond: invertNilCheck(stubFunc),
 			Body: &ast.BlockStmt{List: []ast.Stmt{
@@ -403,10 +433,14 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		}}
 	}
 
+	// First, take the write lock
 	bodyStatements = append(bodyStatements,
 		gen.callMutex(method, "Lock"),
+		gen.deferMutex(method, "Unlock"),
 	)
 
+	// If there are return values, generate
+	// "ret, specificReturn := fake.blahOnCall[len(fake.blahArgsForCall)]"
 	if methodType.Results.NumFields() > 0 {
 		bodyStatements = append(bodyStatements,
 			&ast.AssignStmt{
@@ -437,6 +471,9 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 	}
 
 	bodyStatements = append(bodyStatements,
+		// Add the call arguments to the list of args
+		// fake.blahArgsForCall = append(fake.blahArgsForCall, struct{<args>}{<args>})
+		// If no arguments, the <args> is empty
 		&ast.AssignStmt{
 			Tok: token.ASSIGN,
 			Lhs: []ast.Expr{&ast.SelectorExpr{
@@ -457,7 +494,8 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 				},
 			}},
 		},
-
+		// Generate fake.recordInvocation("Blah", []interface{}{<args>})
+		// with args matching actual args
 		&ast.ExprStmt{
 			X: &ast.CallExpr{
 				Fun: &ast.SelectorExpr{
@@ -471,10 +509,9 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 				},
 			},
 		},
-
-		gen.callMutex(method, "Unlock"),
 	)
 
+	// Now add the "lastStatements" generated earlier
 	bodyStatements = append(bodyStatements, lastStatements...)
 
 	var methodName *ast.Ident
@@ -484,6 +521,7 @@ func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.Fun
 		methodName = ast.NewIdent("Spy")
 	}
 
+	// At the end, return the entire function
 	return &ast.FuncDecl{
 		Name: methodName,
 		Type: &ast.FuncType{
@@ -592,6 +630,7 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 		},
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
+			gen.callMutex(method, "Lock"),
 			&ast.AssignStmt{
 				Tok: token.ASSIGN,
 				Lhs: []ast.Expr{
@@ -622,6 +661,7 @@ func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
 					},
 				},
 			},
+			gen.callMutex(method, "Unlock"),
 		}},
 	}
 }
@@ -650,21 +690,7 @@ func (gen CodeGenerator) methodReturnsOnCallSetter(method *ast.Field) *ast.FuncD
 		},
 		Recv: gen.receiverFieldList(),
 		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.AssignStmt{
-				Tok: token.ASSIGN,
-				Lhs: []ast.Expr{
-					&ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent(gen.methodStubFuncName(method)),
-					},
-				},
-				Rhs: []ast.Expr{
-					&ast.BasicLit{
-						Kind:  token.STRING,
-						Value: "nil",
-					},
-				},
-			},
+			gen.callMutex(method, "Lock"),
 			&ast.IfStmt{
 				Cond: nilCheck(&ast.SelectorExpr{
 					X:   receiverIdent(),
@@ -715,6 +741,7 @@ func (gen CodeGenerator) methodReturnsOnCallSetter(method *ast.Field) *ast.FuncD
 					},
 				},
 			},
+			gen.callMutex(method, "Unlock"),
 		}},
 	}
 }
@@ -1020,14 +1047,18 @@ func eachMethodParam(methodType *ast.FuncType, cb func(string, ast.Expr, int)) {
 }
 
 func eachMethodResult(methodType *ast.FuncType, cb func(string, ast.Expr)) {
+	eachMethodNamedResult(methodType, "result", cb)
+}
+
+func eachMethodNamedResult(methodType *ast.FuncType, leadName string, cb func(string, ast.Expr)) {
 	i := 1
 	for _, field := range methodType.Results.List {
 		if len(field.Names) == 0 {
-			cb(fmt.Sprintf("result%d", i), field.Type)
+			cb(fmt.Sprintf("%s%d", leadName, i), field.Type)
 			i++
 		} else {
 			for _ = range field.Names {
-				cb(fmt.Sprintf("result%d", i), field.Type)
+				cb(fmt.Sprintf("%s%d", leadName, i), field.Type)
 				i++
 			}
 		}
