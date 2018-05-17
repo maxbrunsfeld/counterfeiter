@@ -2,6 +2,7 @@ package locator_test
 
 import (
 	"go/ast"
+	"os"
 	"strconv"
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
@@ -245,6 +246,46 @@ var _ = Describe("Locator", func() {
 			It("should have a single method", func() {
 				Expect(model.Methods).To(HaveLen(1))
 				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("BarVendor"))
+			})
+		})
+	})
+
+	Describe("faking a vendored interface", func() {
+		var model *model.InterfaceToFake
+		var err error
+
+		Context("when the interface is provided by a file path", func() {
+			JustBeforeEach(func() {
+				model, err = GetInterfaceFromFilePath("VendorInterface", "../fixtures/vendored/vendor/apackage/interface.go")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("has the correct import with the vendor prefix", func() {
+				Expect(model.ImportPath).To(Equal("apackage"))
+			})
+		})
+
+		Context("when the interface is provided by an import path", func() {
+			var workingDir string
+
+			JustBeforeEach(func() {
+				workingDir, err = os.Getwd()
+				Expect(err).NotTo(HaveOccurred())
+				err = os.Chdir("../fixtures/vendored")
+				Expect(err).NotTo(HaveOccurred())
+
+				model, err = GetInterfaceFromImportPath("VendorInterface", "apackage")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(model.ImportPath).To(Equal("apackage"))
+			})
+
+			AfterEach(func() {
+				err = os.Chdir(workingDir)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("has the correct import with the vendor prefix", func() {
+				Expect(model.ImportPath).To(Equal("apackage"))
 			})
 		})
 	})

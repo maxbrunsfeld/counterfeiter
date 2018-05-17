@@ -3,6 +3,7 @@ package locator
 import (
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
 	"os"
@@ -13,16 +14,18 @@ import (
 	"strings"
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
-	"go/build"
 )
 
-func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceToFake, error) {
-	dirPath, err := getDir(filePath)
+func GetInterfaceFromImportPath(interfaceName, importPath string) (*model.InterfaceToFake, error) {
+	vendorPaths, err := vendorPathsForDirPath(".")
 	if err != nil {
 		return nil, err
 	}
+	return getInterface(interfaceName, importPath, vendorPaths...)
+}
 
-	importPath, err := importPathForDirPath(dirPath)
+func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceToFake, error) {
+	dirPath, err := getDir(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -32,10 +35,15 @@ func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceT
 		return nil, err
 	}
 
-	return GetInterfaceFromImportPath(interfaceName, importPath, vendorPaths...)
+	importPath, err := importPathForDirPath(dirPath, vendorPaths)
+	if err != nil {
+		return nil, err
+	}
+
+	return getInterface(interfaceName, importPath, vendorPaths...)
 }
 
-func GetInterfaceFromImportPath(interfaceName, importPath string, vendorPaths ...string) (*model.InterfaceToFake, error) {
+func getInterface(interfaceName, importPath string, vendorPaths ...string) (*model.InterfaceToFake, error) {
 	dirPath, err := dirPathForImportPath(importPath, vendorPaths)
 	if err != nil {
 		return nil, err
@@ -131,15 +139,15 @@ func dirPathForImportPath(importPath string, vendorPaths []string) (string, erro
 	return "", fmt.Errorf("Package '%s' not found on GOPATH", importPath)
 }
 
-func importPathForDirPath(sourcePath string) (string, error) {
+func importPathForDirPath(sourcePath string, vendorPaths []string) (string, error) {
 	sourcePath, err := filepath.Abs(sourcePath)
 	if err != nil {
 		return "", err
 	}
 
-	for _, goSrcPath := range goSourcePaths() {
-		if strings.HasPrefix(sourcePath, goSrcPath) {
-			return filepath.ToSlash(sourcePath[len(goSrcPath)+1:]), nil
+	for _, srcPath := range append(vendorPaths, goSourcePaths()...) {
+		if strings.HasPrefix(sourcePath, srcPath) {
+			return sourcePath[len(srcPath)+1:], nil
 		}
 	}
 
