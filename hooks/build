@@ -1,0 +1,6 @@
+#!/bin/sh
+# This build hook is invoked by Docker Hub when building images from GitHub
+# repository. Documentation can be found at https://docs.docker.com/docker-cloud/builds/advanced
+# Suggested usage is from: https://github.com/docker/hub-feedback/issues/508
+# Version is branch/tag followed by commit hash. (e.g. master-aade01c, v5-c1f2005)
+docker build --build-arg VERSION="$SOURCE_BRANCH-${SOURCE_COMMIT:0:7}" -t $IMAGE_NAME .
