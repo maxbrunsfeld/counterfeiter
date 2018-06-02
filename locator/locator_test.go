@@ -248,6 +248,25 @@ var _ = Describe("Locator", func() {
 			})
 		})
 	})
+
+	Describe("finding a foreign interface inside of an interface", func() {
+		var model *model.InterfaceToFake
+		var err error
+
+		JustBeforeEach(func() {
+			model, err = GetInterfaceFromFilePath("SomethingWithForeignInterface", "../fixtures/something_remote.go")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns a model representing the named function alias", func() {
+			Expect(model.Name).To(Equal("SomethingWithForeignInterface"))
+			Expect(model.RepresentedByInterface).To(BeTrue())
+		})
+
+		It("should have the remote interface method", func() {
+			Expect(model.Methods).To(HaveLen(1))
+		})
+	})
 })
 
 func collectImports(specs map[string]*ast.ImportSpec) []string {
