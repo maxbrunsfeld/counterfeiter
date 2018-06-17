@@ -3,8 +3,10 @@ package locator
 import (
 	"fmt"
 	"go/ast"
+	"go/importer"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"path"
 	"path/filepath"
@@ -41,7 +43,7 @@ func GetInterfaceFromImportPath(interfaceName, importPath string, vendorPaths ..
 		return nil, err
 	}
 
-	packages, err := packagesForDirPath(dirPath)
+	packages, fset, err := packagesForDirPath(dirPath)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +56,7 @@ func GetInterfaceFromImportPath(interfaceName, importPath string, vendorPaths ..
 
 		if iface != nil {
 			typesFound := getTypeNames(pkg)
-			importSpecs := getImports(file)
+			importSpecs := getImports(file, fset)
 
 			pkgImport := pkg.Name
 			if strings.HasSuffix(importPath, pkg.Name) {
@@ -177,8 +179,10 @@ func goSourcePaths() []string {
 	return result
 }
 
-func packagesForDirPath(path string) (map[string]*ast.Package, error) {
-	return parser.ParseDir(token.NewFileSet(), path, nil, parser.AllErrors)
+func packagesForDirPath(path string) (map[string]*ast.Package, *token.FileSet, error) {
+	fset := token.NewFileSet()
+	pkg, err := parser.ParseDir(fset, path, nil, parser.AllErrors)
+	return pkg, fset, err
 }
 
 func findInterface(pkg *ast.Package, interfaceName string) (ast.Node, *ast.File, bool, error) {
@@ -216,21 +220,45 @@ func findInterface(pkg *ast.Package, interfaceName string) (ast.Node, *ast.File,
 	return iface, file, isFunction, err
 }
 
-func getImports(file *ast.File) map[string]*ast.ImportSpec {
+func getImports(file *ast.File, fset *token.FileSet) map[string]*ast.ImportSpec {
 	result := map[string]*ast.ImportSpec{}
 	ast.Inspect(file, func(node ast.Node) bool {
 		if importSpec, ok := node.(*ast.ImportSpec); ok {
-			var alias string
 			if importSpec.Name == nil {
-				alias = path.Base(strings.Trim(importSpec.Path.Value, `"`))
+				importForeignPackages(file, importSpec, fset, result)
+				result[path.Base(strings.Trim(importSpec.Path.Value, `"`))] = importSpec
 			} else {
-				alias = importSpec.Name.Name
+				result[importSpec.Name.Name] = importSpec
 			}
-			result[alias] = importSpec
 		}
 		return true
 	})
 	return result
+}
+
+func importForeignPackages(file *ast.File, importSpec *ast.ImportSpec, fset *token.FileSet, result map[string]*ast.ImportSpec) {
+	files := append([]*ast.File{}, file)
+	conf := types.Config{
+		Importer: importer.For("source", nil),
+	}
+	pkg, err := conf.Check(importSpec.Path.Value, fset, files, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, pkg := range pkg.Imports() {
+		if isNotAlreadyInResult(result, pkg) && matchesPath(pkg, importSpec) {
+			result[pkg.Name()] = importSpec
+		}
+	}
+}
+
+func matchesPath(pkg *types.Package, importSpec *ast.ImportSpec) bool {
+	clearedPath := strings.Replace(importSpec.Path.Value, "\"", "", -1)
+	return pkg.Path() == clearedPath
+}
+
+func isNotAlreadyInResult(result map[string]*ast.ImportSpec, pkg *types.Package) bool {
+	return result[pkg.Name()] == nil
 }
 
 func getTypeNames(pkg *ast.Package) map[string]bool {

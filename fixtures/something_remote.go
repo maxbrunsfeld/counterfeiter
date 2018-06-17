@@ -1,6 +1,8 @@
 package fixtures
 
-import "github.com/elgohr/counterfeiter/fixtures/aliased_package"
+import (
+	"github.com/maxbrunsfeld/counterfeiter/fixtures/aliased_package"
+)
 
 //go:generate counterfeiter . SomethingWithForeignInterface
 type SomethingWithForeignInterface interface {
