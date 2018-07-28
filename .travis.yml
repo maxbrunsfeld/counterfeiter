@@ -4,6 +4,8 @@ go:
   - 1.8
   - 1.9
   - "1.10"
+  - 1.11
+  - tip
 sudo : false # uses new containerized infrastructure
 go_import_path: github.com/maxbrunsfeld/counterfeiter
 install: scripts/deps.sh
