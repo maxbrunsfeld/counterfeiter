@@ -8,7 +8,6 @@ import (
 	"go/token"
 	"go/types"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -226,7 +225,6 @@ func getImports(file *ast.File, fset *token.FileSet) map[string]*ast.ImportSpec 
 		if importSpec, ok := node.(*ast.ImportSpec); ok {
 			if importSpec.Name == nil {
 				importForeignPackages(file, importSpec, fset, result)
-				result[path.Base(strings.Trim(importSpec.Path.Value, `"`))] = importSpec
 			} else {
 				result[importSpec.Name.Name] = importSpec
 			}
@@ -237,28 +235,25 @@ func getImports(file *ast.File, fset *token.FileSet) map[string]*ast.ImportSpec 
 }
 
 func importForeignPackages(file *ast.File, importSpec *ast.ImportSpec, fset *token.FileSet, result map[string]*ast.ImportSpec) {
-	files := append([]*ast.File{}, file)
+	files := []*ast.File{file}
 	conf := types.Config{
 		Importer: importer.For("source", nil),
 	}
 	pkg, err := conf.Check(importSpec.Path.Value, fset, files, nil)
 	if err != nil {
-		fmt.Println(err)
+		// ignoring corrupted packages instead of failing
+		fmt.Printf("could not get imports for: %v (%v) - %v", file.Name.Name, importSpec.Path.Value, err)
+		return
 	}
 	for _, pkg := range pkg.Imports() {
-		if isNotAlreadyInResult(result, pkg) && matchesPath(pkg, importSpec) {
+		if !existsInResult(result, pkg) {
 			result[pkg.Name()] = importSpec
 		}
 	}
 }
 
-func matchesPath(pkg *types.Package, importSpec *ast.ImportSpec) bool {
-	clearedPath := strings.Replace(importSpec.Path.Value, "\"", "", -1)
-	return pkg.Path() == clearedPath
-}
-
-func isNotAlreadyInResult(result map[string]*ast.ImportSpec, pkg *types.Package) bool {
-	return result[pkg.Name()] == nil
+func existsInResult(result map[string]*ast.ImportSpec, pkg *types.Package) bool {
+	return result[pkg.Name()] != nil
 }
 
 func getTypeNames(pkg *ast.Package) map[string]bool {
