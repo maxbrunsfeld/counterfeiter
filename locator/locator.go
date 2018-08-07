@@ -15,6 +15,7 @@ import (
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
 	"go/build"
+	"path"
 )
 
 func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceToFake, error) {
@@ -224,6 +225,7 @@ func getImports(file *ast.File, fset *token.FileSet) map[string]*ast.ImportSpec 
 	ast.Inspect(file, func(node ast.Node) bool {
 		if importSpec, ok := node.(*ast.ImportSpec); ok {
 			if importSpec.Name == nil {
+				result[path.Base(strings.Trim(importSpec.Path.Value, `"`))] = importSpec
 				importForeignPackages(file, importSpec, fset, result)
 			} else {
 				result[importSpec.Name.Name] = importSpec
@@ -236,15 +238,9 @@ func getImports(file *ast.File, fset *token.FileSet) map[string]*ast.ImportSpec 
 
 func importForeignPackages(file *ast.File, importSpec *ast.ImportSpec, fset *token.FileSet, result map[string]*ast.ImportSpec) {
 	files := []*ast.File{file}
-	conf := types.Config{
-		Importer: importer.For("source", nil),
-	}
-	pkg, err := conf.Check(importSpec.Path.Value, fset, files, nil)
-	if err != nil {
-		// ignoring corrupted packages instead of failing
-		fmt.Printf("could not get imports for: %v (%v) - %v", file.Name.Name, importSpec.Path.Value, err)
-		return
-	}
+	conf := types.Config{Importer: importer.For("source", nil)}
+
+	pkg, _ := conf.Check(importSpec.Path.Value, fset, files, nil)
 	for _, pkg := range pkg.Imports() {
 		if !existsInResult(result, pkg) {
 			result[pkg.Name()] = importSpec
