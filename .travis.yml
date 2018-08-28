@@ -1,9 +1,11 @@
 language: go
 go:
+  - "1.7"
   - "1.8"
   - "1.9"
   - "1.10"
   - "1.11"
+  - master
 sudo : false # uses new containerized infrastructure
 go_import_path: github.com/maxbrunsfeld/counterfeiter
 install: scripts/deps.sh
