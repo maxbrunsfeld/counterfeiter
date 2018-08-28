@@ -22,7 +22,7 @@ egrep --recursive --include '*.go' 'type [^ ]* interface {' . \
 hasLaterVersion() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
 currentVersion=$(go version | awk '{print $3}')
-if hasLaterVersion ${currentVersion} 'go1.8'; then
+if hasLaterVersion ${currentVersion} 'go1.9'; then
      egrep --recursive --include '*_go1.9_limited.go' 'type [^ ]* interface {' . \
       --exclude 'fake_*.go' --exclude '*_test.go' \
   | sed 's#^./\(.*\)/[^/]*.go:type \([^ ]*\) interface {#\1 \2#' \

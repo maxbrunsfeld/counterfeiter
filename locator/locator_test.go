@@ -260,10 +260,10 @@ var _ = Describe("Locator", func() {
 			model, err = GetInterfaceFromFilePath("SomethingWithForeignInterface", "../fixtures/something_remote_go1.9_limited.go")
 		})
 
-		Context("go version > go1.8", func() {
+		Context("go version >= go1.9", func() {
 
 			It("returns a model representing the named function alias", func() {
-				if util.IsLaterThanVersion("go1.8") {
+				if util.IsLaterThanVersion("go1.9") {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(model.Name).To(Equal("SomethingWithForeignInterface"))
 					Expect(model.RepresentedByInterface).To(BeTrue())
@@ -271,7 +271,7 @@ var _ = Describe("Locator", func() {
 			})
 
 			It("should have the remote interface method", func() {
-				if util.IsLaterThanVersion("go1.8") {
+				if util.IsLaterThanVersion("go1.9") {
 					Expect(model.Methods).To(HaveLen(1))
 				}
 			})

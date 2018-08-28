@@ -147,7 +147,7 @@ var _ = Describe("Generator", func() {
 		})
 
 		It("should generate the correct code", func() {
-			if util.IsLaterThanVersion("go1.8") {
+			if util.IsLaterThanVersion("go1.9") {
 				Expect(generatedFileContents).To(Equal(expectedImportsNewGoHyphenatedPackageFake))
 			} else {
 				Expect(generatedFileContents).To(Equal(expectedImportsGoHyphenatedPackageFake))
