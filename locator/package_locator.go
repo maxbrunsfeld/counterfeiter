@@ -4,7 +4,6 @@ import (
 	"errors"
 	"go/ast"
 	"go/parser"
-	"go/token"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -32,14 +31,13 @@ func GetFuncDecls(packageName, directory string) ([]*ast.FuncDecl, error) {
 		panic(err)
 	}
 
-	packages, err := packagesForDirPath(directory)
+	packages, fset, err := packagesForDirPath(directory)
 	if err != nil {
 		panic(err)
 	}
 
 	types := getTypeNames(packages[packageName])
 
-	fset := token.NewFileSet()
 	funcSet := map[string]struct{}{}
 	funcs := []*ast.FuncDecl{}
 

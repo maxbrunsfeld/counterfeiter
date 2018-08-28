@@ -1,10 +1,10 @@
 package locator_test
 
 import (
+	"github.com/maxbrunsfeld/counterfeiter/model"
+	"github.com/maxbrunsfeld/counterfeiter/util"
 	"go/ast"
 	"strconv"
-
-	"github.com/maxbrunsfeld/counterfeiter/model"
 
 	. "github.com/maxbrunsfeld/counterfeiter/locator"
 	. "github.com/onsi/ginkgo"
@@ -247,6 +247,37 @@ var _ = Describe("Locator", func() {
 				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("BarVendor"))
 			})
 		})
+	})
+
+	Describe("finding a foreign interface inside of an interface", func() {
+
+		var (
+			model *model.InterfaceToFake
+			err   error
+		)
+
+		JustBeforeEach(func() {
+			model, err = GetInterfaceFromFilePath("SomethingWithForeignInterface", "../fixtures/something_remote_go1.9_limited.go")
+		})
+
+		Context("go version >= go1.9", func() {
+
+			It("returns a model representing the named function alias", func() {
+				if util.IsLaterThanVersion("go1.9") {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(model.Name).To(Equal("SomethingWithForeignInterface"))
+					Expect(model.RepresentedByInterface).To(BeTrue())
+				}
+			})
+
+			It("should have the remote interface method", func() {
+				if util.IsLaterThanVersion("go1.9") {
+					Expect(model.Methods).To(HaveLen(1))
+				}
+			})
+
+		})
+
 	})
 })
 
