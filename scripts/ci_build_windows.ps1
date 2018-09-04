@@ -9,7 +9,6 @@ echo "----------------------------"
 echo ""
 
 go get -t .
-go get github.com/onsi/ginkgo/ginkgo
 
 echo "building counterfeiter..."
 echo "-------------------------"
