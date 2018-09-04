@@ -6,35 +6,44 @@ import (
 
 	"github.com/maxbrunsfeld/counterfeiter/model"
 
-	. "github.com/maxbrunsfeld/counterfeiter/locator"
-	. "github.com/onsi/ginkgo"
+	"testing"
+
+	"github.com/maxbrunsfeld/counterfeiter/locator"
+
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Locator", func() {
-	Describe("finding a named interface in a file", func() {
+func TestLocator(t *testing.T) {
+	spec.Run(t, "Locator", testLocator, spec.Report(report.Terminal{}))
+}
+
+func testLocator(t *testing.T, when spec.G, it spec.S) {
+	it.Before(func() {
+		RegisterTestingT(t)
+	})
+
+	when("finding a named interface in a file", func() {
 		var interfaceName string
 		var model *model.InterfaceToFake
 		var err error
 
-		JustBeforeEach(func() {
-			model, err = GetInterfaceFromFilePath(interfaceName, "../fixtures/something.go")
-		})
-
-		Context("when it exists", func() {
-			BeforeEach(func() {
+		when("when it exists", func() {
+			it.Before(func() {
 				interfaceName = "Something"
+				model, err = locator.GetInterfaceFromFilePath(interfaceName, "../fixtures/something.go")
 			})
 
-			It("should have the correct name", func() {
+			it("should have the correct name", func() {
 				Expect(model.Name).To(Equal("Something"))
 			})
 
-			It("should have the correct package name", func() {
+			it("should have the correct package name", func() {
 				Expect(model.PackageName).To(Equal("fixtures"))
 			})
 
-			It("should have the correct import path", func() {
+			it("should have the correct import path", func() {
 				// Make the code testable even in forked repos :)
 				// e.g.: you fork counterfeiter to make a change,
 				//       the repo is now github.com/pizzabandit/counterfeiter
@@ -42,7 +51,7 @@ var _ = Describe("Locator", func() {
 				Expect(model.ImportPath).To(MatchRegexp("^github\\.com/[^/]+/counterfeiter/fixtures$"))
 			})
 
-			It("should have the correct methods", func() {
+			it("should have the correct methods", func() {
 				Expect(model.Methods).To(HaveLen(4))
 				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("DoThings"))
 				Expect(model.Methods[0].Imports).To(HaveLen(1))
@@ -54,78 +63,77 @@ var _ = Describe("Locator", func() {
 				Expect(model.Methods[3].Imports).To(HaveLen(1))
 			})
 
-			It("does not return an error", func() {
+			it("does not return an error", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
-		Context("when it does not exist", func() {
-			BeforeEach(func() {
+		when("when it does not exist", func() {
+			it.Before(func() {
 				interfaceName = "GARBAGE"
+				model, err = locator.GetInterfaceFromFilePath(interfaceName, "../fixtures/something.go")
 			})
 
-			It("returns an error", func() {
+			it("returns an error", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
 
-	Describe("finding an interface described by a named function from a file", func() {
+	when("finding an interface described by a named function from a file", func() {
 		var interfaceName string
 		var model *model.InterfaceToFake
 		var err error
 
-		JustBeforeEach(func() {
-			model, err = GetInterfaceFromFilePath(interfaceName, "../fixtures/request_factory.go")
-		})
-
-		Context("when it exists", func() {
-			BeforeEach(func() {
+		when("when it exists", func() {
+			it.Before(func() {
 				interfaceName = "RequestFactory"
+				model, err = locator.GetInterfaceFromFilePath(interfaceName, "../fixtures/request_factory.go")
 			})
 
-			It("returns a model representing the named function alias", func() {
+			it("returns a model representing the named function alias", func() {
 				Expect(model.Name).To(Equal("RequestFactory"))
 				Expect(model.RepresentedByInterface).To(BeFalse())
 			})
 
-			It("should have a single method", func() {
+			it("should have a single method", func() {
 				Expect(model.Methods).To(HaveLen(1))
 				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("RequestFactory"))
 				Expect(model.Methods[0].Imports).To(HaveLen(1))
 			})
 
-			It("does not return an error", func() {
+			it("does not return an error", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
-		Context("when it does not exist", func() {
-			BeforeEach(func() {
+		when("when it does not exist", func() {
+			it.Before(func() {
 				interfaceName = "Whoops!"
+				model, err = locator.GetInterfaceFromFilePath(interfaceName, "../fixtures/request_factory.go")
 			})
 
-			It("returns an error", func() {
+			it("returns an error", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
 
-	Describe("finding an interface with duplicate imports", func() {
+	when("finding an interface with duplicate imports", func() {
 		var model *model.InterfaceToFake
 		var err error
 
-		JustBeforeEach(func() {
-			model, err = GetInterfaceFromFilePath("AB", "../fixtures/dup_packages/dup_packagenames.go")
+		it.Before(func() {
+			model, err = locator.GetInterfaceFromFilePath("AB", "../fixtures/dup_packages/dup_packagenames.go")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns a model representing the named function alias", func() {
+		it("returns a model representing the named function alias", func() {
 			Expect(model.Name).To(Equal("AB"))
 			Expect(model.RepresentedByInterface).To(BeTrue())
 		})
 
-		It("should have methods", func() {
+		it("should have methods", func() {
 			Expect(model.Methods).To(HaveLen(4))
 			Expect(model.Methods[0].Field.Names[0].Name).To(Equal("A"))
 			Expect(collectImports(model.Methods[0].Imports)).To(ConsistOf(
@@ -146,21 +154,21 @@ var _ = Describe("Locator", func() {
 		})
 	})
 
-	Describe("finding an interface with duplicate indirect imports", func() {
+	when("finding an interface with duplicate indirect imports", func() {
 		var model *model.InterfaceToFake
 		var err error
 
-		JustBeforeEach(func() {
-			model, err = GetInterfaceFromFilePath("DupAB", "../fixtures/dup_packages/dupAB.go")
+		it.Before(func() {
+			model, err = locator.GetInterfaceFromFilePath("DupAB", "../fixtures/dup_packages/dupAB.go")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns a model representing the named function alias", func() {
+		it("returns a model representing the named function alias", func() {
 			Expect(model.Name).To(Equal("DupAB"))
 			Expect(model.RepresentedByInterface).To(BeTrue())
 		})
 
-		It("should have methods", func() {
+		it("should have methods", func() {
 			Expect(model.Methods).To(HaveLen(2))
 			Expect(model.Methods[0].Field.Names[0].Name).To(Equal("A"))
 			Expect(collectImports(model.Methods[0].Imports)).To(ConsistOf(
@@ -173,82 +181,82 @@ var _ = Describe("Locator", func() {
 		})
 	})
 
-	Describe("finding an interface with dot imports", func() {
+	when("finding an interface with dot imports", func() {
 		var model *model.InterfaceToFake
 		var err error
 
-		JustBeforeEach(func() {
-			model, err = GetInterfaceFromFilePath("DotImports", "../fixtures/dot_imports.go")
+		it.Before(func() {
+			model, err = locator.GetInterfaceFromFilePath("DotImports", "../fixtures/dot_imports.go")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns a model representing the named function alias", func() {
+		it("returns a model representing the named function alias", func() {
 			Expect(model.Name).To(Equal("DotImports"))
 			Expect(model.RepresentedByInterface).To(BeTrue())
 		})
 
-		It("should have a single method", func() {
+		it("should have a single method", func() {
 			Expect(model.Methods).To(HaveLen(1))
 			// Expect(model.Methods[0].Names[0].Name).To(Equal("DoThings"))
 		})
 	})
 
-	Describe("finding an interface in vendored code", func() {
+	when("finding an interface in vendored code", func() {
 		var model *model.InterfaceToFake
 		var err error
 
-		Context("when the vendor dir is in the same directory", func() {
-			JustBeforeEach(func() {
-				model, err = GetInterfaceFromFilePath("FooInterface", "../fixtures/vendored/foo.go")
+		when("when the vendor dir is in the same directory", func() {
+			it.Before(func() {
+				model, err = locator.GetInterfaceFromFilePath("FooInterface", "../fixtures/vendored/foo.go")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("returns a model representing the named function alias", func() {
+			it("returns a model representing the named function alias", func() {
 				Expect(model.Name).To(Equal("FooInterface"))
 				Expect(model.RepresentedByInterface).To(BeTrue())
 			})
 
-			It("should have a single method", func() {
+			it("should have a single method", func() {
 				Expect(model.Methods).To(HaveLen(1))
 				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("FooVendor"))
 			})
 		})
 
-		Context("when the vendor dir is in a parent directory", func() {
-			JustBeforeEach(func() {
-				model, err = GetInterfaceFromFilePath("BazInterface", "../fixtures/vendored/baz/baz.go")
+		when("when the vendor dir is in a parent directory", func() {
+			it.Before(func() {
+				model, err = locator.GetInterfaceFromFilePath("BazInterface", "../fixtures/vendored/baz/baz.go")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("returns a model representing the named function alias", func() {
+			it("returns a model representing the named function alias", func() {
 				Expect(model.Name).To(Equal("BazInterface"))
 				Expect(model.RepresentedByInterface).To(BeTrue())
 			})
 
-			It("should have a single method", func() {
+			it("should have a single method", func() {
 				Expect(model.Methods).To(HaveLen(1))
 				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("FooVendor"))
 			})
 		})
 
-		Context("when the vendor code shadows a higher level", func() {
-			JustBeforeEach(func() {
-				model, err = GetInterfaceFromFilePath("BarInterface", "../fixtures/vendored/bar/bar.go")
+		when("when the vendor code shadows a higher level", func() {
+			it.Before(func() {
+				model, err = locator.GetInterfaceFromFilePath("BarInterface", "../fixtures/vendored/bar/bar.go")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("returns a model representing the named function alias", func() {
+			it("returns a model representing the named function alias", func() {
 				Expect(model.Name).To(Equal("BarInterface"))
 				Expect(model.RepresentedByInterface).To(BeTrue())
 			})
 
-			It("should have a single method", func() {
+			it("should have a single method", func() {
 				Expect(model.Methods).To(HaveLen(1))
 				Expect(model.Methods[0].Field.Names[0].Name).To(Equal("BarVendor"))
 			})
 		})
 	})
-})
+}
 
 func collectImports(specs map[string]*ast.ImportSpec) []string {
 	imports := []string{}
