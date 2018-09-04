@@ -7,13 +7,20 @@ import (
 	"path/filepath"
 	"time"
 
+	"testing"
+
 	"github.com/maxbrunsfeld/counterfeiter/terminal/terminalfakes"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("parsing arguments (for windows)", func() {
+func TestParsingArguments(t *testing.T) {
+	spec.Run(t, "ParsingArguments (Windows)", testParsingArguments, spec.Report(report.Terminal{}))
+}
+
+func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	var subject ArgumentParser
 	var parsedArgs ParsedArguments
 	var args []string
@@ -29,7 +36,7 @@ var _ = Describe("parsing arguments (for windows)", func() {
 	var failWasCalledWithMessage string
 	var failWasCalledWithArgs []interface{}
 
-	JustBeforeEach(func() {
+	justBefore := func() {
 		subject = NewArgumentParser(
 			fail,
 			cwd,
@@ -38,17 +45,19 @@ var _ = Describe("parsing arguments (for windows)", func() {
 			ui,
 		)
 		parsedArgs = subject.ParseArguments(args...)
-	})
+	}
 
-	BeforeEach(func() {
+	it.Before(func() {
+		RegisterTestingT(t)
 		*packageFlag = false
 		failWasCalled = false
+		failWasCalledWithMessage = ""
+		failWasCalledWithArgs = []interface{}{}
 		*outputPathFlag = ""
 		fail = func(msg string, args ...interface{}) {
 			failWasCalled = true
 			failWasCalledWithMessage = msg
 			failWasCalledWithArgs = args
-
 		}
 		cwd = func() string {
 			return "C:\\Users\\test-user\\workspace"
@@ -64,23 +73,26 @@ var _ = Describe("parsing arguments (for windows)", func() {
 		}
 	})
 
-	Describe("when a single argument is provided with the output directory", func() {
-		BeforeEach(func() {
+	when("when a single argument is provided with the output directory", func() {
+		it.Before(func() {
 			*outputPathFlag = "C:\\tmp\\foo"
 			args = []string{"io.Writer"}
+			justBefore()
 		})
 
-		It("copies the provided output path into the result", func() {
+		it("copies the provided output path into the result", func() {
 			Expect(parsedArgs.OutputPath).To(Equal("C:\\tmp\\foo"))
+			Expect(failWasCalled).To(BeFalse())
 		})
 	})
 
-	Describe("when two arguments are provided", func() {
-		BeforeEach(func() {
+	when("when two arguments are provided", func() {
+		it.Before(func() {
 			args = []string{"my\\specialpackage", "MySpecialInterface"}
+			justBefore()
 		})
 
-		It("snake cases the filename for the output directory", func() {
+		it("snake cases the filename for the output directory", func() {
 			Expect(parsedArgs.OutputPath).To(Equal(
 				filepath.Join(
 					parsedArgs.SourcePackageDir,
@@ -88,22 +100,25 @@ var _ = Describe("parsing arguments (for windows)", func() {
 					"fake_my_special_interface.go",
 				),
 			))
+			Expect(failWasCalled).To(BeFalse())
 		})
 
-		Describe("the source directory", func() {
-			It("should be an absolute path", func() {
+		when("the source directory", func() {
+			it("should be an absolute path", func() {
 				Expect(filepath.IsAbs(parsedArgs.SourcePackageDir)).To(BeTrue())
+				Expect(failWasCalled).To(BeFalse())
 			})
 		})
 	})
 
-	Describe("when three arguments are provided", func() {
-		Context("and the third one is '-'", func() {
-			BeforeEach(func() {
+	when("when three arguments are provided", func() {
+		when("and the third one is '-'", func() {
+			it.Before(func() {
 				args = []string{"my/mypackage", "MySpecialInterface", "-"}
+				justBefore()
 			})
 
-			It("snake cases the filename for the output directory", func() {
+			it("snake cases the filename for the output directory", func() {
 				Expect(parsedArgs.OutputPath).To(Equal(
 					filepath.Join(
 						parsedArgs.SourcePackageDir,
@@ -111,16 +126,20 @@ var _ = Describe("parsing arguments (for windows)", func() {
 						"fake_my_special_interface.go",
 					),
 				))
+				Expect(failWasCalled).To(BeFalse())
 			})
 
-			Describe("the source directory", func() {
-				It("should be an absolute path", func() {
+			when("the source directory", func() {
+				it("should be an absolute path", func() {
 					Expect(filepath.IsAbs(parsedArgs.SourcePackageDir)).To(BeTrue())
+					Expect(failWasCalled).To(BeFalse())
+					Expect(failWasCalledWithMessage).To(BeZero())
+					Expect(failWasCalledWithArgs).To(HaveLen(0))
 				})
 			})
 		})
 	})
-})
+}
 
 func fakeFileInfo(filename string, isDir bool) os.FileInfo {
 	return testFileInfo{name: filename, isDir: isDir}

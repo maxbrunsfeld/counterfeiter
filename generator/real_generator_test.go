@@ -1,20 +1,28 @@
 package generator_test
 
 import (
+	"testing"
+
+	"github.com/maxbrunsfeld/counterfeiter/generator"
 	"github.com/maxbrunsfeld/counterfeiter/locator"
 
-	. "github.com/maxbrunsfeld/counterfeiter/generator"
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Generator", func() {
-	var subject ShimGenerator
+func TestRealGenerator(t *testing.T) {
+	spec.Run(t, "RealGenerator", testRealGenerator, spec.Report(report.Terminal{}))
+}
 
-	BeforeEach(func() {
+func testRealGenerator(t *testing.T, when spec.G, it spec.S) {
+	var subject generator.ShimGenerator
+
+	it.Before(func() {
+		RegisterTestingT(t)
 		model, _ := locator.GetInterfaceFromFilePath("Os", "../fixtures/packagegen/package_gen.go")
 
-		subject = ShimGenerator{
+		subject = generator.ShimGenerator{
 			Model:         *model,
 			SourcePackage: "os",
 			StructName:    "OsShim",
@@ -22,48 +30,48 @@ var _ = Describe("Generator", func() {
 		}
 	})
 
-	Describe("generating a shim for a package", func() {
+	when("generating a shim for a package", func() {
 		var fileContents string
 		var err error
 
-		BeforeEach(func() {
+		it.Before(func() {
 			fileContents, err = subject.GenerateReal()
 		})
 
-		It("should not fail", func() {
+		it("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should have a package", func() {
+		it("should have a package", func() {
 			Expect(fileContents).To(ContainSubstring("package osshim"))
 		})
 
-		It("should define an empty shim struct", func() {
+		it("should define an empty shim struct", func() {
 			Expect(fileContents).To(ContainSubstring("type OsShim struct{}"))
 		})
 
-		It("should attach a real function to the empty struct", func() {
+		it("should attach a real function to the empty struct", func() {
 			Expect(fileContents).To(ContainSubstring("func (sh *OsShim) MkdirAll("))
 		})
 
-		It("should attach a real function parameters", func() {
+		it("should attach a real function parameters", func() {
 			Expect(fileContents).To(ContainSubstring("MkdirAll(path string, perm os.FileMode) error {"))
 		})
 
-		It("should not return when it should not return", func() {
+		it("should not return when it should not return", func() {
 			Expect(fileContents).To(ContainSubstring(`
 func (sh *OsShim) Exit(code int) {
 	os.Exit(code)
 }`))
 		})
 
-		It("it should handle variadics without exploding", func() {
+		it("it should handle variadics without exploding", func() {
 			Expect(fileContents).To(ContainSubstring("Fictional(lol ...string) {"))
 			Expect(fileContents).To(ContainSubstring("os.Fictional(lol...)"))
 		})
 
-		It("should attach a real function to the empty struct", func() {
+		it("should attach a real function to the empty struct", func() {
 			Expect(fileContents).To(ContainSubstring("return os.MkdirAll(path, perm)"))
 		})
 	})
-})
+}

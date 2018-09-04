@@ -1,27 +1,128 @@
 package integration_test
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"testing"
+
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("The counterfeiter CLI", func() {
+var (
+	tmpDir              string
+	pathToCounterfeiter string
+)
+
+func TestMain(m *testing.M) {
+	var err error
+	pathToCounterfeiter, err = gexec.Build("github.com/maxbrunsfeld/counterfeiter")
+	if err != nil {
+		panic(err)
+	}
+
+	result := m.Run()
+	gexec.CleanupBuildArtifacts()
+	os.Exit(result)
+}
+
+func TestCounterfeiter(t *testing.T) {
+	spec.Run(t, "Counterfeiter", testCounterfeiter, spec.Report(report.Terminal{}))
+}
+
+func testCounterfeiter(t *testing.T, when spec.G, it spec.S) {
 	var pathToCLI string
 
-	BeforeEach(func() {
+	tmpPath := func(destination string) string {
+		return filepath.Join(tmpDir, "src", destination)
+	}
+
+	copyIn := func(fixture string, directory string) {
+		fixturesPath := filepath.Join(directory, "fixtures")
+		err := os.MkdirAll(fixturesPath, 0777)
+		Expect(err).ToNot(HaveOccurred())
+
+		filepath.Walk(filepath.Join("..", "fixtures", fixture), func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+
+			base := filepath.Base(path)
+
+			fileHandle, err := os.Open(path)
+			Expect(err).ToNot(HaveOccurred())
+			defer fileHandle.Close()
+
+			dst, err := os.Create(filepath.Join(fixturesPath, base))
+			Expect(err).ToNot(HaveOccurred())
+			defer dst.Close()
+
+			_, err = io.Copy(dst, fileHandle)
+			Expect(err).ToNot(HaveOccurred())
+			return nil
+		})
+	}
+
+	startCounterfeiter := func(workingDir string, fixtureName string, otherArgs ...string) *gexec.Session {
+		fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
+		absPath, _ := filepath.Abs(fakeGoPathDir)
+		absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
+
+		fixturePath := filepath.Join("fixtures", fixtureName)
+		args := append([]string{fixturePath}, otherArgs...)
+		cmd := exec.Command(pathToCounterfeiter, args...)
+		cmd.Dir = workingDir
+		cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
+		outWriter := &bytes.Buffer{}
+		errWriter := &bytes.Buffer{}
+		session, err := gexec.Start(cmd, outWriter, errWriter)
+		Expect(err).ToNot(HaveOccurred())
+		return session
+	}
+
+	startCounterfeiterWithoutFixture := func(workingDir string, args ...string) *gexec.Session {
+		fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
+		absPath, _ := filepath.Abs(fakeGoPathDir)
+		absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
+
+		cmd := exec.Command(pathToCounterfeiter, args...)
+		cmd.Dir = workingDir
+		cmd.Env = []string{
+			"GOPATH=" + absPathWithSymlinks,
+			"GOROOT=" + os.Getenv("GOROOT"),
+		}
+		outWriter := &bytes.Buffer{}
+		errWriter := &bytes.Buffer{}
+		session, err := gexec.Start(cmd, outWriter, errWriter)
+		Expect(err).ToNot(HaveOccurred())
+		return session
+	}
+
+	it.Before(func() {
+		RegisterTestingT(t)
+		var err error
+		tmpDir, err = ioutil.TempDir("", "counterfeiter-integration")
+		Expect(err).ToNot(HaveOccurred())
 		pathToCLI = tmpPath("counterfeiter")
 	})
 
-	It("can generate a fake for a typed function", func() {
+	it.After(func() {
+		if tmpDir != "" {
+			err := os.RemoveAll(tmpDir)
+			Expect(err).ToNot(HaveOccurred())
+		}
+	})
+
+	it("can generate a fake for a typed function", func() {
 		copyIn("typed_function.go", pathToCLI)
 
 		session := startCounterfeiter(pathToCLI, "typed_function.go", "SomethingFactory")
@@ -43,7 +144,7 @@ var _ = Describe("The counterfeiter CLI", func() {
 		Expect(string(actualContents)).To(Equal(string(expectedContents)))
 	})
 
-	It("can generate a fake for a internal interface, on a provided path", func() {
+	it("can generate a fake for a internal interface, on a provided path", func() {
 		os.MkdirAll(filepath.Join(pathToCLI, "src", "counterfeiter"), 0777)
 
 		session := startCounterfeiterWithoutFixture(pathToCLI, "-o", pathToCLI+"/custom/fake_write_closer.go", "io.WriteCloser")
@@ -64,13 +165,13 @@ var _ = Describe("The counterfeiter CLI", func() {
 		Expect(string(actualContents)).To(Equal(string(expectedContents)))
 	})
 
-	Describe("when given a single argument", func() {
-		BeforeEach(func() {
+	when("when given a single argument", func() {
+		it.Before(func() {
 			copyIn("other_types.go", pathToCLI)
 			copyIn("something.go", tmpPath("otherrepo.com"))
 		})
 
-		It("writes a fake for the fully qualified interface that is provided in the argument", func() {
+		it("writes a fake for the fully qualified interface that is provided in the argument", func() {
 			session := startCounterfeiterWithoutFixture(pathToCLI, "otherrepo.com/fixtures.Something")
 
 			Eventually(session).Should(gexec.Exit(0))
@@ -80,12 +181,12 @@ var _ = Describe("The counterfeiter CLI", func() {
 		})
 	})
 
-	Describe("when given two arguments", func() {
-		BeforeEach(func() {
+	when("when given two arguments", func() {
+		it.Before(func() {
 			copyIn("something.go", pathToCLI)
 		})
 
-		It("writes a fake for the given interface from the provided file", func() {
+		it("writes a fake for the given interface from the provided file", func() {
 			session := startCounterfeiter(pathToCLI, "something.go", "Something")
 
 			Eventually(session).Should(gexec.Exit(0))
@@ -95,12 +196,12 @@ var _ = Describe("The counterfeiter CLI", func() {
 		})
 	})
 
-	Describe("when provided three arguments", func() {
-		BeforeEach(func() {
+	when("when provided three arguments", func() {
+		it.Before(func() {
 			copyIn("something.go", pathToCLI)
 		})
 
-		It("writes the fake to stdout", func() {
+		it("writes the fake to stdout", func() {
 			session := startCounterfeiter(pathToCLI, "something.go", "Something", "-")
 
 			Eventually(session).Should(gexec.Exit(0))
@@ -111,100 +212,6 @@ var _ = Describe("The counterfeiter CLI", func() {
 			Expect(stdout).NotTo(ContainSubstring("Wrote `FakeSomething"))
 
 			Expect(stderr).To(ContainSubstring("Wrote `FakeSomething"))
-
 		})
 	})
-})
-
-// helper functions
-
-func tmpPath(destination string) string {
-	return filepath.Join(tmpDir, "src", destination)
 }
-
-func copyIn(fixture string, directory string) {
-	fixturesPath := filepath.Join(directory, "fixtures")
-	err := os.MkdirAll(fixturesPath, 0777)
-	Expect(err).ToNot(HaveOccurred())
-
-	filepath.Walk(filepath.Join("..", "fixtures", fixture), func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
-
-		base := filepath.Base(path)
-
-		fileHandle, err := os.Open(path)
-		Expect(err).ToNot(HaveOccurred())
-		defer fileHandle.Close()
-
-		dst, err := os.Create(filepath.Join(fixturesPath, base))
-		Expect(err).ToNot(HaveOccurred())
-		defer dst.Close()
-
-		_, err = io.Copy(dst, fileHandle)
-		Expect(err).ToNot(HaveOccurred())
-		return nil
-	})
-}
-
-func startCounterfeiter(workingDir string, fixtureName string, otherArgs ...string) *gexec.Session {
-	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
-	absPath, _ := filepath.Abs(fakeGoPathDir)
-	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
-
-	fixturePath := filepath.Join("fixtures", fixtureName)
-	args := append([]string{fixturePath}, otherArgs...)
-	cmd := exec.Command(pathToCounterfeiter, args...)
-	cmd.Dir = workingDir
-	cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
-
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-	return session
-}
-
-func startCounterfeiterWithoutFixture(workingDir string, args ...string) *gexec.Session {
-	fakeGoPathDir := filepath.Dir(filepath.Dir(workingDir))
-	absPath, _ := filepath.Abs(fakeGoPathDir)
-	absPathWithSymlinks, _ := filepath.EvalSymlinks(absPath)
-
-	cmd := exec.Command(pathToCounterfeiter, args...)
-	cmd.Dir = workingDir
-	cmd.Env = []string{
-		"GOPATH=" + absPathWithSymlinks,
-		"GOROOT=" + os.Getenv("GOROOT"),
-	}
-
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-	return session
-}
-
-// gexec setup
-
-var tmpDir string
-var pathToCounterfeiter string
-
-var _ = SynchronizedBeforeSuite(func() []byte {
-	pathToCounterfeiter, err := gexec.Build("github.com/maxbrunsfeld/counterfeiter")
-	Expect(err).ToNot(HaveOccurred())
-	return []byte(pathToCounterfeiter)
-}, func(computedPath []byte) {
-	pathToCounterfeiter = string(computedPath)
-})
-
-var _ = SynchronizedAfterSuite(func() {}, func() {
-	gexec.CleanupBuildArtifacts()
-})
-
-var _ = BeforeEach(func() {
-	var err error
-	tmpDir, err = ioutil.TempDir("", "counterfeiter-integration")
-	Expect(err).ToNot(HaveOccurred())
-})
-
-var _ = AfterEach(func() {
-	err := os.RemoveAll(tmpDir)
-	Expect(err).ToNot(HaveOccurred())
-})
