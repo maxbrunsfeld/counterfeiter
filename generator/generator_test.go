@@ -1,22 +1,33 @@
 package generator_test
 
 import (
+	"testing"
+
+	"github.com/maxbrunsfeld/counterfeiter/generator"
 	"github.com/maxbrunsfeld/counterfeiter/locator"
 
-	. "github.com/maxbrunsfeld/counterfeiter/generator"
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Generator", func() {
-	Describe("generating a fake for a simple interface", func() {
+func TestGenerator(t *testing.T) {
+	spec.Run(t, "Generator", testGenerator, spec.Report(report.Terminal{}))
+}
+
+func testGenerator(t *testing.T, when spec.G, it spec.S) {
+	it.Before(func() {
+		RegisterTestingT(t)
+	})
+
+	when("generating a fake for a simple interface", func() {
 		var fakeFileContents string
 		var err error
 
-		BeforeEach(func() {
+		it.Before(func() {
 			model, _ := locator.GetInterfaceFromFilePath("Something", "../fixtures/something.go")
 
-			subject := CodeGenerator{
+			subject := generator.CodeGenerator{
 				Model:       *model,
 				StructName:  "FakeSomething",
 				PackageName: "fixturesfakes",
@@ -25,23 +36,23 @@ var _ = Describe("Generator", func() {
 			fakeFileContents, err = subject.GenerateFake()
 		})
 
-		It("should not fail", func() {
+		it("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should match the correct file contents", func() {
+		it("should match the correct file contents", func() {
 			Expect(fakeFileContents).To(Equal(expectedSimpleFake))
 		})
 	})
 
-	Describe("generating a fake for a typed function", func() {
+	when("generating a fake for a typed function", func() {
 		var fakeFileContents string
 		var err error
 
-		BeforeEach(func() {
+		it.Before(func() {
 			model, _ := locator.GetInterfaceFromFilePath("RequestFactory", "../fixtures/request_factory.go")
 
-			subject := CodeGenerator{
+			subject := generator.CodeGenerator{
 				Model:       *model,
 				StructName:  "FakeRequestFactory",
 				PackageName: "fixturesfakes",
@@ -49,23 +60,23 @@ var _ = Describe("Generator", func() {
 			fakeFileContents, err = subject.GenerateFake()
 		})
 
-		It("should not fail", func() {
+		it("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should produce the correct file contents", func() {
+		it("should produce the correct file contents", func() {
 			Expect(fakeFileContents).To(Equal(expectedFuncFake))
 		})
 	})
 
-	Describe("generating a fake for a package with a hyphenated import", func() {
+	when("generating a fake for a package with a hyphenated import", func() {
 		var fakeFileContents string
 		var err error
 
-		BeforeEach(func() {
+		it.Before(func() {
 			model, _ := locator.GetInterfaceFromFilePath("SomeInterface", "../fixtures/hyphenated_package_same_name/some_package/interface.go")
 
-			subject := CodeGenerator{
+			subject := generator.CodeGenerator{
 				Model:       *model,
 				StructName:  "FakeSomeInterface",
 				PackageName: "fixturesfakes",
@@ -73,23 +84,23 @@ var _ = Describe("Generator", func() {
 			fakeFileContents, err = subject.GenerateFake()
 		})
 
-		It("should not fail", func() {
+		it("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should produce the correct file contents", func() {
+		it("should produce the correct file contents", func() {
 			Expect(fakeFileContents).To(Equal(expectedHyphenatedFake))
 		})
 	})
 
-	Describe("generating a fake for a package with a import name differ from package name", func() {
+	when("generating a fake for a package with a import name differ from package name", func() {
 		var fakeFileContents string
 		var err error
 
-		BeforeEach(func() {
+		it.Before(func() {
 			model, _ := locator.GetInterfaceFromFilePath("Potato", "../fixtures/alias_import_name/test/potato.go")
 
-			subject := CodeGenerator{
+			subject := generator.CodeGenerator{
 				Model:       *model,
 				StructName:  "FakePotato",
 				PackageName: "fixturesfakes",
@@ -97,23 +108,23 @@ var _ = Describe("Generator", func() {
 			fakeFileContents, err = subject.GenerateFake()
 		})
 
-		It("should not fail", func() {
+		it("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should produce the correct file contents", func() {
+		it("should produce the correct file contents", func() {
 			Expect(fakeFileContents).To(Equal(expectedAliasFake))
 		})
 	})
 
-	Describe("generating a fake for a function return like (a, b int)", func() {
+	when("generating a fake for a function return like (a, b int)", func() {
 		var fakeFileContents string
 		var err error
 
-		BeforeEach(func() {
+		it.Before(func() {
 			model, _ := locator.GetInterfaceFromFilePath("SomethingElse", "../fixtures/compound_return.go")
 
-			subject := CodeGenerator{
+			subject := generator.CodeGenerator{
 				Model:       *model,
 				StructName:  "FakeSomethingElse",
 				PackageName: "fixturesfakes",
@@ -121,23 +132,23 @@ var _ = Describe("Generator", func() {
 			fakeFileContents, err = subject.GenerateFake()
 		})
 
-		It("should not fail", func() {
+		it("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should match the correct file contents", func() {
+		it("should match the correct file contents", func() {
 			Expect(fakeFileContents).To(Equal(expectedCompoundReturnFake))
 		})
 	})
 
-	Describe("generating a fake which imports packages with go-hyphenated names", func() {
+	when("generating a fake which imports packages with go-hyphenated names", func() {
 		var generatedFileContents string
 		var err error
 
-		BeforeEach(func() {
+		it.Before(func() {
 			model, _ := locator.GetInterfaceFromFilePath("ImportsGoHyphenPackage", "../fixtures/imports_go_hyphen_package.go")
 
-			subject := CodeGenerator{
+			subject := generator.CodeGenerator{
 				Model:       *model,
 				StructName:  "FakeImportsGoHyphenPackage",
 				PackageName: "fixturesfakes",
@@ -145,15 +156,15 @@ var _ = Describe("Generator", func() {
 			generatedFileContents, err = subject.GenerateFake()
 		})
 
-		It("should generate the correct code", func() {
+		it("should generate the correct code", func() {
 			Expect(generatedFileContents).To(Equal(expectedImportsGoHyphenatedPackageFake))
 		})
 
-		It("should not fail", func() {
+		it("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
-})
+}
 
 const expectedSimpleFake string = `// Code generated by counterfeiter. DO NOT EDIT.
 package fixturesfakes

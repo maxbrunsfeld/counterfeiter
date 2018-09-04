@@ -3,25 +3,33 @@ package generator_test
 import (
 	"path/filepath"
 
+	"testing"
+
+	"github.com/maxbrunsfeld/counterfeiter/generator"
 	"github.com/maxbrunsfeld/counterfeiter/locator"
 
-	. "github.com/maxbrunsfeld/counterfeiter/generator"
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Interface Generator", func() {
+func TestInterfaceGenerator(t *testing.T) {
+	spec.Run(t, "InterfaceGenerator", testInterfaceGenerator, spec.Report(report.Terminal{}))
+}
+
+func testInterfaceGenerator(t *testing.T, when spec.G, it spec.S) {
 	var (
-		subject          InterfaceGenerator
+		subject          generator.InterfaceGenerator
 		fakeFileContents string
 		err              error
 	)
 
-	BeforeEach(func() {
+	it.Before(func() {
+		RegisterTestingT(t)
 		fixturePath := filepath.Join("..", "fixtures", "packagegen", "apackage")
 		model, _ := locator.GetFunctionsFromDirectory("ostest", fixturePath)
 
-		subject = InterfaceGenerator{
+		subject = generator.InterfaceGenerator{
 			Model:                  model,
 			Package:                fixturePath,
 			DestinationPackageName: "osshim",
@@ -30,35 +38,35 @@ var _ = Describe("Interface Generator", func() {
 		fakeFileContents, err = subject.GenerateInterface()
 	})
 
-	It("should not fail", func() {
+	it("should not fail", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("correctly names the package", func() {
+	it("correctly names the package", func() {
 		Expect(fakeFileContents).To(ContainSubstring("package osshim"))
 	})
 
-	It("correctly names the interface", func() {
+	it("correctly names the interface", func() {
 		Expect(fakeFileContents).To(ContainSubstring("type Os interface {"))
 	})
 
-	It("should produce a correct function prototype", func() {
+	it("should produce a correct function prototype", func() {
 		Expect(fakeFileContents).To(ContainSubstring("MkdirAll(path string, perm os.FileMode) error"))
 	})
 
-	It("should import the appropriate packages", func() {
+	it("should import the appropriate packages", func() {
 		Expect(fakeFileContents).To(ContainSubstring(`"os"`))
 		Expect(fakeFileContents).To(ContainSubstring(`"time"`))
 	})
 
-	It("should produce the correct file contents", func() {
+	it("should produce the correct file contents", func() {
 		Expect(fakeFileContents).To(ContainSubstring(expectedOutput))
 	})
 
-	It("should produce a go generate comment", func() {
+	it("should produce a go generate comment", func() {
 		Expect(fakeFileContents).To(ContainSubstring("//go:generate counterfeiter -o ostest_fake/fake_ostest.go . Os"))
 	})
-})
+}
 
 const expectedOutput string = `
 type Os interface {
