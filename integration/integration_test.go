@@ -82,8 +82,9 @@ func testCounterfeiter(t *testing.T, when spec.G, it spec.S) {
 		cmd := exec.Command(pathToCounterfeiter, args...)
 		cmd.Dir = workingDir
 		cmd.Env = []string{"GOPATH=" + absPathWithSymlinks}
-		w := &bytes.Buffer{}
-		session, err := gexec.Start(cmd, w, w)
+		outWriter := &bytes.Buffer{}
+		errWriter := &bytes.Buffer{}
+		session, err := gexec.Start(cmd, outWriter, errWriter)
 		Expect(err).ToNot(HaveOccurred())
 		return session
 	}
@@ -99,8 +100,9 @@ func testCounterfeiter(t *testing.T, when spec.G, it spec.S) {
 			"GOPATH=" + absPathWithSymlinks,
 			"GOROOT=" + os.Getenv("GOROOT"),
 		}
-		w := &bytes.Buffer{}
-		session, err := gexec.Start(cmd, w, w)
+		outWriter := &bytes.Buffer{}
+		errWriter := &bytes.Buffer{}
+		session, err := gexec.Start(cmd, outWriter, errWriter)
 		Expect(err).ToNot(HaveOccurred())
 		return session
 	}
