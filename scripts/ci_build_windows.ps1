@@ -44,6 +44,7 @@ if ($LASTEXITCODE -ne 0) {
 echo "running tests..."
 echo "----------------"
 echo ""
+$env:CGO_ENABLED = "0"
 go test -v -race ./...
 if ($LASTEXITCODE -ne 0) {
   ExitWithCode -exitcode $LASTEXITCODE
