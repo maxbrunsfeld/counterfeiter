@@ -5,16 +5,15 @@ clone_folder: c:\gopath\src\github.com\maxbrunsfeld\counterfeiter
 environment:
   GOPATH: c:\gopath
 
-stack: go 1.11
-
 install:
   - echo %PATH%
   - echo %GOPATH%
-  - set PATH=%GOPATH%\bin;%PATH%
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
   - go version
   - go env
 
 test_script:
+  - ps: scripts/ci_build_windows.ps1
   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 build: off

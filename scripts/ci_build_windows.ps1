@@ -2,21 +2,32 @@ echo "========================="
 echo "windows build is starting"
 echo "========================="
 
-$ErrorActionPreference = "Stop"
+function ExitWithCode
+{
+    param
+    (
+        $exitcode
+    )
+
+    $host.SetShouldExit($exitcode)
+    exit
+}
 
 echo "getting test dependencies..."
 echo "----------------------------"
 echo ""
 
 go get -t .
+if ($LASTEXITCODE -ne 0) {
+  ExitWithCode -exitcode $LASTEXITCODE
+}
 
 echo "building counterfeiter..."
 echo "-------------------------"
 echo ""
 go build github.com/maxbrunsfeld/counterfeiter
-if (-Not ($LastExitCode -eq 0)) {
-    echo "FAILED"
-    exit 1
+if ($LASTEXITCODE -ne 0) {
+  ExitWithCode -exitcode $LASTEXITCODE
 }
 
 remove-item ./counterfeiter.exe
@@ -26,14 +37,16 @@ echo "-------------------"
 echo ""
 set-alias counterfeiter counterfeiter.exe
 go generate ./...
+if ($LASTEXITCODE -ne 0) {
+  ExitWithCode -exitcode $LASTEXITCODE
+}
 
 echo "running tests..."
 echo "----------------"
 echo ""
 go test -v -race ./...
-if (-Not ($LastExitCode -eq 0)) {
-    echo "FAILED"
-    exit 2
+if ($LASTEXITCODE -ne 0) {
+  ExitWithCode -exitcode $LASTEXITCODE
 }
 
 echo "Windows test suite was a 'sweet' success"
