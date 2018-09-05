@@ -6,6 +6,12 @@ automatically at runtime, and writing them by hand can be quite arduous.
 
 `counterfeiter` allows you to simply generate test doubles for a given interface.
 
+### Install
+
+ ```shell
+go get -u github.com/maxbrunsfeld/counterfeiter
+```
+
 ### Generating Test Doubles
 
 Given a path to a package and an interface name, you can generate a test double.
