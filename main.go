@@ -17,12 +17,20 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
-func main() {
-	flag.Parse()
-	args := flag.Args()
+// AppVersion is replaced with a real version string during build. For example:
+// go install -ldflags "-X main.AppVersion=$(git rev-parse --short HEAD)" github.com/maxbrunsfeld/counterfeiter
+var AppVersion = "UNKNOWN"
 
+func main() {
+	version := flag.Bool("v", false, "print executable version and exit")
+	flag.Parse()
+	if *version {
+		fail("counterfeiter %s", AppVersion)
+		return
+	}
+	args := flag.Args()
 	if len(args) < 1 {
-		fail("%s", usage)
+		fail(usage, AppVersion, os.Args[0])
 		return
 	}
 
@@ -176,8 +184,9 @@ func fail(s string, args ...interface{}) {
 }
 
 var usage = `
+counterfeiter %s
 USAGE
-	counterfeiter
+	%s
 		[-o <output-path>] [-p] [--fake-name <fake-name>]
 		[<source-path>] <interface> [-]
 
