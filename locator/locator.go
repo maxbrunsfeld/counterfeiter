@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,91 +13,84 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maxbrunsfeld/counterfeiter/model"
 	"go/build"
+
+	"github.com/maxbrunsfeld/counterfeiter/model"
+	"golang.org/x/tools/go/packages"
 )
 
 func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceToFake, error) {
-	dirPath, err := getDir(filePath)
-	if err != nil {
-		return nil, err
+	cfg := &packages.Config{
+		Mode: packages.LoadSyntax,
 	}
 
-	importPath, err := importPathForDirPath(dirPath)
-	if err != nil {
-		return nil, err
+	pkgs, err := packages.Load(cfg, fmt.Sprintf("contains:%s", filePath))
+	if err != nil || len(pkgs) == 0 {
+		return nil, fmt.Errorf("couldn't load package for file %q: %v", filePath, err)
 	}
-
-	vendorPaths, err := vendorPathsForDirPath(dirPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return GetInterfaceFromImportPath(interfaceName, importPath, vendorPaths...)
+	return getInterfaceFromPackage(interfaceName, pkgs[0])
 }
 
-func GetInterfaceFromImportPath(interfaceName, importPath string, vendorPaths ...string) (*model.InterfaceToFake, error) {
-	dirPath, err := dirPathForImportPath(importPath, vendorPaths)
+func getInterfaceFromPackage(interfaceName string, pkg *packages.Package) (*model.InterfaceToFake, error) {
+	iface, file, isFunction, err := findInterface(pkg, interfaceName)
 	if err != nil {
 		return nil, err
 	}
 
-	packages, err := packagesForDirPath(dirPath)
-	if err != nil {
-		return nil, err
-	}
+	if iface != nil {
+		typesFound := getTypeNames(pkg)
+		importSpecs := getImports(file)
 
-	for _, pkg := range packages {
-		iface, file, isFunction, err := findInterface(pkg, interfaceName)
+		pkgImport := pkg.Name
+		if strings.HasSuffix(pkg.PkgPath, pkg.Name) {
+			pkgImport = "xyz123"
+		}
+
+		var methods []model.Method
+		var err error
+		switch iface.(type) {
+		case *ast.InterfaceType:
+			methods, err = methodsForInterface(iface.(*ast.InterfaceType), pkg.PkgPath, pkg.Name, importSpecs, typesFound)
+		case *ast.FuncType:
+			funcNode := iface.(*ast.FuncType)
+			methods, err = methodsForFunction(funcNode, interfaceName, pkgImport, importSpecs, typesFound)
+		default:
+			err = fmt.Errorf("cannot generate a counterfeit for a '%T'", iface)
+		}
+
 		if err != nil {
 			return nil, err
 		}
 
-		if iface != nil {
-			typesFound := getTypeNames(pkg)
-			importSpecs := getImports(file)
-
-			pkgImport := pkg.Name
-			if strings.HasSuffix(importPath, pkg.Name) {
-				pkgImport = "xyz123"
-			}
-
-			var methods []model.Method
-			var err error
-			switch iface.(type) {
-			case *ast.InterfaceType:
-				interfaceNode := iface.(*ast.InterfaceType)
-				methods, err = methodsForInterface(interfaceNode, importPath, pkgImport, importSpecs, typesFound, vendorPaths)
-			case *ast.FuncType:
-				funcNode := iface.(*ast.FuncType)
-				methods, err = methodsForFunction(funcNode, interfaceName, pkgImport, importSpecs, typesFound)
-			default:
-				err = fmt.Errorf("cannot generate a counterfeit for a '%T'", iface)
-			}
-
-			if err != nil {
-				return nil, err
-			}
-
-			importSpecs[pkgImport] = &ast.ImportSpec{
-				Name: &ast.Ident{Name: pkgImport},
-				Path: &ast.BasicLit{
-					Kind:  token.STRING,
-					Value: strconv.Quote(importPath),
-				},
-			}
-
-			return &model.InterfaceToFake{
-				Name:                   interfaceName,
-				Methods:                methods,
-				ImportPath:             importPath,
-				PackageName:            pkg.Name,
-				RepresentedByInterface: !isFunction,
-			}, nil
+		importSpecs[pkgImport] = &ast.ImportSpec{
+			Name: &ast.Ident{Name: pkgImport},
+			Path: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: strconv.Quote(pkg.PkgPath),
+			},
 		}
+
+		return &model.InterfaceToFake{
+			Name:                   interfaceName,
+			Methods:                methods,
+			ImportPath:             pkg.PkgPath,
+			PackageName:            pkg.Name,
+			RepresentedByInterface: !isFunction,
+		}, nil
 	}
 
 	return nil, fmt.Errorf("Could not find interface '%s'", interfaceName)
+}
+
+func GetInterfaceFromImportPath(interfaceName, importPath string) (*model.InterfaceToFake, error) {
+	cfg := &packages.Config{
+		Mode: packages.LoadSyntax,
+	}
+	pkgs, err := packages.Load(cfg, importPath)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't load package %q: %v", importPath, err)
+	}
+	return getInterfaceFromPackage(interfaceName, pkgs[0])
 }
 
 func getDir(path string) (string, error) {
@@ -181,35 +175,34 @@ func packagesForDirPath(path string) (map[string]*ast.Package, error) {
 	return parser.ParseDir(token.NewFileSet(), path, nil, parser.AllErrors)
 }
 
-func findInterface(pkg *ast.Package, interfaceName string) (ast.Node, *ast.File, bool, error) {
-	var file *ast.File
-	var iface ast.Node
-	var err error
-	var isFunction bool
-
-	for _, f := range pkg.Files {
-		ast.Inspect(f, func(node ast.Node) bool {
-			typeSpec, ok := node.(*ast.TypeSpec)
-			if !ok || typeSpec.Name.Name != interfaceName {
-				return true
+func findInterface(pkg *packages.Package, name string) (ast.Node, *ast.File, bool, error) {
+	var (
+		file       *ast.File
+		iface      ast.Node
+		err        error
+		isFunction bool
+	)
+	ifaceObj := pkg.Types.Scope().Lookup(name)
+	if ifaceObj == nil {
+		return nil, nil, false, fmt.Errorf("interface with name %s not found in package %s", name, pkg.Name)
+	}
+	_, nodes := pathEnclosingInterval(pkg, ifaceObj.Pos(), ifaceObj.Pos())
+	for _, node := range nodes {
+		switch x := node.(type) {
+		case *ast.TypeSpec:
+			if iface == nil && x.Name.Name == name {
+				switch x.Type.(type) {
+				case *ast.InterfaceType:
+					iface = x.Type
+				case *ast.FuncType:
+					iface = x.Type
+					isFunction = true
+				}
 			}
-
-			switch typeSpec.Type.(type) {
-			case *ast.InterfaceType:
-				file = f
-				iface = typeSpec.Type
-			case *ast.FuncType:
-				file = f
-				isFunction = true
-				iface = typeSpec.Type
-			default:
-				err = fmt.Errorf("Name '%s' does not refer to an interface", interfaceName)
+		case *ast.File:
+			if file == nil {
+				file = x
 			}
-			return false
-		})
-
-		if iface != nil {
-			break
 		}
 	}
 
@@ -233,15 +226,15 @@ func getImports(file *ast.File) map[string]*ast.ImportSpec {
 	return result
 }
 
-func getTypeNames(pkg *ast.Package) map[string]bool {
+func getTypeNames(pkg *packages.Package) map[string]bool {
 	result := make(map[string]bool)
-	ast.Inspect(pkg, func(node ast.Node) bool {
-		if typeSpec, ok := node.(*ast.TypeSpec); ok {
-			if typeSpec.Name != nil {
-				result[typeSpec.Name.Name] = true
-			}
+	scope := pkg.Types.Scope()
+	for _, name := range scope.Names() {
+		obj := scope.Lookup(name)
+		t, ok := obj.(*types.TypeName)
+		if obj.Exported() && ok {
+			result[t.Name()] = true
 		}
-		return true
-	})
+	}
 	return result
 }

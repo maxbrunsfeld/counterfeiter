@@ -11,6 +11,7 @@ import (
 
 	"github.com/maxbrunsfeld/counterfeiter/astutil"
 	"github.com/maxbrunsfeld/counterfeiter/model"
+	"golang.org/x/tools/go/packages"
 )
 
 func GetFunctionsFromDirectory(packageName, directory string) (*model.PackageToInterfacify, error) {
@@ -32,12 +33,13 @@ func GetFuncDecls(packageName, directory string) ([]*ast.FuncDecl, error) {
 		panic(err)
 	}
 
-	packages, err := packagesForDirPath(directory)
+	cfg := &packages.Config{Mode: packages.LoadAllSyntax}
+	pkgs, err := packages.Load(cfg, directory)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	types := getTypeNames(packages[packageName])
+	types := getTypeNames(pkgs[0])
 
 	fset := token.NewFileSet()
 	funcSet := map[string]struct{}{}
