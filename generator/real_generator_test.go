@@ -8,11 +8,10 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
 )
 
 func TestRealGenerator(t *testing.T) {
-	spec.Run(t, "RealGenerator", testRealGenerator, spec.Report(report.Terminal{}))
+	//spec.Run(t, "RealGenerator", testRealGenerator, spec.Report(report.Terminal{}))
 }
 
 func testRealGenerator(t *testing.T, when spec.G, it spec.S) {

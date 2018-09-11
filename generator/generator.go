@@ -3,1229 +3,593 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"go/ast"
-	"go/format"
-	"go/token"
-	"regexp"
-	"strconv"
+	"go/types"
+	"html/template"
+	"log"
+	"reflect"
+	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
-	"github.com/maxbrunsfeld/counterfeiter/astutil"
-	"github.com/maxbrunsfeld/counterfeiter/model"
-
+	"golang.org/x/tools/go/packages"
+	"golang.org/x/tools/go/types/typeutil"
 	"golang.org/x/tools/imports"
 )
 
-type CodeGenerator struct {
-	Model       model.InterfaceToFake
-	StructName  string
-	PackageName string
-
-	packageAlias map[string]string
+// Fake is used to generate a Fake implementation of an interface.
+type Fake struct {
+	Packages           []*packages.Package
+	Package            *packages.Package
+	Interface          *types.TypeName
+	DestinationPackage string
+	Name               string
+	InterfaceAlias     string
+	InterfaceName      string
+	InterfacePackage   string
+	Imports            []Import
+	Methods            []Method
 }
 
-func (gen CodeGenerator) GenerateFake() (string, error) {
-	buf := new(bytes.Buffer)
-	err := format.Node(buf, token.NewFileSet(), gen.buildASTForFake())
+// AddImport creates an import with the given alias and path, and adds it to
+// Fake.Imports.
+func (f *Fake) AddImport(alias string, path string) Import {
+	for i := range f.Imports {
+		if f.Imports[i].Path == path {
+			return f.Imports[i]
+		}
+	}
+
+	result := Import{
+		Alias: alias,
+		Path:  path,
+	}
+	f.Imports = append(f.Imports, result)
+	return result
+}
+
+// SortImports sorts imports alphabetically.
+func (f *Fake) sortImports() {
+	sort.SliceStable(f.Imports, func(i, j int) bool {
+		return f.Imports[i].Path < f.Imports[j].Path
+	})
+}
+
+// disambiguateAliases ensures that all imports are aliased uniquely.
+func (f *Fake) disambiguateAliases() {
+	f.sortImports()
+	log.Println("Before Disambiguation:")
+	for i := range f.Imports {
+		log.Printf("- %s > %s\n", f.Imports[i].Alias, f.Imports[i].Path)
+	}
+
+	var byAlias map[string][]Import
+	for {
+		byAlias = f.aliasMap()
+		hasDuplicateAliases := false
+		for _, imports := range byAlias {
+			if len(imports) > 1 {
+				hasDuplicateAliases = true
+				break
+			}
+		}
+		if !hasDuplicateAliases {
+			break
+		}
+		for i := range f.Imports {
+			imports := byAlias[f.Imports[i].Alias]
+			if len(imports) == 1 {
+				continue
+			}
+
+			for j := 0; j < len(imports); j++ {
+				if imports[j].Path == f.Imports[i].Path && j > 0 {
+					f.Imports[i].Alias = f.Imports[i].Alias + string('a'+byte(j-1))
+					if f.Imports[i].Path == f.InterfacePackage {
+						f.InterfaceAlias = f.Imports[i].Alias
+					}
+				}
+			}
+		}
+	}
+
+	log.Println("After Disambiguation:")
+	for i := range f.Imports {
+		log.Printf("- %s > %s\n", f.Imports[i].Alias, f.Imports[i].Path)
+	}
+}
+
+func (f *Fake) aliasMap() map[string][]Import {
+	result := map[string][]Import{}
+	for i := range f.Imports {
+		imports := result[f.Imports[i].Alias]
+		result[f.Imports[i].Alias] = append(imports, f.Imports[i])
+	}
+	return result
+}
+
+func (f *Fake) importsMap() map[string]Import {
+	f.disambiguateAliases()
+	result := map[string]Import{}
+	for i := range f.Imports {
+		result[f.Imports[i].Path] = f.Imports[i]
+	}
+	return result
+}
+
+type Import struct {
+	Alias string
+	Path  string
+}
+
+type ByPath []Import
+
+type Method struct {
+	FakeName string
+	Name     string
+	Params   Params
+	Args     string
+	Returns  Returns
+	Rets     string
+}
+
+type Params []Param
+
+type Param struct {
+	Name       string
+	Type       string
+	IsVariadic bool
+}
+
+func (p Params) HasLength() bool {
+	return len(p) > 0
+}
+
+type Returns []Return
+
+type Return struct {
+	Name string
+	Type string
+}
+
+func (r Returns) HasLength() bool {
+	return len(r) > 0
+}
+
+func returns(r []Return) string {
+	if len(r) == 0 {
+		return ""
+	}
+	if len(r) == 1 {
+		return r[0].Type
+	}
+	result := "("
+	for i := range r {
+		result = result + r[i].Type
+		if i < len(r) {
+			result = result + ", "
+		}
+	}
+	result = result + ")"
+	return result
+}
+
+func (r Returns) WithPrefix(p string) string {
+	if len(r) == 0 {
+		return ""
+	}
+
+	rets := []string{}
+	for i := range r {
+		if p == "" {
+			rets = append(rets, unexport(r[i].Name))
+		} else {
+			rets = append(rets, p+unexport(r[i].Name))
+		}
+	}
+	return strings.Join(rets, ", ")
+}
+
+func (r Returns) AsArgs() string {
+	if len(r) == 0 {
+		return ""
+	}
+
+	rets := []string{}
+	for i := range r {
+		log.Println(r[i].Type)
+		rets = append(rets, r[i].Type)
+	}
+	return strings.Join(rets, ", ")
+}
+
+func (p Params) AsArgs() string {
+	if len(p) == 0 {
+		return ""
+	}
+
+	params := []string{}
+	for i := range p {
+		params = append(params, p[i].Type)
+	}
+	return strings.Join(params, ", ")
+}
+
+func (r Returns) AsNamedArgsWithTypes() string {
+	if len(r) == 0 {
+		return ""
+	}
+
+	rets := []string{}
+	for i := range r {
+		rets = append(rets, unexport(r[i].Name)+" "+r[i].Type)
+	}
+	return strings.Join(rets, ", ")
+}
+
+func (p Params) AsNamedArgsWithTypes() string {
+	if len(p) == 0 {
+		return ""
+	}
+
+	params := []string{}
+	for i := range p {
+		params = append(params, unexport(p[i].Name)+" "+p[i].Type)
+	}
+	return strings.Join(params, ", ")
+}
+
+func (r Returns) AsNamedArgs() string {
+	if len(r) == 0 {
+		return ""
+	}
+
+	rets := []string{}
+	for i := range r {
+		rets = append(rets, unexport(r[i].Name))
+	}
+	return strings.Join(rets, ", ")
+}
+
+func (p Params) AsNamedArgs() string {
+	if len(p) == 0 {
+		return ""
+	}
+
+	params := []string{}
+	for i := range p {
+		if p[i].IsVariadic {
+			params = append(params, unexport(p[i].Name)+"...")
+		} else {
+			params = append(params, unexport(p[i].Name))
+		}
+	}
+	return strings.Join(params, ", ")
+}
+
+func returnsNames(r []Return) string {
+	if len(r) == 0 {
+		return ""
+	}
+	rets := []string{}
+	for i := range r {
+		rets = append(rets, unexport(r[i].Name))
+	}
+	return strings.Join(rets, ", ")
+}
+
+func unexport(s string) string {
+	if s == "" {
+		return ""
+	}
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToLower(r)) + s[n:]
+}
+
+var funcs template.FuncMap = template.FuncMap{
+	"ToLower":      strings.ToLower,
+	"UnExport":     unexport,
+	"Returns":      returns,
+	"ReturnsNames": returnsNames,
+}
+
+func (f *Fake) LoadPackages(packagePath string) error {
+	p, err := packages.Load(&packages.Config{
+		Mode: packages.LoadSyntax,
+	}, packagePath)
 	if err != nil {
-		return "", err
+		return err
 	}
-
-	code, err := imports.Process(tempProcessFilename(), buf.Bytes(), nil)
-	return commentLine() + prettifyCode(string(code)), err
+	f.Packages = p
+	return nil
 }
 
-func (gen CodeGenerator) isExportedInterface() bool {
-	return ast.IsExported(gen.Model.Name)
-}
-
-// The anatomy of a generated fake
-// FIXME: These would be good to break into separate builders
-//        (they could be individually unit tested, and this would just delegate)
-/*
-  imports
-  type MySpecialFake struct {}
-  MyMethod()
-  MyMethodCallCount()
-  MyMethodArgsForCall()
-  Invocations -> map[string][][]interface{}
-  recordInvocation(string, []interface{})
-  var _ fixtures.SomeInterface = new(MySpecialFake)
-*/
-
-func (gen CodeGenerator) buildASTForFake() ast.Node {
-	gen.packageAlias = map[string]string{}
-
-	declarations := []ast.Decl{}
-	declarations = append(declarations, gen.imports())
-	gen.fixup()
-
-	declarations = append(declarations, gen.fakeStructDeclaration())
-
-	for _, m := range gen.Model.Methods {
-		methodType := m.Field.Type.(*ast.FuncType)
-
-		declarations = append(
-			declarations,
-			gen.stubbedMethodImplementation(m.Field),
-			gen.methodCallCountGetter(m.Field),
-		)
-
-		if methodType.Params.NumFields() > 0 {
-			declarations = append(
-				declarations,
-				gen.methodCallArgsGetter(m.Field),
-			)
-		}
-
-		if methodType.Results.NumFields() > 0 {
-			declarations = append(
-				declarations,
-				gen.methodReturnsSetter(m.Field),
-				gen.methodReturnsOnCallSetter(m.Field),
-			)
-		}
-	}
-
-	declarations = append(declarations, gen.recordedInvocationsMethod())
-	declarations = append(declarations, gen.recordInvocationMethod())
-
-	if gen.isExportedInterface() {
-		declarations = append(
-			declarations,
-			gen.ensureInterfaceIsUsed(),
-		)
-	}
-
-	return &ast.File{
-		Name:  &ast.Ident{Name: gen.PackageName},
-		Decls: declarations,
-	}
-}
-
-func (gen CodeGenerator) imports() ast.Decl {
-	specs := []ast.Spec{}
-	allImports := map[string]bool{}
-	dotImports := map[string]bool{}
-	aliasImportNames := map[string]string{}
-
-	modelImportName := strconv.Quote(gen.Model.ImportPath)
-	allImports[modelImportName] = true
-
-	syncImportName := strconv.Quote("sync")
-	allImports[syncImportName] = true
-	gen.packageAlias[syncImportName] = "sync"
-
-	for _, m := range gen.Model.Methods {
-		for packageName, importSpec := range m.Imports {
-			if packageName == "." {
-				dotImports[importSpec.Name.Name] = true
-				gen.packageAlias[importSpec.Path.Value] = "."
-			}
-
-			allImports[importSpec.Path.Value] = true
-
-			var importAlias = ""
-			if importSpec.Name != nil && importSpec.Name.Name != "xyz123" {
-				importAlias = importSpec.Name.Name
-			}
-			aliasImportNames[importSpec.Path.Value] = importAlias
-		}
-	}
-
-	aliases := map[string]bool{}
-	aliases[gen.Model.PackageName] = true
-	gen.packageAlias[modelImportName] = gen.Model.PackageName
-	for importName := range allImports {
-		if _, found := gen.packageAlias[importName]; found {
+func (f *Fake) FindPackageWithInterface() error {
+	var iface *types.TypeName
+	var pkg *packages.Package
+	for i := range f.Packages {
+		if f.Packages[i].Types == nil || f.Packages[i].Types.Scope() == nil {
 			continue
 		}
+		pkg = f.Packages[i]
 
-		alias := aliasImportNames[importName]
-		if alias == "" {
-			alias = gen.generateAlias(importName, aliases)
-			if alias == "" {
-				panic("could not generate an alias for " + importName)
+		raw := pkg.Types.Scope().Lookup(f.InterfaceName)
+		if raw != nil {
+			if typeName, ok := raw.(*types.TypeName); ok {
+				iface = typeName
+				break
 			}
 		}
-		aliases[alias] = true
-		gen.packageAlias[importName] = alias
 	}
-
-	for importName, alias := range gen.packageAlias {
-		var name *ast.Ident
-		if !strings.HasSuffix(importName[:len(importName)-1], alias) {
-			name = &ast.Ident{Name: alias}
-		}
-		specs = append(specs, &ast.ImportSpec{
-			Name: name,
-			Path: &ast.BasicLit{
-				Kind:  token.STRING,
-				Value: strings.Replace(importName, "\\", "/", -1),
-			},
-		})
+	if pkg == nil || iface == nil {
+		return fmt.Errorf("cannot find package with interface %s", f.InterfaceName)
 	}
-
-	return &ast.GenDecl{
-		Lparen: 1,
-		Tok:    token.IMPORT,
-		Specs:  specs,
-	}
+	f.Interface = iface
+	f.Package = pkg
+	f.InterfaceName = iface.Name()
+	f.InterfacePackage = pkg.PkgPath
+	f.InterfaceAlias = pkg.Name
+	f.AddImport(pkg.Name, pkg.PkgPath)
+	return nil
 }
 
-var identifierRegex = regexp.MustCompile(`[^[:alnum:]]`)
-
-func (gen CodeGenerator) generateAlias(importName string, aliases map[string]bool) string {
-	unquoted, err := strconv.Unquote(importName)
-	if err != nil {
-		panic("cannot generate alias for " + importName)
+func NewFake(interfaceName string, packagePath string, fakeName string, destinationPackage string) (*Fake, error) {
+	f := &Fake{
+		InterfaceName:      interfaceName,
+		InterfacePackage:   packagePath,
+		Name:               fakeName,
+		DestinationPackage: destinationPackage,
+		Imports: []Import{
+			Import{
+				Alias: "sync",
+				Path:  "sync",
+			},
+		},
 	}
 
-	paths := strings.Split(unquoted, "/")
-	alias := ""
-	for i := len(paths) - 1; i >= 0; i-- {
-		safePath := identifierRegex.ReplaceAllString(paths[i], "_")
+	err := f.LoadPackages(packagePath)
+	if err != nil {
+		return nil, err
+	}
 
-		alias = alias + safePath
+	err = f.FindPackageWithInterface()
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
 
-		if aliases[alias] == false {
-			return alias
+func (f *Fake) Generate(runImports bool) ([]byte, error) {
+	log.Printf("Writing fake %s for interface %s in package %s\n", f.Name, f.InterfaceName, f.DestinationPackage)
+	methods := typeutil.IntuitiveMethodSet(f.Interface.Type(), nil)
+	for i := range methods {
+		sig := methods[i].Type().(*types.Signature)
+		log.Printf("Preparing method %s...", methods[i].String())
+		for i := 0; i < sig.Results().Len(); i++ {
+			ret := sig.Results().At(i)
+			f.AddImportsFor(ret.Type())
 		}
+		for i := 0; i < sig.Params().Len(); i++ {
+			param := sig.Params().At(i)
+			f.AddImportsFor(param.Type())
+		}
+	}
+
+	importsMap := f.importsMap()
+	for i := range methods {
+		sig := methods[i].Type().(*types.Signature)
+		fun := methods[i].Obj().(*types.Func)
+		params := []Param{}
+		for i := 0; i < sig.Params().Len(); i++ {
+			param := sig.Params().At(i)
+			isVariadic := i == sig.Params().Len()-1 && sig.Variadic()
+			typ := TypeFor(param.Type(), importsMap)
+			if isVariadic {
+				typ = "..." + typ[2:] // Change []string to ...string
+			}
+			p := Param{
+				Name:       fmt.Sprintf("arg%v", i+1),
+				Type:       typ,
+				IsVariadic: isVariadic,
+			}
+			params = append(params, p)
+		}
+		returns := []Return{}
+		for i := 0; i < sig.Results().Len(); i++ {
+			ret := sig.Results().At(i)
+			r := Return{
+				Name: fmt.Sprintf("result%v", i+1),
+				Type: TypeFor(ret.Type(), importsMap),
+			}
+			returns = append(returns, r)
+		}
+		method := Method{
+			FakeName: f.Name,
+			Name:     fun.Name(),
+			Returns:  returns,
+			Params:   params,
+		}
+		f.Methods = append(f.Methods, method)
+	}
+
+	// Generate the template
+	tmpl := template.Must(template.New("fake").Funcs(funcs).Parse(fakeTemplate))
+	b := &bytes.Buffer{}
+	tmpl.Execute(b, f)
+	if runImports {
+		return imports.Process("counterfeiter_temp_process_file", b.Bytes(), nil)
+	}
+	return b.Bytes(), nil
+}
+
+func TypeFor(typ types.Type, importsMap map[string]Import) string {
+	if typ == nil {
+		return ""
+	}
+	log.Println(reflect.TypeOf(typ))
+	switch t := typ.(type) {
+	case *types.Slice:
+		return "[]" + TypeFor(t.Elem(), importsMap)
+	case *types.Array:
+		return fmt.Sprintf("[%v]%s", t.Len(), TypeFor(t.Elem(), importsMap))
+	case *types.Pointer:
+		return "*" + TypeFor(t.Elem(), importsMap)
+	case *types.Map:
+		return "map[" + TypeFor(t.Key(), importsMap) + "]" + TypeFor(t.Elem(), importsMap)
+	case *types.Chan:
+		switch t.Dir() {
+		case types.SendRecv:
+			return "chan " + TypeFor(t.Elem(), importsMap)
+		case types.SendOnly:
+			return "chan<- " + TypeFor(t.Elem(), importsMap)
+		case types.RecvOnly:
+			return "<-chan " + TypeFor(t.Elem(), importsMap)
+		}
+
+	case *types.Basic:
+		return t.Name()
+	case *types.Named:
+		if t.Obj() == nil {
+			log.Println(t.String())
+			return ""
+		}
+		if t.Obj().Pkg() == nil {
+			return t.Obj().Name()
+		}
+		imp := importsMap[t.Obj().Pkg().Path()]
+		if imp.Path == "" {
+			return t.Obj().Name()
+		}
+
+		return imp.Alias + "." + t.Obj().Name()
 	}
 
 	return ""
 }
 
-func (gen CodeGenerator) fixup() {
-	for _, m := range gen.Model.Methods {
-		typ := m.Field.Type.(*ast.FuncType)
-		astutil.InjectAlias(typ, m.Imports, gen.packageAlias)
+// AddImportsFor inspects the given type and adds imports to the fake if importable
+// types are found.
+func (f *Fake) AddImportsFor(typ types.Type) {
+	if typ == nil {
+		return
 	}
-}
 
-func (gen CodeGenerator) fakeStructDeclaration() ast.Decl {
-	structFields := []*ast.Field{}
-
-	for _, m := range gen.Model.Methods {
-		methodType := m.Field.Type.(*ast.FuncType)
-
-		structFields = append(
-			structFields,
-
-			&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent(gen.methodStubFuncName(m.Field))},
-				Type:  m.Field.Type,
-			},
-
-			&ast.Field{
-				Type: &ast.SelectorExpr{
-					X:   ast.NewIdent("sync"),
-					Sel: ast.NewIdent("RWMutex"),
-				},
-				Names: []*ast.Ident{ast.NewIdent(gen.mutexFieldName(m.Field))},
-			},
-
-			&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent(gen.callArgsFieldName(m.Field))},
-				Type: &ast.ArrayType{
-					Elt: argsStructTypeForMethod(methodType),
-				},
-			},
-		)
-
-		if methodType.Results.NumFields() > 0 {
-			structFields = append(
-				structFields,
-				&ast.Field{
-					Names: []*ast.Ident{ast.NewIdent(gen.returnStructFieldName(m.Field))},
-					Type:  returnStructTypeForMethod(methodType),
-				},
-				&ast.Field{
-					Names: []*ast.Ident{ast.NewIdent(gen.returnMapFieldName(m.Field))},
-					Type:  returnMapTypeForMethod(methodType),
-				},
-			)
+	log.Println(reflect.TypeOf(typ))
+	switch t := typ.(type) {
+	case *types.Basic:
+		return
+	case *types.Pointer:
+		f.AddImportsFor(t.Elem())
+	case *types.Map:
+		f.AddImportsFor(t.Key())
+		f.AddImportsFor(t.Elem())
+	case *types.Chan:
+		f.AddImportsFor(t.Elem())
+	case *types.Named:
+		if t.Obj() != nil && t.Obj().Pkg() != nil {
+			f.AddImport(t.Obj().Pkg().Name(), t.Obj().Pkg().Path())
 		}
-	}
-
-	// include list of invocations
-	structFields = append(structFields, &ast.Field{
-		Names: []*ast.Ident{ast.NewIdent("invocations")},
-		Type: &ast.MapType{
-			Key:   ast.NewIdent("string"),
-			Value: ast.NewIdent("[][]interface{}"),
-		},
-	})
-	// and mutex for recording invocations
-	structFields = append(structFields, &ast.Field{
-		Names: []*ast.Ident{ast.NewIdent("invocationsMutex")},
-		Type: &ast.SelectorExpr{
-			X:   ast.NewIdent("sync"),
-			Sel: ast.NewIdent("RWMutex"),
-		},
-	})
-
-	return &ast.GenDecl{
-		Tok: token.TYPE,
-		Specs: []ast.Spec{
-			&ast.TypeSpec{
-				Name: &ast.Ident{Name: gen.StructName},
-				Type: &ast.StructType{
-					Fields: &ast.FieldList{List: structFields},
-				},
-			},
-		},
+	case *types.Slice:
+		f.AddImportsFor(t.Elem())
+	case *types.Array:
+		f.AddImportsFor(t.Elem())
+	default:
+		log.Printf("!!! WARNING: Missing case for type %s\n", reflect.TypeOf(typ).String())
 	}
 }
 
-func (gen CodeGenerator) stubbedMethodImplementation(method *ast.Field) *ast.FuncDecl {
-	methodType := method.Type.(*ast.FuncType)
+const fakeTemplate string = `// Code generated by counterfeiter. DO NOT EDIT.
+package {{.DestinationPackage}}
 
-	stubFunc := &ast.SelectorExpr{
-		X:   receiverIdent(),
-		Sel: ast.NewIdent(gen.methodStubFuncName(method)),
+import (
+	{{range .Imports}}{{.Alias}} "{{.Path}}"
+	{{end}}
+)
+
+type {{.Name}} struct {
+	{{range .Methods}}{{.Name}}Stub func({{.Params.AsArgs}}) {{Returns .Returns}}
+	{{UnExport .Name}}Mutex sync.RWMutex
+	{{UnExport .Name}}ArgsForCall []struct{}
+	{{if .Returns.HasLength}}{{UnExport .Name}}Returns struct{
+		{{range .Returns}}{{UnExport .Name}} {{.Type}}
+		{{end}}
 	}
+	{{UnExport .Name}}ReturnsOnCall map[int]struct{
+		{{range .Returns}}{{UnExport .Name}} {{.Type}}
+		{{end}}
+	}{{end}}
+	{{end}}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
+}{{range .Methods}}
 
-	paramValuesToRecord := []ast.Expr{}
-	paramValuesToPassToStub := []ast.Expr{}
-	paramFields := []*ast.Field{}
-	var ellipsisPos token.Pos
-	var bodyStatements []ast.Stmt
+func (fake *{{.FakeName}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{Returns .Returns}} {
+	fake.{{UnExport .Name}}Mutex.Lock()
+	{{if .Returns.HasLength}}ret, specificReturn := fake.{{UnExport .Name}}ReturnsOnCall[len(fake.{{UnExport .Name}}ArgsForCall)]
+	{{end}}fake.{{UnExport .Name}}ArgsForCall = append(fake.{{UnExport .Name}}ArgsForCall, struct{}{})
+	fake.recordInvocation("{{.Name}}", []interface{}{})
+	fake.{{UnExport .Name}}Mutex.Unlock()
+	if fake.{{.Name}}Stub != nil {
+		{{if .Returns.HasLength}}return fake.{{.Name}}Stub({{.Params.AsNamedArgs}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgs}}){{end}}
+	}{{if .Returns.HasLength}}
+	if specificReturn {
+		return {{.Returns.WithPrefix "ret."}}
+	}
+	fakeReturns := fake.{{UnExport .Name}}Returns
+	return {{.Returns.WithPrefix "fakeReturns."}}{{end}}
+}
 
-	eachMethodParam(methodType, func(name string, t ast.Expr, i int) {
-		paramFields = append(paramFields, &ast.Field{
-			Names: []*ast.Ident{ast.NewIdent(name)},
-			Type:  t,
+func (fake *{{.FakeName}}) {{.Name}}CallCount() int {
+	fake.{{UnExport .Name}}Mutex.RLock()
+	defer fake.{{UnExport .Name}}Mutex.RUnlock()
+	return len(fake.{{UnExport .Name}}ArgsForCall)
+}
+
+{{if .Returns.HasLength}}func (fake *{{.FakeName}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
+	fake.{{.Name}}Stub = nil
+	fake.{{UnExport .Name}}Returns = struct {
+		{{range .Returns}}{{UnExport .Name}} {{.Type}}
+		{{end}}
+	}{ {{- .Returns.AsNamedArgs -}} }
+}
+
+func (fake *{{.FakeName}}) {{.Name}}ReturnsOnCall(i int, {{.Returns.AsNamedArgsWithTypes}}) {
+	fake.{{.Name}}Stub = nil
+	if fake.{{UnExport .Name}}ReturnsOnCall == nil {
+		fake.{{UnExport .Name}}ReturnsOnCall = make(map[int]struct {
+			{{range .Returns}}{{UnExport .Name}} {{.Type}}
+			{{end}}
 		})
-
-		if _, ok := t.(*ast.Ellipsis); ok {
-			ellipsisPos = token.Pos(i + 1)
-		}
-
-		if tArray, ok := t.(*ast.ArrayType); ok && tArray.Len == nil {
-			copyName := name + "Copy"
-			bodyStatements = append(bodyStatements,
-				&ast.DeclStmt{
-					Decl: &ast.GenDecl{
-						Tok: token.VAR,
-						Specs: []ast.Spec{
-							&ast.ValueSpec{
-								Names: []*ast.Ident{ast.NewIdent(copyName)},
-								Type:  t,
-							},
-						},
-					},
-				},
-				&ast.IfStmt{
-					Cond: invertNilCheck(ast.NewIdent(name)),
-					Body: &ast.BlockStmt{List: []ast.Stmt{
-						&ast.AssignStmt{
-							Tok: token.ASSIGN,
-							Lhs: []ast.Expr{
-								ast.NewIdent(copyName),
-							},
-							Rhs: []ast.Expr{
-								&ast.CallExpr{
-									Fun: ast.NewIdent("make"),
-									Args: []ast.Expr{
-										t,
-										&ast.CallExpr{
-											Fun:  ast.NewIdent("len"),
-											Args: []ast.Expr{ast.NewIdent(name)},
-										},
-									},
-								},
-							},
-						},
-						&ast.ExprStmt{
-							X: &ast.CallExpr{
-								Fun: ast.NewIdent("copy"),
-								Args: []ast.Expr{
-									ast.NewIdent(copyName),
-									ast.NewIdent(name),
-								},
-							},
-						},
-					}},
-				})
-			paramValuesToRecord = append(paramValuesToRecord, ast.NewIdent(copyName))
-		} else {
-			paramValuesToRecord = append(paramValuesToRecord, ast.NewIdent(name))
-		}
-		paramValuesToPassToStub = append(paramValuesToPassToStub, ast.NewIdent(name))
-	})
-
-	stubFuncCall := &ast.CallExpr{
-		Fun:      stubFunc,
-		Args:     paramValuesToPassToStub,
-		Ellipsis: ellipsisPos,
 	}
+	fake.{{UnExport .Name}}ReturnsOnCall[i] = struct {
+		{{range .Returns}}{{UnExport .Name}} {{.Type}}
+		{{end}}
+	}{ {{- .Returns.AsNamedArgs -}} }
+}{{end}}
 
-	var lastStatements []ast.Stmt
-	if methodType.Results.NumFields() > 0 {
-		returnValues := []ast.Expr{}
-		specificReturnValues := []ast.Expr{}
-		eachMethodResult(methodType, func(name string, t ast.Expr) {
-			returnValues = append(returnValues, &ast.SelectorExpr{
-				X: &ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent(gen.returnStructFieldName(method)),
-				},
-				Sel: ast.NewIdent(name),
-			})
-			specificReturnValues = append(specificReturnValues, &ast.SelectorExpr{
-				X:   ast.NewIdent("ret"),
-				Sel: ast.NewIdent(name),
-			})
-		})
-
-		lastStatements = []ast.Stmt{
-			&ast.IfStmt{
-				Cond: invertNilCheck(stubFunc),
-				Body: &ast.BlockStmt{List: []ast.Stmt{
-					&ast.ReturnStmt{Results: []ast.Expr{stubFuncCall}},
-				}},
-			},
-			&ast.IfStmt{
-				Cond: ast.NewIdent("specificReturn"),
-				Body: &ast.BlockStmt{List: []ast.Stmt{
-					&ast.ReturnStmt{Results: specificReturnValues},
-				}},
-			},
-			&ast.ReturnStmt{Results: returnValues},
-		}
-	} else {
-		lastStatements = []ast.Stmt{&ast.IfStmt{
-			Cond: invertNilCheck(stubFunc),
-			Body: &ast.BlockStmt{List: []ast.Stmt{
-				&ast.ExprStmt{X: stubFuncCall},
-			}},
-		}}
+{{end}}func (fake *{{.Name}}) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	{{range .Methods}}fake.{{UnExport .Name}}Mutex.RLock()
+	defer fake.{{UnExport .Name}}Mutex.RUnlock()
+	{{end}}copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
 	}
-
-	bodyStatements = append(bodyStatements,
-		gen.callMutex(method, "Lock"),
-	)
-
-	if methodType.Results.NumFields() > 0 {
-		bodyStatements = append(bodyStatements,
-			&ast.AssignStmt{
-				Tok: token.DEFINE,
-				Lhs: []ast.Expr{
-					ast.NewIdent("ret"),
-					ast.NewIdent("specificReturn"),
-				},
-				Rhs: []ast.Expr{
-					&ast.IndexExpr{
-						X: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent(gen.returnMapFieldName(method)),
-						},
-						Index: &ast.CallExpr{
-							Fun: ast.NewIdent("len"),
-							Args: []ast.Expr{
-								&ast.SelectorExpr{
-									X:   receiverIdent(),
-									Sel: ast.NewIdent(gen.callArgsFieldName(method)),
-								},
-							},
-						},
-					},
-				},
-			},
-		)
-	}
-
-	bodyStatements = append(bodyStatements,
-		&ast.AssignStmt{
-			Tok: token.ASSIGN,
-			Lhs: []ast.Expr{&ast.SelectorExpr{
-				X:   receiverIdent(),
-				Sel: ast.NewIdent(gen.callArgsFieldName(method)),
-			}},
-			Rhs: []ast.Expr{&ast.CallExpr{
-				Fun: ast.NewIdent("append"),
-				Args: []ast.Expr{
-					&ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent(gen.callArgsFieldName(method)),
-					},
-					&ast.CompositeLit{
-						Type: argsStructTypeForMethod(methodType),
-						Elts: paramValuesToRecord,
-					},
-				},
-			}},
-		},
-
-		&ast.ExprStmt{
-			X: &ast.CallExpr{
-				Fun: &ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent("recordInvocation"),
-				},
-				Args: []ast.Expr{quotedMethodName(method), &ast.CompositeLit{
-					Type: ast.NewIdent("[]interface{}"),
-					Elts: paramValuesToRecord,
-				},
-				},
-			},
-		},
-
-		gen.callMutex(method, "Unlock"),
-	)
-
-	bodyStatements = append(bodyStatements, lastStatements...)
-
-	var methodName *ast.Ident
-	if gen.Model.RepresentedByInterface {
-		methodName = method.Names[0]
-	} else {
-		methodName = ast.NewIdent("Spy")
-	}
-
-	return &ast.FuncDecl{
-		Name: methodName,
-		Type: &ast.FuncType{
-			Params:  &ast.FieldList{List: paramFields},
-			Results: methodType.Results,
-		},
-		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: bodyStatements},
-	}
+	return copiedInvocations
 }
 
-func (gen CodeGenerator) methodCallCountGetter(method *ast.Field) *ast.FuncDecl {
-	return &ast.FuncDecl{
-		Name: ast.NewIdent(gen.callCountMethodName(method)),
-		Type: &ast.FuncType{
-			Results: &ast.FieldList{List: []*ast.Field{
-				&ast.Field{
-					Type: ast.NewIdent("int"),
-				},
-			}},
-		},
-		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			gen.callMutex(method, "RLock"),
-			gen.deferMutex(method, "RUnlock"),
-
-			&ast.ReturnStmt{
-				Results: []ast.Expr{
-					&ast.CallExpr{
-						Fun: ast.NewIdent("len"),
-						Args: []ast.Expr{
-							&ast.SelectorExpr{
-								X:   receiverIdent(),
-								Sel: ast.NewIdent(gen.callArgsFieldName(method)),
-							},
-						},
-					},
-				},
-			},
-		}},
+func (fake *{{.Name}}) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
+	if fake.invocations == nil {
+		fake.invocations = map[string][][]interface{}{}
 	}
-}
-
-func (gen CodeGenerator) methodCallArgsGetter(method *ast.Field) *ast.FuncDecl {
-	indexIdent := ast.NewIdent("i")
-	resultValues := []ast.Expr{}
-	resultTypes := []*ast.Field{}
-
-	eachMethodParam(method.Type.(*ast.FuncType), func(name string, t ast.Expr, _ int) {
-		resultValues = append(resultValues, &ast.SelectorExpr{
-			X: &ast.IndexExpr{
-				X: &ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent(gen.callArgsFieldName(method)),
-				},
-				Index: indexIdent,
-			},
-			Sel: ast.NewIdent(name),
-		})
-
-		resultTypes = append(resultTypes, &ast.Field{
-			Type: storedTypeForType(t),
-		})
-	})
-
-	return &ast.FuncDecl{
-		Name: ast.NewIdent(gen.callArgsMethodName(method)),
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{List: []*ast.Field{
-				&ast.Field{
-					Names: []*ast.Ident{indexIdent},
-					Type:  ast.NewIdent("int"),
-				},
-			}},
-			Results: &ast.FieldList{List: resultTypes},
-		},
-		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			gen.callMutex(method, "RLock"),
-			gen.deferMutex(method, "RUnlock"),
-			&ast.ReturnStmt{
-				Results: resultValues,
-			},
-		}},
+	if fake.invocations[key] == nil {
+		fake.invocations[key] = [][]interface{}{}
 	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-func (gen CodeGenerator) methodReturnsSetter(method *ast.Field) *ast.FuncDecl {
-	methodType := method.Type.(*ast.FuncType)
-
-	params := []*ast.Field{}
-	structFields := []ast.Expr{}
-	eachMethodResult(methodType, func(name string, t ast.Expr) {
-		params = append(params, &ast.Field{
-			Names: []*ast.Ident{ast.NewIdent(name)},
-			Type:  t,
-		})
-
-		structFields = append(structFields, ast.NewIdent(name))
-	})
-
-	return &ast.FuncDecl{
-		Name: ast.NewIdent(gen.returnSetterMethodName(method)),
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{List: params},
-		},
-		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.AssignStmt{
-				Tok: token.ASSIGN,
-				Lhs: []ast.Expr{
-					&ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent(gen.methodStubFuncName(method)),
-					},
-				},
-				Rhs: []ast.Expr{
-					&ast.BasicLit{
-						Kind:  token.STRING,
-						Value: "nil",
-					},
-				},
-			},
-			&ast.AssignStmt{
-				Tok: token.ASSIGN,
-				Lhs: []ast.Expr{
-					&ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent(gen.returnStructFieldName(method)),
-					},
-				},
-				Rhs: []ast.Expr{
-					&ast.CompositeLit{
-						Type: returnStructTypeForMethod(methodType),
-						Elts: structFields,
-					},
-				},
-			},
-		}},
-	}
-}
-
-func (gen CodeGenerator) methodReturnsOnCallSetter(method *ast.Field) *ast.FuncDecl {
-	methodType := method.Type.(*ast.FuncType)
-
-	params := []*ast.Field{}
-	structFields := []ast.Expr{}
-	eachMethodResult(methodType, func(name string, t ast.Expr) {
-		params = append(params, &ast.Field{
-			Names: []*ast.Ident{ast.NewIdent(name)},
-			Type:  t,
-		})
-
-		structFields = append(structFields, ast.NewIdent(name))
-	})
-
-	return &ast.FuncDecl{
-		Name: ast.NewIdent(gen.returnSetterOnCallMethodName(method)),
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{List: append([]*ast.Field{&ast.Field{
-				Names: []*ast.Ident{ast.NewIdent("i")},
-				Type:  ast.NewIdent("int"),
-			}}, params...)},
-		},
-		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.AssignStmt{
-				Tok: token.ASSIGN,
-				Lhs: []ast.Expr{
-					&ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent(gen.methodStubFuncName(method)),
-					},
-				},
-				Rhs: []ast.Expr{
-					&ast.BasicLit{
-						Kind:  token.STRING,
-						Value: "nil",
-					},
-				},
-			},
-			&ast.IfStmt{
-				Cond: nilCheck(&ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent(gen.returnMapFieldName(method)),
-				}),
-				Body: &ast.BlockStmt{List: []ast.Stmt{
-					&ast.AssignStmt{
-						Tok: token.ASSIGN,
-						Lhs: []ast.Expr{
-							&ast.SelectorExpr{
-								X:   receiverIdent(),
-								Sel: ast.NewIdent(gen.returnMapFieldName(method)),
-							},
-						},
-						Rhs: []ast.Expr{
-							&ast.CallExpr{
-								Fun: ast.NewIdent("make"),
-								Args: []ast.Expr{
-									&ast.MapType{
-										Key: ast.NewIdent("int"),
-										Value: &ast.StructType{
-											Fields: &ast.FieldList{
-												List: params,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}},
-			},
-			&ast.AssignStmt{
-				Tok: token.ASSIGN,
-				Lhs: []ast.Expr{
-					&ast.IndexExpr{
-						X: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent(gen.returnMapFieldName(method)),
-						},
-						Index: ast.NewIdent("i"),
-					},
-				},
-				Rhs: []ast.Expr{
-					&ast.CompositeLit{
-						Type: returnStructTypeForMethod(methodType),
-						Elts: structFields,
-					},
-				},
-			},
-		}},
-	}
-}
-
-func (gen CodeGenerator) recordedInvocationsMethod() *ast.FuncDecl {
-	funcNode := &ast.FuncDecl{
-		Name: ast.NewIdent("Invocations"),
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{},
-			Results: &ast.FieldList{
-				List: []*ast.Field{{
-					Type: ast.NewIdent("map[string][][]interface{}"),
-				}},
-			},
-		},
-		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{}},
-	}
-
-	acquireLocks := []ast.Stmt{
-		&ast.ExprStmt{
-			X: &ast.CallExpr{
-				Fun: &ast.SelectorExpr{
-					X: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("invocationsMutex"),
-					},
-					Sel: ast.NewIdent("RLock"),
-				},
-			},
-		},
-		&ast.DeferStmt{
-			Call: &ast.CallExpr{
-				Fun: &ast.SelectorExpr{
-					X: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("invocationsMutex"),
-					},
-					Sel: ast.NewIdent("RUnlock"),
-				},
-			},
-		},
-	}
-
-	for _, m := range gen.Model.Methods {
-		methodMutexFieldName := gen.mutexFieldName(m.Field)
-		lockStmt := &ast.ExprStmt{
-			X: &ast.CallExpr{
-				Fun: &ast.SelectorExpr{
-					X: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent(methodMutexFieldName),
-					},
-					Sel: ast.NewIdent("RLock"),
-				},
-			},
-		}
-		unlockStmt := &ast.DeferStmt{
-			Call: &ast.CallExpr{
-				Fun: &ast.SelectorExpr{
-					X: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent(methodMutexFieldName),
-					},
-					Sel: ast.NewIdent("RUnlock"),
-				},
-			},
-		}
-
-		acquireLocks = append(acquireLocks, lockStmt)
-		acquireLocks = append(acquireLocks, unlockStmt)
-	}
-
-	// create copied invocations
-	createCopy := &ast.AssignStmt{
-		Tok: token.DEFINE,
-		Lhs: []ast.Expr{
-			ast.NewIdent("copiedInvocations"),
-		},
-		Rhs: []ast.Expr{ast.NewIdent("map[string][][]interface{}{}")},
-	}
-
-	// iterate over fake.invocations
-	iterateKeysCopyingValues := &ast.RangeStmt{
-		Tok:   token.DEFINE,
-		Key:   ast.NewIdent("key"),
-		Value: ast.NewIdent("value"),
-		X: &ast.SelectorExpr{
-			X:   receiverIdent(),
-			Sel: ast.NewIdent("invocations"),
-		},
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.AssignStmt{
-					Tok: token.ASSIGN,
-					Lhs: []ast.Expr{&ast.IndexExpr{
-						X:     ast.NewIdent("copiedInvocations"),
-						Index: ast.NewIdent("key"),
-					}},
-					Rhs: []ast.Expr{ast.NewIdent("value")},
-				},
-			},
-		},
-	}
-
-	// return the copied invocations map
-	returnCopy := &ast.ReturnStmt{
-		Results: []ast.Expr{
-			ast.NewIdent("copiedInvocations"),
-		},
-	}
-
-	funcNode.Body.List = append(
-		acquireLocks,
-		createCopy,
-		iterateKeysCopyingValues,
-		returnCopy,
-	)
-	return funcNode
-}
-
-func (gen CodeGenerator) recordInvocationMethod() *ast.FuncDecl {
-	return &ast.FuncDecl{
-		Name: ast.NewIdent("recordInvocation"),
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{
-				List: []*ast.Field{{
-					Names: []*ast.Ident{ast.NewIdent("key")},
-					Type:  ast.NewIdent("string"),
-				},
-					{
-						Names: []*ast.Ident{ast.NewIdent("args")},
-						Type:  ast.NewIdent("[]interface{}"),
-					}},
-			},
-			Results: &ast.FieldList{},
-		},
-		Recv: gen.receiverFieldList(),
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.ExprStmt{
-				X: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("invocationsMutex"),
-						},
-						Sel: ast.NewIdent("Lock"),
-					},
-				},
-			},
-			&ast.DeferStmt{
-				Call: &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X: &ast.SelectorExpr{
-							X:   receiverIdent(),
-							Sel: ast.NewIdent("invocationsMutex"),
-						},
-						Sel: ast.NewIdent("Unlock"),
-					},
-				},
-			},
-			&ast.IfStmt{
-				Cond: nilCheck(&ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent("invocations"),
-				}),
-				Body: &ast.BlockStmt{
-					List: []ast.Stmt{
-						&ast.AssignStmt{
-							Tok: token.ASSIGN,
-							Lhs: []ast.Expr{&ast.SelectorExpr{
-								X:   receiverIdent(),
-								Sel: ast.NewIdent("invocations"),
-							}},
-							Rhs: []ast.Expr{ast.NewIdent("map[string][][]interface{}{}")},
-						},
-					},
-				},
-			},
-
-			&ast.IfStmt{
-				Cond: nilCheck(&ast.IndexExpr{
-					X: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("invocations"),
-					},
-					Index: ast.NewIdent("key"),
-				}),
-				Body: &ast.BlockStmt{
-					List: []ast.Stmt{
-						&ast.AssignStmt{
-							Tok: token.ASSIGN,
-							Lhs: []ast.Expr{&ast.IndexExpr{
-								X: &ast.SelectorExpr{
-									X:   receiverIdent(),
-									Sel: ast.NewIdent("invocations"),
-								},
-								Index: ast.NewIdent("key"),
-							}},
-							Rhs: []ast.Expr{ast.NewIdent("[][]interface{}{}")},
-						},
-					},
-				},
-			},
-
-			&ast.AssignStmt{
-				Tok: token.ASSIGN,
-				Lhs: []ast.Expr{&ast.IndexExpr{
-					X: &ast.SelectorExpr{
-						X:   receiverIdent(),
-						Sel: ast.NewIdent("invocations"),
-					},
-					Index: ast.NewIdent("key"),
-				}},
-				Rhs: []ast.Expr{&ast.CallExpr{
-					Fun: ast.NewIdent("append"),
-					Args: []ast.Expr{
-						&ast.IndexExpr{
-							X: &ast.SelectorExpr{
-								X:   receiverIdent(),
-								Sel: ast.NewIdent("invocations"),
-							},
-							Index: ast.NewIdent("key"),
-						},
-						ast.NewIdent("args"),
-					},
-				}},
-			},
-		}},
-	}
-}
-
-func (gen CodeGenerator) receiverFieldList() *ast.FieldList {
-	return &ast.FieldList{
-		List: []*ast.Field{
-			{
-				Names: []*ast.Ident{receiverIdent()},
-				Type:  &ast.StarExpr{X: ast.NewIdent(gen.StructName)},
-			},
-		},
-	}
-}
-
-func (gen CodeGenerator) ensureInterfaceIsUsed() *ast.GenDecl {
-	packageName := gen.packageAlias[strconv.Quote(gen.Model.ImportPath)]
-	if gen.Model.RepresentedByInterface {
-		return &ast.GenDecl{
-			Tok: token.VAR,
-			Specs: []ast.Spec{
-				&ast.ValueSpec{
-					Names: []*ast.Ident{ast.NewIdent("_")},
-					Type: &ast.SelectorExpr{
-						X:   ast.NewIdent(packageName),
-						Sel: ast.NewIdent(gen.Model.Name),
-					},
-					Values: []ast.Expr{
-						&ast.CallExpr{
-							Fun:  ast.NewIdent("new"),
-							Args: []ast.Expr{ast.NewIdent(gen.StructName)},
-						},
-					},
-				},
-			},
-		}
-	}
-
-	return &ast.GenDecl{
-		Tok: token.VAR,
-		Specs: []ast.Spec{
-			&ast.ValueSpec{
-				Names: []*ast.Ident{ast.NewIdent("_")},
-				Type: &ast.SelectorExpr{
-					X:   ast.NewIdent(packageName),
-					Sel: ast.NewIdent(gen.Model.Name),
-				},
-				Values: []ast.Expr{
-					&ast.SelectorExpr{
-						Sel: ast.NewIdent("Spy"),
-						X: &ast.CallExpr{
-							Fun:  ast.NewIdent("new"),
-							Args: []ast.Expr{ast.NewIdent(gen.StructName)},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func eachMethodParam(methodType *ast.FuncType, cb func(string, ast.Expr, int)) {
-	i := 0
-	for _, field := range methodType.Params.List {
-		if len(field.Names) == 0 {
-			cb(fmt.Sprintf("arg%d", i+1), field.Type, i)
-			i++
-		} else {
-			for _, name := range field.Names {
-				cb(name.Name, field.Type, i)
-				i++
-			}
-		}
-	}
-}
-
-func eachMethodResult(methodType *ast.FuncType, cb func(string, ast.Expr)) {
-	i := 1
-	for _, field := range methodType.Results.List {
-		if len(field.Names) == 0 {
-			cb(fmt.Sprintf("result%d", i), field.Type)
-			i++
-		} else {
-			for _ = range field.Names {
-				cb(fmt.Sprintf("result%d", i), field.Type)
-				i++
-			}
-		}
-	}
-}
-
-func argsStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
-	fields := []*ast.Field{}
-
-	eachMethodParam(methodType, func(name string, t ast.Expr, _ int) {
-		fields = append(fields, &ast.Field{
-			Type:  storedTypeForType(t),
-			Names: []*ast.Ident{ast.NewIdent(name)},
-		})
-	})
-
-	return &ast.StructType{
-		Fields: &ast.FieldList{List: fields},
-	}
-}
-
-func returnStructTypeForMethod(methodType *ast.FuncType) *ast.StructType {
-	resultFields := []*ast.Field{}
-	eachMethodResult(methodType, func(name string, t ast.Expr) {
-		resultFields = append(resultFields, &ast.Field{
-			Type:  t,
-			Names: []*ast.Ident{ast.NewIdent(name)},
-		})
-	})
-
-	return &ast.StructType{
-		Fields: &ast.FieldList{List: resultFields},
-	}
-}
-
-func returnMapTypeForMethod(methodType *ast.FuncType) *ast.MapType {
-	resultFields := []*ast.Field{}
-	eachMethodResult(methodType, func(name string, t ast.Expr) {
-		resultFields = append(resultFields, &ast.Field{
-			Type:  t,
-			Names: []*ast.Ident{ast.NewIdent(name)},
-		})
-	})
-
-	return &ast.MapType{
-		Key: ast.NewIdent("int"),
-		Value: &ast.StructType{
-			Fields: &ast.FieldList{
-				List: resultFields,
-			},
-		},
-	}
-}
-
-func storedTypeForType(t ast.Expr) ast.Expr {
-	if ellipsis, ok := t.(*ast.Ellipsis); ok {
-		return &ast.ArrayType{Elt: ellipsis.Elt}
-	} else {
-		return t
-	}
-}
-
-func (gen CodeGenerator) callCountMethodName(method *ast.Field) string {
-	if gen.Model.RepresentedByInterface {
-		return method.Names[0].Name + "CallCount"
-	} else {
-		return "CallCount"
-	}
-}
-
-func (gen CodeGenerator) callArgsMethodName(method *ast.Field) string {
-	if gen.Model.RepresentedByInterface {
-		return method.Names[0].Name + "ArgsForCall"
-	} else {
-		return "ArgsForCall"
-	}
-}
-
-func (gen CodeGenerator) callArgsFieldName(method *ast.Field) string {
-	return privatize(gen.callArgsMethodName(method))
-}
-
-func (gen CodeGenerator) mutexFieldName(method *ast.Field) string {
-	if gen.Model.RepresentedByInterface {
-		return privatize(method.Names[0].Name) + "Mutex"
-	} else {
-		return "mutex"
-	}
-}
-
-func (gen CodeGenerator) methodStubFuncName(method *ast.Field) string {
-	if gen.Model.RepresentedByInterface {
-		return method.Names[0].Name + "Stub"
-	} else {
-		return "Stub"
-	}
-}
-
-func (gen CodeGenerator) returnSetterMethodName(method *ast.Field) string {
-	if gen.Model.RepresentedByInterface {
-		return method.Names[0].Name + "Returns"
-	} else {
-		return "Returns"
-	}
-}
-
-func (gen CodeGenerator) returnSetterOnCallMethodName(method *ast.Field) string {
-	if gen.Model.RepresentedByInterface {
-		return method.Names[0].Name + "ReturnsOnCall"
-	} else {
-		return "ReturnsOnCall"
-	}
-}
-
-func (gen CodeGenerator) returnMapFieldName(method *ast.Field) string {
-	return privatize(gen.returnSetterOnCallMethodName(method))
-}
-
-func (gen CodeGenerator) returnStructFieldName(method *ast.Field) string {
-	return privatize(gen.returnSetterMethodName(method))
-}
-
-func receiverIdent() *ast.Ident {
-	return ast.NewIdent("fake")
-}
-
-func (gen CodeGenerator) callMutex(method *ast.Field, verb string) ast.Stmt {
-	return &ast.ExprStmt{
-		X: &ast.CallExpr{
-			Fun: &ast.SelectorExpr{
-				X: &ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent(gen.mutexFieldName(method)),
-				},
-				Sel: ast.NewIdent(verb),
-			},
-		},
-	}
-}
-
-func (gen CodeGenerator) deferMutex(method *ast.Field, verb string) ast.Stmt {
-	return &ast.DeferStmt{
-		Call: &ast.CallExpr{
-			Fun: &ast.SelectorExpr{
-				X: &ast.SelectorExpr{
-					X:   receiverIdent(),
-					Sel: ast.NewIdent(gen.mutexFieldName(method)),
-				},
-				Sel: ast.NewIdent(verb),
-			},
-		},
-	}
-}
-
-func publicize(input string) string {
-	return strings.ToUpper(input[0:1]) + input[1:]
-}
-
-func privatize(input string) string {
-	return strings.ToLower(input[0:1]) + input[1:]
-}
-
-func invertNilCheck(x ast.Expr) ast.Expr {
-	return &ast.BinaryExpr{
-		X:  x,
-		Op: token.NEQ,
-		Y: &ast.BasicLit{
-			Kind:  token.STRING,
-			Value: "nil",
-		},
-	}
-}
-
-func nilCheck(x ast.Expr) ast.Expr {
-	return &ast.BinaryExpr{
-		X:  x,
-		Op: token.EQL,
-		Y: &ast.BasicLit{
-			Kind:  token.STRING,
-			Value: "nil",
-		},
-	}
-}
-
-func quotedMethodName(method *ast.Field) *ast.Ident {
-	return ast.NewIdent(`"` + method.Names[0].Name + `"`)
-}
-
-func commentLine() string {
-	return "// Code generated by counterfeiter. DO NOT EDIT.\n"
-}
-
-func prettifyCode(code string) string {
-	code = funcRegexp.ReplaceAllString(code, "\n\nfunc")
-	code = emptyStructRegexp.ReplaceAllString(code, "struct{}")
-	code = strings.Replace(code, "\n\n\n", "\n\n", -1)
-	return code
-}
-
-var funcRegexp = regexp.MustCompile("\nfunc")
-var emptyStructRegexp = regexp.MustCompile("struct[\\s]+{[\\s]+}")
+var _ {{.InterfaceAlias}}.{{.InterfaceName}} = new({{.Name}})
+`

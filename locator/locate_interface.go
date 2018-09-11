@@ -1,7 +1,7 @@
 package locator
 
 import (
-	"errors"
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -11,56 +11,28 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/model"
 	goast "golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
-	"golang.org/x/tools/go/types/typeutil"
 )
-
-func methodsForInterface2(
-	iface types.Object,
-	importPath string,
-	pkg *packages.Package,
-	importSpecs map[string]*ast.ImportSpec,
-	knownTypes map[string]bool,
-	vendorPaths []string,
-) ([]model.Method, error) {
-	result := []model.Method{}
-	tn, ok := iface.(*types.TypeName)
-	if !ok {
-		return nil, errors.New(tn.Name() + " is not a TypeName")
-	}
-
-	methods := typeutil.IntuitiveMethodSet(iface.Type(), nil)
-	for _, method := range methods {
-		log.Println("processing method", method.Obj().Name())
-		_, nodes := pathEnclosingInterval(pkg, method.Obj().Pos(), method.Obj().Pos())
-		for _, node := range nodes {
-			if field, ok := node.(*ast.Field); ok {
-				result = append(result, model.Method{
-					Field:   field,
-					Imports: importSpecs,
-				})
-				break
-			}
-		}
-	}
-	return result, nil
-}
 
 func methodsForInterface(
 	iface *ast.InterfaceType,
 	importPath string,
 	pkgName string,
+	pkg *packages.Package,
 	importSpecs map[string]*ast.ImportSpec,
 	knownTypes map[string]bool,
 ) ([]model.Method, error) {
+	log.Printf("\n\nMethods for %s\n", importPath)
 	result := []model.Method{}
-	for _, field := range iface.Methods.List {
+	for i, field := range iface.Methods.List {
+		log.Printf("\n\nField %v:\n", i)
 		switch t := field.Type.(type) {
 		case *ast.FuncType:
-
+			log.Println("FUNC_TYPE")
 			// this  will mutate the actual ast node to generate "correct code"
 			// it ensures func signatures have the correct package name for
 			// types that belong to the package we are generating code from
 			// e.g.: change "Param" to "foo.Param" when Param belongs to pkg "foo"
+			log.Printf("adding package prefix [%s] to [%s]\n", pkgName, field.Names[0])
 			astutil.AddPackagePrefix(t, pkgName, knownTypes)
 			result = append(result,
 				model.Method{
@@ -69,18 +41,26 @@ func methodsForInterface(
 				})
 
 		case *ast.Ident:
+			log.Println("IDENT")
 			iface, err := GetInterfaceFromImportPath(t.Name, importPath)
 			if err != nil {
 				return nil, err
 			}
 			result = append(result, iface.Methods...)
 		case *ast.SelectorExpr:
+			log.Println("SELECTOR_EXPR")
 			pkgAlias := t.X.(*ast.Ident).Name
+			log.Printf(">>>>>>>>> Package Alias: %s\n", pkgAlias)
 			pkgImportPath := findImportPath(importSpecs, pkgAlias)
-			iface, err := GetInterfaceFromImportPath(t.Sel.Name, pkgImportPath)
+			pkgAtPath := pkg.Imports[pkgImportPath]
+			if pkgAtPath == nil {
+				return nil, fmt.Errorf("cannot find package with import path: %s", pkgImportPath)
+			}
+			iface, err := GetInterfaceFromImportPath(t.Sel.Name, pkgAtPath.PkgPath)
 			if err != nil {
 				return nil, err
 			}
+
 			result = append(result, iface.Methods...)
 		}
 	}

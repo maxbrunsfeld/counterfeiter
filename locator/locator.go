@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -20,6 +21,9 @@ import (
 )
 
 func GetInterfaceFromFilePath(interfaceName, filePath string) (*model.InterfaceToFake, error) {
+	if !strings.HasSuffix(strings.ToLower(filePath), ".go") {
+		return GetInterfaceFromImportPath(interfaceName, filePath)
+	}
 	cfg := &packages.Config{
 		Mode: packages.LoadSyntax,
 	}
@@ -42,7 +46,13 @@ func getInterfaceFromPackage(interfaceName string, pkg *packages.Package) (*mode
 		importSpecs := getImports(file)
 
 		pkgImport := pkg.Name
-		if strings.HasSuffix(pkg.PkgPath, pkg.Name) {
+		pkgPath := pkg.PkgPath
+		if i := strings.Index(pkgPath, "/vendor/"); i != -1 {
+			pkgPath = pkgPath[i+len("/vendor/"):]
+		}
+
+		if strings.HasSuffix(pkgPath, pkg.Name) {
+			log.Println("changing package", pkg.PkgPath, "to xyz123")
 			pkgImport = "xyz123"
 		}
 
@@ -50,8 +60,10 @@ func getInterfaceFromPackage(interfaceName string, pkg *packages.Package) (*mode
 		var err error
 		switch iface.(type) {
 		case *ast.InterfaceType:
-			methods, err = methodsForInterface(iface.(*ast.InterfaceType), pkg.PkgPath, pkg.Name, importSpecs, typesFound)
+			log.Println("getting methods for interface")
+			methods, err = methodsForInterface(iface.(*ast.InterfaceType), pkgPath, pkg.Name, pkg, importSpecs, typesFound)
 		case *ast.FuncType:
+			log.Println("getting methods for func")
 			funcNode := iface.(*ast.FuncType)
 			methods, err = methodsForFunction(funcNode, interfaceName, pkgImport, importSpecs, typesFound)
 		default:
@@ -66,14 +78,18 @@ func getInterfaceFromPackage(interfaceName string, pkg *packages.Package) (*mode
 			Name: &ast.Ident{Name: pkgImport},
 			Path: &ast.BasicLit{
 				Kind:  token.STRING,
-				Value: strconv.Quote(pkg.PkgPath),
+				Value: strconv.Quote(pkgPath),
 			},
+		}
+
+		for k, v := range importSpecs {
+			log.Printf("%s > %s > %s\n", k, v.Name.Name, v.Path.Value)
 		}
 
 		return &model.InterfaceToFake{
 			Name:                   interfaceName,
 			Methods:                methods,
-			ImportPath:             pkg.PkgPath,
+			ImportPath:             pkgPath,
 			PackageName:            pkg.Name,
 			RepresentedByInterface: !isFunction,
 		}, nil
@@ -86,6 +102,7 @@ func GetInterfaceFromImportPath(interfaceName, importPath string) (*model.Interf
 	cfg := &packages.Config{
 		Mode: packages.LoadSyntax,
 	}
+
 	pkgs, err := packages.Load(cfg, importPath)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't load package %q: %v", importPath, err)
@@ -108,6 +125,8 @@ func getDir(path string) (string, error) {
 
 func findImportPath(importSpecs map[string]*ast.ImportSpec, alias string) string {
 	if importSpec, ok := importSpecs[alias]; ok {
+		log.Println(importSpec.Name)
+		log.Println(importSpec.Path.Value)
 		return strings.Trim(importSpec.Path.Value, `"`)
 	}
 	return ""

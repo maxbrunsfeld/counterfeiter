@@ -1,6 +1,7 @@
 package arguments
 
 import (
+	"log"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -71,12 +72,16 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 	)
 
 	packageName := restrictToValidPackageName(filepath.Base(filepath.Dir(outputPath)))
+	if importPath == "" {
+		importPath = sourcePackageDir
+	}
 
+	log.Printf("Parsed Arguments:\nInterface Name: %s\nPackage Path: %s\nDestination Package Name: %s", interfaceName, importPath, packageName)
 	return ParsedArguments{
 		GenerateInterfaceAndShimFromPackageDirectory: false,
-		SourcePackageDir:                             sourcePackageDir,
-		OutputPath:                                   outputPath,
-		ImportPath:                                   importPath,
+		SourcePackageDir: sourcePackageDir,
+		OutputPath:       outputPath,
+		ImportPath:       importPath,
 
 		InterfaceName:          interfaceName,
 		DestinationPackageName: packageName,
@@ -101,8 +106,8 @@ func (argParser *argumentParser) parsePackageArgs(args ...string) ParsedArgument
 
 	return ParsedArguments{
 		GenerateInterfaceAndShimFromPackageDirectory: true,
-		SourcePackageDir:                             dir,
-		OutputPath:                                   outputPath,
+		SourcePackageDir: dir,
+		OutputPath:       outputPath,
 
 		DestinationPackageName: packageName,
 

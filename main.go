@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"go/format"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,11 +15,15 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
 	"github.com/maxbrunsfeld/counterfeiter/locator"
-	"github.com/maxbrunsfeld/counterfeiter/model"
 	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
 func main() {
+	debug := os.Getenv("COUNTERFEITER_DEBUG")
+	log.SetFlags(log.Lshortfile)
+	if debug == "" {
+		log.SetOutput(ioutil.Discard)
+	}
 	flag.Parse()
 	args := flag.Args()
 
@@ -45,30 +51,31 @@ func main() {
 	}
 }
 
-func generateFake(interfaceName, sourcePackageDir, importPath, outputPath, destinationPackage, fakeName string, printToStdOut bool) {
-	var err error
-	var iface *model.InterfaceToFake
-	if sourcePackageDir == "" {
-		iface, err = locator.GetInterfaceFromImportPath(interfaceName, importPath)
-	} else {
-		iface, err = locator.GetInterfaceFromFilePath(interfaceName, sourcePackageDir)
+func generateFake(interfaceName string, sourcePackageDir string, importPath string, outputPath string, destinationPackage string, fakeName string, printToStdOut bool) {
+	/*
+		var err error
+		var iface *model.InterfaceToFake
+		if sourcePackageDir == "" {
+			log.Printf("Getting interface [%s] from import path [%s]...\n", interfaceName, importPath)
+			iface, err = locator.GetInterfaceFromImportPath(interfaceName, importPath)
+		} else {
+			log.Printf("Getting interface [%s] from file path [%s]...\n", interfaceName, sourcePackageDir)
+			iface, err = locator.GetInterfaceFromFilePath(interfaceName, sourcePackageDir)
+		}
+		if err != nil {
+			fail("%v", err)
+		}
+	*/
+	f, err := generator.NewFake(interfaceName, importPath, fakeName, destinationPackage)
+	if err != nil {
+		fail("%v", err)
 	}
+	b, err := f.Generate(true)
 	if err != nil {
 		fail("%v", err)
 	}
 
-	var code string
-	code, err = generator.CodeGenerator{
-		Model:       *iface,
-		StructName:  fakeName,
-		PackageName: destinationPackage,
-	}.GenerateFake()
-
-	if err != nil {
-		fail("%v", err)
-	}
-
-	printCode(code, outputPath, printToStdOut)
+	printCode(string(b), outputPath, printToStdOut)
 	reportDone(printToStdOut, outputPath, fakeName)
 }
 
