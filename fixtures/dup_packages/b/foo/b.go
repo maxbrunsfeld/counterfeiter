@@ -1,6 +1,6 @@
-package v1
+package foo
 
-type S struct {}
+type S struct{}
 
 //go:generate counterfeiter . I
 type I interface {

@@ -1,14 +1,15 @@
-package dup_packages
+package foo
 
 import (
 	"github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/foo"
 	bfoo "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo"
 )
 
-//go:generate counterfeiter . AB
-type AB interface {
-	A() foo.S
+type S struct{}
+
+//go:generate counterfeiter . MultiAB
+type MultiAB interface {
+	Mine() S
 	foo.I
-	B() bfoo.S
 	bfoo.I
 }
