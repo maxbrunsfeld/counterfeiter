@@ -2,8 +2,9 @@
 package fixturesfakes
 
 import (
-	"counterfeiter/fixtures"
-	"sync"
+	sync "sync"
+
+	fixtures "github.com/maxbrunsfeld/counterfeiter/fixtures"
 )
 
 type FakeSomethingFactory struct {

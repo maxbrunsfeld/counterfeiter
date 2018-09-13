@@ -66,7 +66,7 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 		}
 		// Set this to true to write the output of tests to the testdata/output
 		// directory 🙃 happy debugging!
-		// writeToTestData = true
+		writeToTestData = false
 	})
 
 	it.After(func() {
@@ -86,14 +86,14 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 		it("succeeds", func() {
 			f, err := generator.NewFake("WriteCloser", "io", "FakeWriteCloser", "custom")
 			Expect(err).NotTo(HaveOccurred())
-			b, err := f.Generate(true)
+			b, err := f.Generate(true) // Flip to false to see output if goimports fails
 			Expect(err).NotTo(HaveOccurred())
 			if writeToTestData {
 				WriteOutput(b, filepath.Join("testdata", "output", "write_closer", "actual.go"))
 			}
 			WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_write_closer.go"))
 			RunBuild(baseDir)
-			b2, err := ioutil.ReadFile(filepath.Join("testdata", "expected_fake_write_closer.txt"))
+			b2, err := ioutil.ReadFile(filepath.Join("testdata", "expected_fake_writecloser.txt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(b2)).To(Equal(string(b)))
 		})
@@ -112,7 +112,7 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 				it("succeeds", func() {
 					f, err := generator.NewFake(interfaceName, "github.com/maxbrunsfeld/counterfeiter/fixtures", "Fake"+interfaceName, "fixturesfakes")
 					Expect(err).NotTo(HaveOccurred())
-					b, err := f.Generate(true)
+					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
 					if writeToTestData {
 						WriteOutput(b, filepath.Join("testdata", "output", strings.Replace(filename, ".go", "", -1), "actual.go"))
@@ -132,10 +132,10 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 		t("ImportsGoHyphenPackage", "imports_go_hyphen_package.go", filepath.Join("go-hyphenpackage", "fixture.go"))
 		t("FirstInterface", "multiple_interfaces.go")
 		t("SecondInterface", "multiple_interfaces.go")
-		// t("RequestFactory", "request_factory.go")
+		t("RequestFactory", "request_factory.go")
 		t("ReusesArgTypes", "reuses_arg_types.go")
 		t("Something", "something.go")
-		// t("SomethingFactory", "typed_function.go")
+		t("SomethingFactory", "typed_function.go")
 
 		when("working with duplicate packages", func() {
 			t := func(interfaceName string, offset string, fakePackageName string) {
@@ -153,7 +153,7 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 						}
 						f, err := generator.NewFake(interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName)
 						Expect(err).NotTo(HaveOccurred())
-						b, err := f.Generate(true)
+						b, err := f.Generate(true) // Flip to false to see output if goimports fails
 						Expect(err).NotTo(HaveOccurred())
 						if writeToTestData {
 							WriteOutput(b, filepath.Join("testdata", "output", "dup_"+strings.ToLower(interfaceName), "actual.go"))
@@ -185,7 +185,7 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 					}
 					f, err := generator.NewFake(interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName)
 					Expect(err).NotTo(HaveOccurred())
-					b, err := f.Generate(true)
+					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
 					if writeToTestData {
 						WriteOutput(b, filepath.Join("testdata", "output", "vendored_"+strings.ToLower(interfaceName), "actual.go"))

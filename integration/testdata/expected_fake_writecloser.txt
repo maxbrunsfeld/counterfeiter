@@ -9,8 +9,9 @@ import (
 type FakeWriteCloser struct {
 	CloseStub        func() error
 	closeMutex       sync.RWMutex
-	closeArgsForCall []struct{}
-	closeReturns     struct {
+	closeArgsForCall []struct {
+	}
+	closeReturns struct {
 		result1 error
 	}
 	closeReturnsOnCall map[int]struct {
@@ -29,7 +30,6 @@ type FakeWriteCloser struct {
 		result1 int
 		result2 error
 	}
-
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -37,7 +37,8 @@ type FakeWriteCloser struct {
 func (fake *FakeWriteCloser) Close() error {
 	fake.closeMutex.Lock()
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
-	fake.closeArgsForCall = append(fake.closeArgsForCall, struct{}{})
+	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
+	}{})
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
