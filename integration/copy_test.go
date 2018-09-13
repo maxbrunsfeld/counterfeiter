@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file
@@ -24,6 +25,9 @@ func copy(src, dest string, info os.FileInfo) error {
 		return lcopy(src, dest, info)
 	}
 	if info.IsDir() {
+		if strings.HasSuffix(src, "fakes") {
+			return nil
+		}
 		return dcopy(src, dest, info)
 	}
 	return fcopy(src, dest, info)
@@ -33,7 +37,6 @@ func copy(src, dest string, info os.FileInfo) error {
 // with considering existence of parent directory
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo) error {
-
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
 	}
@@ -62,7 +65,6 @@ func fcopy(src, dest string, info os.FileInfo) error {
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo) error {
-
 	if err := os.MkdirAll(destdir, info.Mode()); err != nil {
 		return err
 	}

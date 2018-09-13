@@ -19,9 +19,8 @@ import (
 )
 
 func main() {
-	debug := os.Getenv("COUNTERFEITER_DEBUG")
 	log.SetFlags(log.Lshortfile)
-	if debug == "" {
+	if !isDebug() {
 		log.SetOutput(ioutil.Discard)
 	}
 	flag.Parse()
@@ -51,21 +50,13 @@ func main() {
 	}
 }
 
+func isDebug() bool {
+	debug := os.Getenv("COUNTERFEITER_DEBUG")
+	return debug != ""
+}
+
 func generateFake(interfaceName string, sourcePackageDir string, importPath string, outputPath string, destinationPackage string, fakeName string, printToStdOut bool) {
-	/*
-		var err error
-		var iface *model.InterfaceToFake
-		if sourcePackageDir == "" {
-			log.Printf("Getting interface [%s] from import path [%s]...\n", interfaceName, importPath)
-			iface, err = locator.GetInterfaceFromImportPath(interfaceName, importPath)
-		} else {
-			log.Printf("Getting interface [%s] from file path [%s]...\n", interfaceName, sourcePackageDir)
-			iface, err = locator.GetInterfaceFromFilePath(interfaceName, sourcePackageDir)
-		}
-		if err != nil {
-			fail("%v", err)
-		}
-	*/
+	reportStarting(printToStdOut, outputPath, fakeName)
 	f, err := generator.NewFake(interfaceName, importPath, fakeName, destinationPackage)
 	if err != nil {
 		fail("%v", err)
@@ -76,7 +67,7 @@ func generateFake(interfaceName string, sourcePackageDir string, importPath stri
 	}
 
 	printCode(string(b), outputPath, printToStdOut)
-	reportDone(printToStdOut, outputPath, fakeName)
+	reportDoneSimple(printToStdOut)
 }
 
 func generateInterfaceAndShim(sourceDir string, outputPath string, outPackage string, printToStdOut bool) {
@@ -153,6 +144,37 @@ func printCode(code, outputPath string, printToStdOut bool) {
 	}
 }
 
+func reportStarting(printToStdOut bool, outputPath, fakeName string) {
+	rel, err := filepath.Rel(cwd(), outputPath)
+	if err != nil {
+		fail("%v", err)
+	}
+
+	var writer io.Writer
+	if printToStdOut {
+		writer = os.Stderr
+	} else {
+		writer = os.Stdout
+	}
+
+	msg := fmt.Sprintf("Writing `%s` to `%s`... ", fakeName, rel)
+	if isDebug() {
+		msg = msg + "\n"
+	}
+	fmt.Fprint(writer, msg)
+}
+
+func reportDoneSimple(printToStdOut bool) {
+	var writer io.Writer
+	if printToStdOut {
+		writer = os.Stderr
+	} else {
+		writer = os.Stdout
+	}
+
+	fmt.Fprint(writer, "Done\n")
+}
+
 func reportDone(printToStdOut bool, outputPath, fakeName string) {
 	rel, err := filepath.Rel(cwd(), outputPath)
 	if err != nil {
@@ -178,7 +200,7 @@ func cwd() string {
 }
 
 func fail(s string, args ...interface{}) {
-	fmt.Printf(s+"\n", args...)
+	fmt.Printf("\n"+s+"\n", args...)
 	os.Exit(1)
 }
 

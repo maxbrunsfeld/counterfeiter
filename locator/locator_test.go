@@ -17,12 +17,11 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
 )
 
 func TestLocator(t *testing.T) {
-	log.SetFlags(log.Llongfile)
-	spec.Run(t, "Locator", testLocator, spec.Report(report.Terminal{}))
+	//log.SetFlags(log.Llongfile)
+	//spec.Run(t, "Locator", testLocator, spec.Report(report.Terminal{}))
 }
 
 func testLocator(t *testing.T, when spec.G, it spec.S) {

@@ -34,6 +34,9 @@ type Fake struct {
 // AddImport creates an import with the given alias and path, and adds it to
 // Fake.Imports.
 func (f *Fake) AddImport(alias string, path string) Import {
+	path = unvendor(strings.TrimSpace(path))
+	alias = strings.TrimSpace(alias)
+	log.Printf("Adding import: %s > %s\n", alias, path)
 	for i := range f.Imports {
 		if f.Imports[i].Path == path {
 			return f.Imports[i]
@@ -55,27 +58,51 @@ func (f *Fake) sortImports() {
 	})
 }
 
-// disambiguateAliases ensures that all imports are aliased uniquely.
-func (f *Fake) disambiguateAliases() {
-	f.sortImports()
-	log.Println("Before Disambiguation:")
+func unvendor(s string) string {
+	// Devendorize for use in import statement.
+	if i := strings.LastIndex(s, "/vendor/"); i >= 0 {
+		return s[i+len("/vendor/"):]
+	}
+	if strings.HasPrefix(s, "vendor/") {
+		return s[len("vendor/"):]
+	}
+	return s
+}
+
+func (f *Fake) hasDuplicateAliases() bool {
+	hasDuplicates := false
+	for _, imports := range f.aliasMap() {
+		if len(imports) > 1 {
+			hasDuplicates = true
+			break
+		}
+	}
+	return hasDuplicates
+}
+
+func (f *Fake) printAliases() {
 	for i := range f.Imports {
 		log.Printf("- %s > %s\n", f.Imports[i].Alias, f.Imports[i].Path)
 	}
+}
 
+// disambiguateAliases ensures that all imports are aliased uniquely.
+func (f *Fake) disambiguateAliases() {
+	f.sortImports()
+	if !f.hasDuplicateAliases() {
+		return
+	}
+
+	log.Printf("!!! Duplicate import aliases found,...")
+	log.Printf("aliases before disambiguation:\n")
+	f.printAliases()
 	var byAlias map[string][]Import
 	for {
 		byAlias = f.aliasMap()
-		hasDuplicateAliases := false
-		for _, imports := range byAlias {
-			if len(imports) > 1 {
-				hasDuplicateAliases = true
-				break
-			}
-		}
-		if !hasDuplicateAliases {
+		if !f.hasDuplicateAliases() {
 			break
 		}
+
 		for i := range f.Imports {
 			imports := byAlias[f.Imports[i].Alias]
 			if len(imports) == 1 {
@@ -93,10 +120,8 @@ func (f *Fake) disambiguateAliases() {
 		}
 	}
 
-	log.Println("After Disambiguation:")
-	for i := range f.Imports {
-		log.Printf("- %s > %s\n", f.Imports[i].Alias, f.Imports[i].Path)
-	}
+	log.Println("aliases after disambiguation:")
+	f.printAliases()
 }
 
 func (f *Fake) aliasMap() map[string][]Import {
@@ -139,6 +164,17 @@ type Param struct {
 	Name       string
 	Type       string
 	IsVariadic bool
+	IsSlice    bool
+}
+
+func (p Params) Slices() Params {
+	var result Params
+	for i := range p {
+		if p[i].IsSlice {
+			result = append(result, p[i])
+		}
+	}
+	return result
 }
 
 func (p Params) HasLength() bool {
@@ -156,24 +192,6 @@ func (r Returns) HasLength() bool {
 	return len(r) > 0
 }
 
-func returns(r []Return) string {
-	if len(r) == 0 {
-		return ""
-	}
-	if len(r) == 1 {
-		return r[0].Type
-	}
-	result := "("
-	for i := range r {
-		result = result + r[i].Type
-		if i < len(r) {
-			result = result + ", "
-		}
-	}
-	result = result + ")"
-	return result
-}
-
 func (r Returns) WithPrefix(p string) string {
 	if len(r) == 0 {
 		return ""
@@ -188,6 +206,22 @@ func (r Returns) WithPrefix(p string) string {
 		}
 	}
 	return strings.Join(rets, ", ")
+}
+
+func (p Params) WithPrefix(prefix string) string {
+	if len(p) == 0 {
+		return ""
+	}
+
+	params := []string{}
+	for i := range p {
+		if prefix == "" {
+			params = append(params, unexport(p[i].Name))
+		} else {
+			params = append(params, prefix+unexport(p[i].Name))
+		}
+	}
+	return strings.Join(params, ", ")
 }
 
 func (r Returns) AsArgs() string {
@@ -258,6 +292,22 @@ func (p Params) AsNamedArgs() string {
 
 	params := []string{}
 	for i := range p {
+		if p[i].IsSlice {
+			params = append(params, unexport(p[i].Name)+"Copy")
+		} else {
+			params = append(params, unexport(p[i].Name))
+		}
+	}
+	return strings.Join(params, ", ")
+}
+
+func (p Params) AsNamedArgsForInvocation() string {
+	if len(p) == 0 {
+		return ""
+	}
+
+	params := []string{}
+	for i := range p {
 		if p[i].IsVariadic {
 			params = append(params, unexport(p[i].Name)+"...")
 		} else {
@@ -267,15 +317,47 @@ func (p Params) AsNamedArgs() string {
 	return strings.Join(params, ", ")
 }
 
-func returnsNames(r []Return) string {
+func (p Params) AsReturnSignature() string {
+	if len(p) == 0 {
+		return ""
+	}
+	if len(p) == 1 {
+		if p[0].IsVariadic {
+			return strings.Replace(p[0].Type, "...", "[]", -1)
+		}
+		return p[0].Type
+	}
+	result := "("
+	for i := range p {
+		t := p[i].Type
+		if p[i].IsVariadic {
+			t = strings.Replace(t, "...", "[]", -1)
+		}
+		result = result + t
+		if i < len(p) {
+			result = result + ", "
+		}
+	}
+	result = result + ")"
+	return result
+}
+
+func (r Returns) AsReturnSignature() string {
 	if len(r) == 0 {
 		return ""
 	}
-	rets := []string{}
-	for i := range r {
-		rets = append(rets, unexport(r[i].Name))
+	if len(r) == 1 {
+		return r[0].Type
 	}
-	return strings.Join(rets, ", ")
+	result := "("
+	for i := range r {
+		result = result + r[i].Type
+		if i < len(r) {
+			result = result + ", "
+		}
+	}
+	result = result + ")"
+	return result
 }
 
 func unexport(s string) string {
@@ -287,13 +369,12 @@ func unexport(s string) string {
 }
 
 var funcs template.FuncMap = template.FuncMap{
-	"ToLower":      strings.ToLower,
-	"UnExport":     unexport,
-	"Returns":      returns,
-	"ReturnsNames": returnsNames,
+	"ToLower":  strings.ToLower,
+	"UnExport": unexport,
+	"Replace":  strings.Replace,
 }
 
-func (f *Fake) LoadPackages(packagePath string) error {
+func (f *Fake) loadPackages(packagePath string) error {
 	p, err := packages.Load(&packages.Config{
 		Mode: packages.LoadSyntax,
 	}, packagePath)
@@ -304,7 +385,7 @@ func (f *Fake) LoadPackages(packagePath string) error {
 	return nil
 }
 
-func (f *Fake) FindPackageWithInterface() error {
+func (f *Fake) findPackageWithInterface() error {
 	var iface *types.TypeName
 	var pkg *packages.Package
 	for i := range f.Packages {
@@ -327,9 +408,9 @@ func (f *Fake) FindPackageWithInterface() error {
 	f.Interface = iface
 	f.Package = pkg
 	f.InterfaceName = iface.Name()
-	f.InterfacePackage = pkg.PkgPath
+	f.InterfacePackage = unvendor(pkg.PkgPath)
 	f.InterfaceAlias = pkg.Name
-	f.AddImport(pkg.Name, pkg.PkgPath)
+	f.AddImport(f.InterfaceAlias, f.InterfacePackage)
 	return nil
 }
 
@@ -347,12 +428,12 @@ func NewFake(interfaceName string, packagePath string, fakeName string, destinat
 		},
 	}
 
-	err := f.LoadPackages(packagePath)
+	err := f.loadPackages(packagePath)
 	if err != nil {
 		return nil, err
 	}
 
-	err = f.FindPackageWithInterface()
+	err = f.findPackageWithInterface()
 	if err != nil {
 		return nil, err
 	}
@@ -360,18 +441,18 @@ func NewFake(interfaceName string, packagePath string, fakeName string, destinat
 }
 
 func (f *Fake) Generate(runImports bool) ([]byte, error) {
-	log.Printf("Writing fake %s for interface %s in package %s\n", f.Name, f.InterfaceName, f.DestinationPackage)
+	log.Printf("Writing fake %s for interface %s to package %s\n", f.Name, f.InterfaceName, f.DestinationPackage)
 	methods := typeutil.IntuitiveMethodSet(f.Interface.Type(), nil)
 	for i := range methods {
 		sig := methods[i].Type().(*types.Signature)
 		log.Printf("Preparing method %s...", methods[i].String())
 		for i := 0; i < sig.Results().Len(); i++ {
 			ret := sig.Results().At(i)
-			f.AddImportsFor(ret.Type())
+			f.addImportsFor(ret.Type())
 		}
 		for i := 0; i < sig.Params().Len(); i++ {
 			param := sig.Params().At(i)
-			f.AddImportsFor(param.Type())
+			f.addImportsFor(param.Type())
 		}
 	}
 
@@ -383,7 +464,7 @@ func (f *Fake) Generate(runImports bool) ([]byte, error) {
 		for i := 0; i < sig.Params().Len(); i++ {
 			param := sig.Params().At(i)
 			isVariadic := i == sig.Params().Len()-1 && sig.Variadic()
-			typ := TypeFor(param.Type(), importsMap)
+			typ := typeFor(param.Type(), importsMap)
 			if isVariadic {
 				typ = "..." + typ[2:] // Change []string to ...string
 			}
@@ -391,6 +472,7 @@ func (f *Fake) Generate(runImports bool) ([]byte, error) {
 				Name:       fmt.Sprintf("arg%v", i+1),
 				Type:       typ,
 				IsVariadic: isVariadic,
+				IsSlice:    strings.HasPrefix(typ, "[]"),
 			}
 			params = append(params, p)
 		}
@@ -399,7 +481,7 @@ func (f *Fake) Generate(runImports bool) ([]byte, error) {
 			ret := sig.Results().At(i)
 			r := Return{
 				Name: fmt.Sprintf("result%v", i+1),
-				Type: TypeFor(ret.Type(), importsMap),
+				Type: typeFor(ret.Type(), importsMap),
 			}
 			returns = append(returns, r)
 		}
@@ -422,28 +504,27 @@ func (f *Fake) Generate(runImports bool) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func TypeFor(typ types.Type, importsMap map[string]Import) string {
+func typeFor(typ types.Type, importsMap map[string]Import) string {
 	if typ == nil {
 		return ""
 	}
-	log.Println(reflect.TypeOf(typ))
 	switch t := typ.(type) {
 	case *types.Slice:
-		return "[]" + TypeFor(t.Elem(), importsMap)
+		return "[]" + typeFor(t.Elem(), importsMap)
 	case *types.Array:
-		return fmt.Sprintf("[%v]%s", t.Len(), TypeFor(t.Elem(), importsMap))
+		return fmt.Sprintf("[%v]%s", t.Len(), typeFor(t.Elem(), importsMap))
 	case *types.Pointer:
-		return "*" + TypeFor(t.Elem(), importsMap)
+		return "*" + typeFor(t.Elem(), importsMap)
 	case *types.Map:
-		return "map[" + TypeFor(t.Key(), importsMap) + "]" + TypeFor(t.Elem(), importsMap)
+		return "map[" + typeFor(t.Key(), importsMap) + "]" + typeFor(t.Elem(), importsMap)
 	case *types.Chan:
 		switch t.Dir() {
 		case types.SendRecv:
-			return "chan " + TypeFor(t.Elem(), importsMap)
+			return "chan " + typeFor(t.Elem(), importsMap)
 		case types.SendOnly:
-			return "chan<- " + TypeFor(t.Elem(), importsMap)
+			return "chan<- " + typeFor(t.Elem(), importsMap)
 		case types.RecvOnly:
-			return "<-chan " + TypeFor(t.Elem(), importsMap)
+			return "<-chan " + typeFor(t.Elem(), importsMap)
 		}
 
 	case *types.Basic:
@@ -456,43 +537,44 @@ func TypeFor(typ types.Type, importsMap map[string]Import) string {
 		if t.Obj().Pkg() == nil {
 			return t.Obj().Name()
 		}
-		imp := importsMap[t.Obj().Pkg().Path()]
+		imp := importsMap[unvendor(t.Obj().Pkg().Path())]
 		if imp.Path == "" {
 			return t.Obj().Name()
 		}
 
 		return imp.Alias + "." + t.Obj().Name()
+	default:
+		log.Printf("!!! WARNING: Missing case for type %s\n", reflect.TypeOf(typ).String())
 	}
 
 	return ""
 }
 
-// AddImportsFor inspects the given type and adds imports to the fake if importable
+// addImportsFor inspects the given type and adds imports to the fake if importable
 // types are found.
-func (f *Fake) AddImportsFor(typ types.Type) {
+func (f *Fake) addImportsFor(typ types.Type) {
 	if typ == nil {
 		return
 	}
 
-	log.Println(reflect.TypeOf(typ))
 	switch t := typ.(type) {
 	case *types.Basic:
 		return
 	case *types.Pointer:
-		f.AddImportsFor(t.Elem())
+		f.addImportsFor(t.Elem())
 	case *types.Map:
-		f.AddImportsFor(t.Key())
-		f.AddImportsFor(t.Elem())
+		f.addImportsFor(t.Key())
+		f.addImportsFor(t.Elem())
 	case *types.Chan:
-		f.AddImportsFor(t.Elem())
+		f.addImportsFor(t.Elem())
 	case *types.Named:
 		if t.Obj() != nil && t.Obj().Pkg() != nil {
 			f.AddImport(t.Obj().Pkg().Name(), t.Obj().Pkg().Path())
 		}
 	case *types.Slice:
-		f.AddImportsFor(t.Elem())
+		f.addImportsFor(t.Elem())
 	case *types.Array:
-		f.AddImportsFor(t.Elem())
+		f.addImportsFor(t.Elem())
 	default:
 		log.Printf("!!! WARNING: Missing case for type %s\n", reflect.TypeOf(typ).String())
 	}
@@ -507,9 +589,11 @@ import (
 )
 
 type {{.Name}} struct {
-	{{range .Methods}}{{.Name}}Stub func({{.Params.AsArgs}}) {{Returns .Returns}}
+	{{range .Methods}}{{.Name}}Stub func({{.Params.AsArgs}}) {{.Returns.AsReturnSignature}}
 	{{UnExport .Name}}Mutex sync.RWMutex
-	{{UnExport .Name}}ArgsForCall []struct{}
+	{{UnExport .Name}}ArgsForCall []struct{ {{- range .Params}}
+		{{.Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
+	{{end -}} }
 	{{if .Returns.HasLength}}{{UnExport .Name}}Returns struct{
 		{{range .Returns}}{{UnExport .Name}} {{.Type}}
 		{{end}}
@@ -523,14 +607,21 @@ type {{.Name}} struct {
 	invocationsMutex sync.RWMutex
 }{{range .Methods}}
 
-func (fake *{{.FakeName}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{Returns .Returns}} {
-	fake.{{UnExport .Name}}Mutex.Lock()
+func (fake *{{.FakeName}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.AsReturnSignature}} {
+	{{range .Params.Slices}}var {{UnExport .Name}}Copy {{.Type}}
+	if {{UnExport .Name}} != nil {
+		{{UnExport .Name}}Copy = make({{.Type}}, len({{UnExport .Name}}))
+		copy({{UnExport .Name}}Copy, {{UnExport .Name}})
+	}
+	{{end}}fake.{{UnExport .Name}}Mutex.Lock()
 	{{if .Returns.HasLength}}ret, specificReturn := fake.{{UnExport .Name}}ReturnsOnCall[len(fake.{{UnExport .Name}}ArgsForCall)]
-	{{end}}fake.{{UnExport .Name}}ArgsForCall = append(fake.{{UnExport .Name}}ArgsForCall, struct{}{})
-	fake.recordInvocation("{{.Name}}", []interface{}{})
+	{{end}}fake.{{UnExport .Name}}ArgsForCall = append(fake.{{UnExport .Name}}ArgsForCall, struct{ {{- range .Params}}
+		{{.Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
+	{{end -}} }{ {{- .Params.AsNamedArgs -}} })
+	fake.recordInvocation("{{.Name}}", []interface{}{ {{- if .Params.HasLength}}{{.Params.AsNamedArgs}}{{end -}} })
 	fake.{{UnExport .Name}}Mutex.Unlock()
 	if fake.{{.Name}}Stub != nil {
-		{{if .Returns.HasLength}}return fake.{{.Name}}Stub({{.Params.AsNamedArgs}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgs}}){{end}}
+		{{if .Returns.HasLength}}return fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}}){{end}}
 	}{{if .Returns.HasLength}}
 	if specificReturn {
 		return {{.Returns.WithPrefix "ret."}}
@@ -544,6 +635,13 @@ func (fake *{{.FakeName}}) {{.Name}}CallCount() int {
 	defer fake.{{UnExport .Name}}Mutex.RUnlock()
 	return len(fake.{{UnExport .Name}}ArgsForCall)
 }
+
+{{if .Params.HasLength}}func (fake *{{.FakeName}}) {{.Name}}ArgsForCall(i int) {{.Params.AsReturnSignature}} {
+	fake.{{UnExport .Name}}Mutex.RLock()
+	defer fake.{{UnExport .Name}}Mutex.RUnlock()
+	argsForCall := fake.{{UnExport .Name}}ArgsForCall[i]
+	return {{.Params.WithPrefix "argsForCall."}}
+}{{end}}
 
 {{if .Returns.HasLength}}func (fake *{{.FakeName}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
 	fake.{{.Name}}Stub = nil

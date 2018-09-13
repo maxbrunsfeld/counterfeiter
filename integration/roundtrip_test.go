@@ -16,26 +16,6 @@ import (
 	"github.com/sclevine/spec/report"
 )
 
-func WriteOutput(b []byte, file string) {
-	os.MkdirAll(filepath.Dir(file), 0700)
-	ioutil.WriteFile(file, b, 0600)
-}
-
-func RunBuild(baseDir string) {
-	cmd := exec.Command("go", "build", "./...")
-	cmd.Dir = baseDir
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Println(stdout.String())
-		log.Println(stderr.String())
-	}
-	Expect(err).NotTo(HaveOccurred())
-}
-
 func TestRoundTrip(t *testing.T) {
 	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
@@ -86,7 +66,7 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 		}
 		// Set this to true to write the output of tests to the testdata/output
 		// directory 🙃 happy debugging!
-		writeToTestData = true
+		// writeToTestData = true
 	})
 
 	it.After(func() {
@@ -188,4 +168,54 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 			t("AliasV1", "", "dup_packagesfakes")
 		})
 	})
+
+	when("working with vendored packages", func() {
+		t := func(interfaceName string, offset string, fakePackageName string) {
+			when("working with "+interfaceName, func() {
+				it.Before(func() {
+					baseDir = filepath.Join(baseDir, "vendored")
+					relativeDir = filepath.Join(relativeDir, "vendored")
+					copyDirFunc()
+				})
+
+				it("succeeds", func() {
+					pkgPath := "github.com/maxbrunsfeld/counterfeiter/fixtures/vendored"
+					if offset != "" {
+						pkgPath = pkgPath + "/" + offset
+					}
+					f, err := generator.NewFake(interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName)
+					Expect(err).NotTo(HaveOccurred())
+					b, err := f.Generate(true)
+					Expect(err).NotTo(HaveOccurred())
+					if writeToTestData {
+						WriteOutput(b, filepath.Join("testdata", "output", "vendored_"+strings.ToLower(interfaceName), "actual.go"))
+					}
+					WriteOutput(b, filepath.Join(baseDir, offset, fakePackageName, "fake_"+strings.ToLower(interfaceName)+".go"))
+					RunBuild(filepath.Join(baseDir, offset, fakePackageName))
+				})
+			})
+		}
+
+		t("BarVendoredParameter", "bar", "barfakes")
+	})
+}
+
+func WriteOutput(b []byte, file string) {
+	os.MkdirAll(filepath.Dir(file), 0700)
+	ioutil.WriteFile(file, b, 0600)
+}
+
+func RunBuild(baseDir string) {
+	cmd := exec.Command("go", "build", "./...")
+	cmd.Dir = baseDir
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Println(stdout.String())
+		log.Println(stderr.String())
+	}
+	Expect(err).NotTo(HaveOccurred())
 }

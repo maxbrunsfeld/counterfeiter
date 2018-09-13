@@ -25,6 +25,16 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			m := f.aliasMap()
 			Expect(m).To(BeEmpty())
 		})
+
+		it("turns a vendor path into the correct import", func() {
+			i := f.AddImport("apackage", "github.com/maxbrunsfeld/counterfeiter/fixtures/vendored/vendor/apackage")
+			Expect(i.Alias).To(Equal("apackage"))
+			Expect(i.Path).To(Equal("apackage"))
+
+			i = f.AddImport("anotherpackage", "vendor/anotherpackage")
+			Expect(i.Alias).To(Equal("anotherpackage"))
+			Expect(i.Path).To(Equal("anotherpackage"))
+		})
 	})
 
 	when("there is a single import", func() {
