@@ -39,11 +39,10 @@ func main() {
 
 	outputPath := parsedArgs.OutputPath
 	destinationPackage := parsedArgs.DestinationPackageName
-
 	if parsedArgs.GenerateInterfaceAndShimFromPackageDirectory {
 		fail("%s", "package mode is temporarily disabled")
 	} else {
-		generateFake(parsedArgs.InterfaceName, parsedArgs.SourcePackageDir, parsedArgs.ImportPath, outputPath, destinationPackage, parsedArgs.FakeImplName, parsedArgs.PrintToStdOut)
+		generateFake(cwd(), parsedArgs.InterfaceName, parsedArgs.SourcePackageDir, parsedArgs.ImportPath, outputPath, destinationPackage, parsedArgs.FakeImplName, parsedArgs.PrintToStdOut)
 	}
 }
 
@@ -52,9 +51,9 @@ func isDebug() bool {
 	return debug != ""
 }
 
-func generateFake(interfaceName string, sourcePackageDir string, importPath string, outputPath string, destinationPackage string, fakeName string, printToStdOut bool) {
+func generateFake(workingDir string, interfaceName string, sourcePackageDir string, importPath string, outputPath string, destinationPackage string, fakeName string, printToStdOut bool) {
 	reportStarting(printToStdOut, outputPath, fakeName)
-	f, err := generator.NewFake(interfaceName, importPath, fakeName, destinationPackage, "")
+	f, err := generator.NewFake(interfaceName, importPath, fakeName, destinationPackage, workingDir)
 	if err != nil {
 		fail("%v", err)
 	}

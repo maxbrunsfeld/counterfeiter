@@ -1,6 +1,7 @@
 package arguments
 
 import (
+	"go/build"
 	"log"
 	"path"
 	"path/filepath"
@@ -74,6 +75,9 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 	packageName := restrictToValidPackageName(filepath.Base(filepath.Dir(outputPath)))
 	if importPath == "" {
 		importPath = sourcePackageDir
+	}
+	if strings.HasPrefix(importPath, build.Default.GOPATH) {
+		importPath = strings.Replace(importPath, build.Default.GOPATH+"/src/", "", -1)
 	}
 
 	log.Printf("Parsed Arguments:\nInterface Name: %s\nPackage Path: %s\nDestination Package Name: %s", interfaceName, importPath, packageName)
