@@ -91,46 +91,11 @@ func typeFor(typ types.Type, importsMap map[string]Import) string {
 	if typ == nil {
 		return ""
 	}
-	switch t := typ.(type) {
-	case *types.Slice:
-		return "[]" + typeFor(t.Elem(), importsMap)
-	case *types.Array:
-		return fmt.Sprintf("[%v]%s", t.Len(), typeFor(t.Elem(), importsMap))
-	case *types.Pointer:
-		return "*" + typeFor(t.Elem(), importsMap)
-	case *types.Map:
-		return "map[" + typeFor(t.Key(), importsMap) + "]" + typeFor(t.Elem(), importsMap)
-	case *types.Chan:
-		switch t.Dir() {
-		case types.SendRecv:
-			return "chan " + typeFor(t.Elem(), importsMap)
-		case types.SendOnly:
-			return "chan<- " + typeFor(t.Elem(), importsMap)
-		case types.RecvOnly:
-			return "<-chan " + typeFor(t.Elem(), importsMap)
+	return types.TypeString(typ, func(p *types.Package) string {
+		imp, ok := importsMap[unvendor(p.Path())]
+		if ok {
+			return imp.Alias
 		}
-
-	case *types.Basic:
-		return t.Name()
-	case *types.Interface:
-		return t.String()
-	case *types.Named:
-		if t.Obj() == nil {
-			log.Println(t.String())
-			return ""
-		}
-		if t.Obj().Pkg() == nil {
-			return t.Obj().Name()
-		}
-		imp := importsMap[unvendor(t.Obj().Pkg().Path())]
-		if imp.Path == "" {
-			return t.Obj().Name()
-		}
-
-		return imp.Alias + "." + t.Obj().Name()
-	default:
-		log.Printf("!!! WARNING: Missing case for type %s\n", reflect.TypeOf(typ).String())
-	}
-
-	return ""
+		return ""
+	})
 }
