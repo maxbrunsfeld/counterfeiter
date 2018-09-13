@@ -8,13 +8,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
-	"github.com/maxbrunsfeld/counterfeiter/locator"
 	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
@@ -44,7 +41,7 @@ func main() {
 	destinationPackage := parsedArgs.DestinationPackageName
 
 	if parsedArgs.GenerateInterfaceAndShimFromPackageDirectory {
-		generateInterfaceAndShim(parsedArgs.SourcePackageDir, outputPath, destinationPackage, parsedArgs.PrintToStdOut)
+		fail("%s", "package mode is temporarily disabled")
 	} else {
 		generateFake(parsedArgs.InterfaceName, parsedArgs.SourcePackageDir, parsedArgs.ImportPath, outputPath, destinationPackage, parsedArgs.FakeImplName, parsedArgs.PrintToStdOut)
 	}
@@ -68,56 +65,6 @@ func generateFake(interfaceName string, sourcePackageDir string, importPath stri
 
 	printCode(string(b), outputPath, printToStdOut)
 	reportDoneSimple(printToStdOut)
-}
-
-func generateInterfaceAndShim(sourceDir string, outputPath string, outPackage string, printToStdOut bool) {
-	var code string
-	functions, err := locator.GetFunctionsFromDirectory(path.Base(sourceDir), sourceDir)
-	if err != nil {
-		fail("%v", err)
-	}
-
-	interfaceName := strings.ToUpper(path.Base(sourceDir))[:1] + path.Base(sourceDir)[1:]
-
-	code, err = generator.InterfaceGenerator{
-		Model:                  functions,
-		Package:                sourceDir,
-		DestinationInterface:   interfaceName,
-		DestinationPackageName: outPackage,
-	}.GenerateInterface()
-
-	if err != nil {
-		fail("%v", err)
-	}
-	interfacePath := path.Join(outputPath, path.Base(sourceDir)+".go")
-	interfaceDir := path.Dir(interfacePath)
-
-	printCode(code, interfacePath, printToStdOut)
-
-	reportDone(printToStdOut, interfacePath, interfaceName)
-
-	sourcePackage := path.Base(sourceDir)
-
-	iface, err := locator.GetInterfaceFromFilePath(interfaceName, interfaceDir)
-	if err != nil {
-		fail("%v", err)
-	}
-
-	code, err = generator.ShimGenerator{
-		Model:         *iface,
-		StructName:    interfaceName + "Shim",
-		PackageName:   outPackage,
-		SourcePackage: sourcePackage,
-	}.GenerateReal()
-
-	if err != nil {
-		fail("%v", err)
-	}
-
-	realPath := path.Join(interfaceDir, outPackage+".go")
-
-	printCode(code, realPath, printToStdOut)
-	reportDone(printToStdOut, realPath, interfaceName+"Shim")
 }
 
 func printCode(code, outputPath string, printToStdOut bool) {
