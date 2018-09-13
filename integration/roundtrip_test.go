@@ -117,6 +117,9 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("succeeds", func() {
+					if !useGopath {
+						WriteOutput([]byte("module github.com/maxbrunsfeld/counterfeiter/fixtures\n"), filepath.Join(baseDir, "go.mod"))
+					}
 					f, err := generator.NewFake(interfaceName, "github.com/maxbrunsfeld/counterfeiter/fixtures", "Fake"+interfaceName, "fixturesfakes", baseDir)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
