@@ -9,9 +9,10 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func (f *Fake) loadPackages(packagePath string) error {
+func (f *Fake) loadPackages(packagePath string, workingDir string) error {
 	p, err := packages.Load(&packages.Config{
 		Mode: packages.LoadSyntax,
+		Dir:  workingDir,
 	}, packagePath)
 	if err != nil {
 		return err

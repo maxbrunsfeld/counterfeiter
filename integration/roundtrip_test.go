@@ -1,33 +1,27 @@
 package integration_test
 
 import (
-	"bytes"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/maxbrunsfeld/counterfeiter/generator"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
+
+	"github.com/maxbrunsfeld/counterfeiter/generator"
 )
 
-func TestRoundTrip(t *testing.T) {
+func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
-	spec.Run(t, "RoundTrip", testRoundTrip, spec.Report(report.Terminal{}))
-}
-
-func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 	var (
 		baseDir         string
 		relativeDir     string
 		originalGopath  string
-		gopath          string
+		testDir         string
 		copyDirFunc     func()
 		copyFileFunc    func(name string)
 		writeToTestData bool
@@ -37,10 +31,20 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 		RegisterTestingT(t)
 		originalGopath = os.Getenv("GOPATH")
 		var err error
-		gopath, err = ioutil.TempDir("", "counterfeiter-integration")
+		testDir, err = ioutil.TempDir("", "counterfeiter-integration")
 		Expect(err).NotTo(HaveOccurred())
-		os.Setenv("GOPATH", gopath)
-		baseDir = filepath.Join(gopath, "src", "github.com", "maxbrunsfeld", "counterfeiter", "fixtures")
+		if useGopath {
+			os.Setenv("GOPATH", testDir)
+		} else {
+			os.Unsetenv("GOPATH")
+		}
+
+		if useGopath {
+			baseDir = filepath.Join(testDir, "src", "github.com", "maxbrunsfeld", "counterfeiter", "fixtures")
+		} else {
+			baseDir = testDir
+		}
+
 		err = os.MkdirAll(baseDir, 0777)
 		Expect(err).ToNot(HaveOccurred())
 		relativeDir = filepath.Join("..", "fixtures")
@@ -78,13 +82,13 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 		if baseDir == "" {
 			return
 		}
-		err := os.RemoveAll(gopath)
+		err := os.RemoveAll(testDir)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	when("generating a fake for stdlib interfaces", func() {
 		it("succeeds", func() {
-			f, err := generator.NewFake("WriteCloser", "io", "FakeWriteCloser", "custom")
+			f, err := generator.NewFake("WriteCloser", "io", "FakeWriteCloser", "custom", baseDir)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
 			Expect(err).NotTo(HaveOccurred())
@@ -98,8 +102,11 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 			Expect(string(b2)).To(Equal(string(b)))
 		})
 	})
-
-	when("working with a GOPATH", func() {
+	name := "working with a GOPATH"
+	if !useGopath {
+		name = "working with a module"
+	}
+	when(name, func() {
 		t := func(interfaceName string, filename string, files ...string) {
 			when("working with "+filename, func() {
 				it.Before(func() {
@@ -110,7 +117,7 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("succeeds", func() {
-					f, err := generator.NewFake(interfaceName, "github.com/maxbrunsfeld/counterfeiter/fixtures", "Fake"+interfaceName, "fixturesfakes")
+					f, err := generator.NewFake(interfaceName, "github.com/maxbrunsfeld/counterfeiter/fixtures", "Fake"+interfaceName, "fixturesfakes", baseDir)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
@@ -141,7 +148,9 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 			t := func(interfaceName string, offset string, fakePackageName string) {
 				when("working with "+interfaceName, func() {
 					it.Before(func() {
-						baseDir = filepath.Join(baseDir, "dup_packages")
+						if useGopath {
+							baseDir = filepath.Join(baseDir, "dup_packages")
+						}
 						relativeDir = filepath.Join(relativeDir, "dup_packages")
 						copyDirFunc()
 					})
@@ -151,9 +160,9 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 						if offset != "" {
 							pkgPath = pkgPath + "/" + offset
 						}
-						f, err := generator.NewFake(interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName)
+						f, err := generator.NewFake(interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, baseDir)
 						Expect(err).NotTo(HaveOccurred())
-						b, err := f.Generate(true) // Flip to false to see output if goimports fails
+						b, err := f.Generate(false) // Flip to false to see output if goimports fails
 						Expect(err).NotTo(HaveOccurred())
 						if writeToTestData {
 							WriteOutput(b, filepath.Join("testdata", "output", "dup_"+strings.ToLower(interfaceName), "actual.go"))
@@ -173,7 +182,9 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 		t := func(interfaceName string, offset string, fakePackageName string) {
 			when("working with "+interfaceName, func() {
 				it.Before(func() {
-					baseDir = filepath.Join(baseDir, "vendored")
+					if useGopath {
+						baseDir = filepath.Join(baseDir, "vendored")
+					}
 					relativeDir = filepath.Join(relativeDir, "vendored")
 					copyDirFunc()
 				})
@@ -183,7 +194,7 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 					if offset != "" {
 						pkgPath = pkgPath + "/" + offset
 					}
-					f, err := generator.NewFake(interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName)
+					f, err := generator.NewFake(interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, baseDir)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
@@ -196,26 +207,8 @@ func testRoundTrip(t *testing.T, when spec.G, it spec.S) {
 			})
 		}
 
-		t("BarVendoredParameter", "bar", "barfakes")
+		if useGopath {
+			t("BarVendoredParameter", "bar", "barfakes")
+		}
 	})
-}
-
-func WriteOutput(b []byte, file string) {
-	os.MkdirAll(filepath.Dir(file), 0700)
-	ioutil.WriteFile(file, b, 0600)
-}
-
-func RunBuild(baseDir string) {
-	cmd := exec.Command("go", "build", "./...")
-	cmd.Dir = baseDir
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Println(stdout.String())
-		log.Println(stderr.String())
-	}
-	Expect(err).NotTo(HaveOccurred())
 }

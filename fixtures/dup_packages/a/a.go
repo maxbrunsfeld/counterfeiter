@@ -1,4 +1,4 @@
-package a
+package a // import "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a"
 
 import "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/foo"
 

@@ -38,7 +38,10 @@ fixtures/dup_packages/foo/foofakes/
 fixtures/dup_packages/foo/foofakes/
 fixtures/hyphenated_package_same_name/some_package/some_packagefakes/
 fixtures/alias_import_name/test/testfakes/
-fixtures/vendored
+fixtures/vendored/vendoredfakes
+fixtures/vendored/bar/barfakes
+fixtures/vendored/baz/bazfakes
 fixtures/packagegen/packagegenfakes
 .idea
 integration/testdata/output
+/counterfeiter

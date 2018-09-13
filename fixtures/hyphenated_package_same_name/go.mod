@@ -1,0 +1,1 @@
+module github.com/maxbrunsfeld/counterfeiter/fixtures/hyphenated_package_same_name

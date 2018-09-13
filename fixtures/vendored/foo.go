@@ -1,4 +1,4 @@
-package bar
+package bar // import "github.com/maxbrunsfeld/counterfeiter/fixtures/vendored"
 
 import "apackage"
 

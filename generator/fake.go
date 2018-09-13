@@ -40,7 +40,7 @@ type Method struct {
 
 // NewFake returns a Fake that loads the package and finds the interface or the
 // function.
-func NewFake(interfaceName string, packagePath string, fakeName string, destinationPackage string) (*Fake, error) {
+func NewFake(interfaceName string, packagePath string, fakeName string, destinationPackage string, workingDir string) (*Fake, error) {
 	f := &Fake{
 		TargetName:         interfaceName,
 		TargetPackage:      packagePath,
@@ -54,7 +54,7 @@ func NewFake(interfaceName string, packagePath string, fakeName string, destinat
 		},
 	}
 
-	err := f.loadPackages(packagePath)
+	err := f.loadPackages(packagePath, workingDir)
 	if err != nil {
 		return nil, err
 	}

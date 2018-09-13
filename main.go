@@ -57,7 +57,7 @@ func isDebug() bool {
 
 func generateFake(interfaceName string, sourcePackageDir string, importPath string, outputPath string, destinationPackage string, fakeName string, printToStdOut bool) {
 	reportStarting(printToStdOut, outputPath, fakeName)
-	f, err := generator.NewFake(interfaceName, importPath, fakeName, destinationPackage)
+	f, err := generator.NewFake(interfaceName, importPath, fakeName, destinationPackage, "")
 	if err != nil {
 		fail("%v", err)
 	}
