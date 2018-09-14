@@ -9,8 +9,6 @@ import (
 
 	"testing"
 
-	"github.com/maxbrunsfeld/counterfeiter/terminal/terminalfakes"
-
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
@@ -30,8 +28,6 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	var symlinkEvaler SymlinkEvaler
 	var fileStatReader FileStatReader
 
-	var ui *terminalfakes.FakeUI
-
 	var failWasCalled bool
 	var failWasCalledWithMessage string
 	var failWasCalledWithArgs []interface{}
@@ -42,7 +38,6 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			cwd,
 			symlinkEvaler,
 			fileStatReader,
-			ui,
 		)
 		parsedArgs = subject.ParseArguments(args...)
 	}
@@ -62,8 +57,6 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		cwd = func() string {
 			return "C:\\Users\\test-user\\workspace"
 		}
-
-		ui = new(terminalfakes.FakeUI)
 
 		symlinkEvaler = func(input string) (string, error) {
 			return input, nil

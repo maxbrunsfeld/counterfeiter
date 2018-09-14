@@ -12,7 +12,6 @@ import (
 
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
-	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
 func main() {
@@ -33,7 +32,6 @@ func main() {
 		cwd,
 		filepath.EvalSymlinks,
 		os.Stat,
-		terminal.NewUI(),
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
 

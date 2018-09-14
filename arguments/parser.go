@@ -9,8 +9,6 @@ import (
 	"runtime"
 	"strings"
 	"unicode"
-
-	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
 //go:generate counterfeiter . ArgumentParser
@@ -23,10 +21,8 @@ func NewArgumentParser(
 	currentWorkingDir CurrentWorkingDir,
 	symlinkEvaler SymlinkEvaler,
 	fileStatReader FileStatReader,
-	ui terminal.UI,
 ) ArgumentParser {
 	return &argumentParser{
-		ui:                ui,
 		failHandler:       failHandler,
 		currentWorkingDir: currentWorkingDir,
 		symlinkEvaler:     symlinkEvaler,
@@ -120,7 +116,6 @@ func (argParser *argumentParser) parsePackageArgs(args ...string) ParsedArgument
 }
 
 type argumentParser struct {
-	ui                terminal.UI
 	failHandler       FailHandler
 	currentWorkingDir CurrentWorkingDir
 	symlinkEvaler     SymlinkEvaler
