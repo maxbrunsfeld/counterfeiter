@@ -34,14 +34,7 @@ func main() {
 		os.Stat,
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
-
-	outputPath := parsedArgs.OutputPath
-	destinationPackage := parsedArgs.DestinationPackageName
-	if parsedArgs.GenerateInterfaceAndShimFromPackageDirectory {
-		fail("%s", "package mode is temporarily disabled")
-	} else {
-		generateFake(cwd(), parsedArgs.InterfaceName, parsedArgs.SourcePackageDir, parsedArgs.ImportPath, outputPath, destinationPackage, parsedArgs.FakeImplName, parsedArgs.PrintToStdOut)
-	}
+	generate(cwd(), parsedArgs)
 }
 
 func isDebug() bool {
@@ -49,9 +42,13 @@ func isDebug() bool {
 	return debug != ""
 }
 
-func generateFake(workingDir string, interfaceName string, sourcePackageDir string, importPath string, outputPath string, destinationPackage string, fakeName string, printToStdOut bool) {
-	reportStarting(printToStdOut, outputPath, fakeName)
-	f, err := generator.NewFake(interfaceName, importPath, fakeName, destinationPackage, workingDir)
+func generate(workingDir string, args arguments.ParsedArguments) {
+	reportStarting(args.PrintToStdOut, args.OutputPath, args.FakeImplName)
+	mode := generator.InterfaceOrFunction
+	if args.GenerateInterfaceAndShimFromPackageDirectory {
+		mode = generator.Package
+	}
+	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, workingDir)
 	if err != nil {
 		fail("%v", err)
 	}
@@ -60,8 +57,8 @@ func generateFake(workingDir string, interfaceName string, sourcePackageDir stri
 		fail("%v", err)
 	}
 
-	printCode(string(b), outputPath, printToStdOut)
-	reportDoneSimple(printToStdOut)
+	printCode(string(b), args.OutputPath, args.PrintToStdOut)
+	reportDoneSimple(args.PrintToStdOut)
 }
 
 func printCode(code, outputPath string, printToStdOut bool) {

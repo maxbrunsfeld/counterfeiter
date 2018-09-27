@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"go/types"
-	"html/template"
 	"log"
+	"strings"
+	"text/template"
 	"unicode"
 	"unicode/utf8"
 
@@ -13,11 +14,21 @@ import (
 	"golang.org/x/tools/imports"
 )
 
+// FakeMode indicates the type of Fake to generate.
+type FakeMode int
+
+// FakeMode can be Interface, Function, or Package.
+const (
+	InterfaceOrFunction FakeMode = iota
+	Package
+)
+
 // Fake is used to generate a Fake implementation of an interface.
 type Fake struct {
 	Packages           []*packages.Package
 	Package            *packages.Package
 	Target             *types.TypeName
+	Mode               FakeMode
 	DestinationPackage string
 	Name               string
 	TargetAlias        string
@@ -25,27 +36,31 @@ type Fake struct {
 	TargetPackage      string
 	Imports            []Import
 	Methods            []Method
-	Method             Method
+	Function           Method
+	WorkingDirectory   string
 }
 
 // Method is a method of the interface.
 type Method struct {
-	FakeName string
-	Name     string
-	Params   Params
-	Args     string
-	Returns  Returns
-	Rets     string
+	FakeName    string
+	FakePackage string
+	Name        string
+	Params      Params
+	Args        string
+	Returns     Returns
+	Rets        string
 }
 
 // NewFake returns a Fake that loads the package and finds the interface or the
 // function.
-func NewFake(interfaceName string, packagePath string, fakeName string, destinationPackage string, workingDir string) (*Fake, error) {
+func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName string, destinationPackage string, workingDir string) (*Fake, error) {
 	f := &Fake{
-		TargetName:         interfaceName,
+		TargetName:         targetName,
 		TargetPackage:      packagePath,
 		Name:               fakeName,
+		Mode:               fakeMode,
 		DestinationPackage: destinationPackage,
+		WorkingDirectory:   workingDir,
 		Imports: []Import{
 			Import{
 				Alias: "sync",
@@ -54,21 +69,22 @@ func NewFake(interfaceName string, packagePath string, fakeName string, destinat
 		},
 	}
 
-	err := f.loadPackages(packagePath, workingDir)
+	err := f.loadPackages()
 	if err != nil {
 		return nil, err
 	}
 
-	err = f.findPackageWithTarget()
+	// TODO: Package mode here
+	err = f.findPackage()
 	if err != nil {
 		return nil, err
 	}
 
-	if f.IsInterface() {
-		f.loadMethodsForInterface()
+	if f.IsInterface() || f.Mode == Package {
+		f.loadMethods()
 	}
 	if f.IsFunction() {
-		err := f.loadMethodForFunction()
+		err = f.loadMethodForFunction()
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +94,7 @@ func NewFake(interfaceName string, packagePath string, fakeName string, destinat
 
 // IsInterface indicates whether the fake is for an interface.
 func (f *Fake) IsInterface() bool {
-	if f.Target == nil {
+	if f.Target == nil || f.Target.Type() == nil {
 		return false
 	}
 	return types.IsInterface(f.Target.Type())
@@ -86,18 +102,29 @@ func (f *Fake) IsInterface() bool {
 
 // IsFunction indicates whether the fake is for a function..
 func (f *Fake) IsFunction() bool {
-	if f.Target == nil {
+	if f.Target == nil || f.Target.Type() == nil || f.Target.Type().Underlying() == nil {
 		return false
 	}
-	return !f.IsInterface()
+	_, ok := f.Target.Type().Underlying().(*types.Signature)
+	return ok
 }
 
 func unexport(s string) string {
+	s = strings.TrimSpace(s)
 	if s == "" {
 		return ""
 	}
 	r, n := utf8.DecodeRuneInString(s)
 	return string(unicode.ToLower(r)) + s[n:]
+}
+
+func export(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToUpper(r)) + s[n:]
 }
 
 // Generate uses the Fake to generate an implementation, optionally running
@@ -111,6 +138,10 @@ func (f *Fake) Generate(runImports bool) ([]byte, error) {
 	if f.IsFunction() {
 		log.Printf("Writing fake %s for function %s to package %s\n", f.Name, f.TargetName, f.DestinationPackage)
 		tmpl = template.Must(template.New("fake").Funcs(functionFuncs).Parse(functionTemplate))
+	}
+	if f.Mode == Package {
+		log.Printf("Writing fake %s for package %s to package %s\n", f.Name, f.TargetPackage, f.DestinationPackage)
+		tmpl = template.Must(template.New("fake").Funcs(packageFuncs).Parse(packageTemplate))
 	}
 	if tmpl == nil {
 		return nil, errors.New("counterfeiter can only generate fakes for interfaces or specific functions")

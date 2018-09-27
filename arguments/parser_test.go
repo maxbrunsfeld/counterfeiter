@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"testing"
@@ -77,12 +76,12 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 		it("doesn't parse extraneous arguments", func() {
 			Expect(parsedArgs.InterfaceName).To(Equal(""))
-			Expect(parsedArgs.FakeImplName).To(Equal(""))
+			Expect(parsedArgs.FakeImplName).To(Equal("Os"))
 		})
 
 		when("given a stdlib package", func() {
 			it("sets arguments as expected", func() {
-				Expect(parsedArgs.SourcePackageDir).To(Equal(path.Join(runtime.GOROOT(), "src/os")))
+				Expect(parsedArgs.SourcePackageDir).To(Equal("os"))
 				Expect(parsedArgs.OutputPath).To(Equal(path.Join(cwd(), "osshim")))
 				Expect(parsedArgs.DestinationPackageName).To(Equal("osshim"))
 			})
@@ -106,7 +105,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("provides a path for the interface source", func() {
-			Expect(parsedArgs.ImportPath).To(Equal("someonesinterfaces"))
+			Expect(parsedArgs.PackagePath).To(Equal("someonesinterfaces"))
 		})
 
 		it("treats the last segment as the interface to counterfeit", func() {
@@ -140,7 +139,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("provides a path for the interface source", func() {
-			Expect(parsedArgs.ImportPath).To(Equal("io"))
+			Expect(parsedArgs.PackagePath).To(Equal("io"))
 		})
 
 		it("treats the last segment as the interface to counterfeit", func() {

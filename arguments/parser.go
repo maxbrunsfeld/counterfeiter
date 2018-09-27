@@ -6,7 +6,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"unicode"
 )
@@ -43,7 +42,7 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 	var outputPathFlagValue string
 	var rootDestinationDir string
 	var sourcePackageDir string
-	var importPath string
+	var packagePath string
 
 	if outputPathFlag != nil {
 		outputPathFlagValue = *outputPathFlag
@@ -57,7 +56,7 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 		fullyQualifiedInterface := strings.Split(args[0], ".")
 		interfaceName = fullyQualifiedInterface[len(fullyQualifiedInterface)-1]
 		rootDestinationDir = argParser.currentWorkingDir()
-		importPath = strings.Join(fullyQualifiedInterface[:len(fullyQualifiedInterface)-1], ".")
+		packagePath = strings.Join(fullyQualifiedInterface[:len(fullyQualifiedInterface)-1], ".")
 	}
 
 	fakeImplName := getFakeName(interfaceName, *fakeNameFlag)
@@ -69,19 +68,19 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 	)
 
 	packageName := restrictToValidPackageName(filepath.Base(filepath.Dir(outputPath)))
-	if importPath == "" {
-		importPath = sourcePackageDir
+	if packagePath == "" {
+		packagePath = sourcePackageDir
 	}
-	if strings.HasPrefix(importPath, build.Default.GOPATH) {
-		importPath = strings.Replace(importPath, build.Default.GOPATH+"/src/", "", -1)
+	if strings.HasPrefix(packagePath, build.Default.GOPATH) {
+		packagePath = strings.Replace(packagePath, build.Default.GOPATH+"/src/", "", -1)
 	}
 
-	log.Printf("Parsed Arguments:\nInterface Name: %s\nPackage Path: %s\nDestination Package Name: %s", interfaceName, importPath, packageName)
+	log.Printf("Parsed Arguments:\nInterface Name: %s\nPackage Path: %s\nDestination Package Name: %s", interfaceName, packagePath, packageName)
 	return ParsedArguments{
 		GenerateInterfaceAndShimFromPackageDirectory: false,
 		SourcePackageDir: sourcePackageDir,
 		OutputPath:       outputPath,
-		ImportPath:       importPath,
+		PackagePath:      packagePath,
 
 		InterfaceName:          interfaceName,
 		DestinationPackageName: packageName,
@@ -92,9 +91,8 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 }
 
 func (argParser *argumentParser) parsePackageArgs(args ...string) ParsedArguments {
-	dir := argParser.getPackageDir(args[0])
-
-	packageName := path.Base(dir) + "shim"
+	packagePath := args[0]
+	packageName := path.Base(packagePath) + "shim"
 
 	var outputPath string
 	if *outputPathFlag != "" {
@@ -104,14 +102,15 @@ func (argParser *argumentParser) parsePackageArgs(args ...string) ParsedArgument
 		outputPath = path.Join(argParser.currentWorkingDir(), packageName)
 	}
 
+	log.Printf("Parsed Arguments:\nPackage Name: %s\nDestination Package Name: %s", packagePath, packageName)
 	return ParsedArguments{
 		GenerateInterfaceAndShimFromPackageDirectory: true,
-		SourcePackageDir: dir,
-		OutputPath:       outputPath,
-
+		SourcePackageDir:       packagePath,
+		OutputPath:             outputPath,
+		PackagePath:            packagePath,
 		DestinationPackageName: packageName,
-
-		PrintToStdOut: any(args, "-"),
+		FakeImplName:           strings.ToUpper(path.Base(packagePath))[:1] + path.Base(packagePath)[1:],
+		PrintToStdOut:          any(args, "-"),
 	}
 }
 
@@ -126,7 +125,7 @@ type ParsedArguments struct {
 	GenerateInterfaceAndShimFromPackageDirectory bool
 
 	SourcePackageDir string // abs path to the dir containing the interface to fake
-	ImportPath       string // import path to the package containing the interface to fake
+	PackagePath      string // package path to the package containing the interface to fake
 	OutputPath       string // path to write the fake file to
 
 	DestinationPackageName string // often the base-dir for OutputPath but must be a valid package name
@@ -172,24 +171,6 @@ func (argParser *argumentParser) getOutputPath(rootDestinationDir, fakeName, out
 func packageNameForPath(pathToPackage string) string {
 	_, packageName := filepath.Split(pathToPackage)
 	return packageName + "fakes"
-}
-
-func (argParser *argumentParser) getPackageDir(arg string) string {
-	if filepath.IsAbs(arg) {
-		return arg
-	}
-
-	pathToCheck := path.Join(runtime.GOROOT(), "src", arg)
-
-	stat, err := argParser.fileStatReader(pathToCheck)
-	if err != nil {
-		argParser.failHandler("No such file or directory '%s'", arg)
-	}
-	if !stat.IsDir() {
-		argParser.failHandler("No such file or directory '%s'", arg)
-	}
-
-	return pathToCheck
 }
 
 func (argParser *argumentParser) getSourceDir(path string) string {

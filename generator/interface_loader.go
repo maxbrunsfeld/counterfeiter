@@ -19,7 +19,7 @@ func (f *Fake) addTypesForMethod(sig *types.Signature) {
 	}
 }
 
-func methodForSignature(sig *types.Signature, fakeName string, methodName string, importsMap map[string]Import) Method {
+func methodForSignature(sig *types.Signature, fakeName string, fakePackage string, methodName string, importsMap map[string]Import) Method {
 	params := []Param{}
 	for i := 0; i < sig.Params().Len(); i++ {
 		param := sig.Params().At(i)
@@ -46,25 +46,64 @@ func methodForSignature(sig *types.Signature, fakeName string, methodName string
 		returns = append(returns, r)
 	}
 	return Method{
-		FakeName: fakeName,
-		Name:     methodName,
-		Returns:  returns,
-		Params:   params,
+		FakeName:    fakeName,
+		FakePackage: fakePackage,
+		Name:        methodName,
+		Returns:     returns,
+		Params:      params,
 	}
 }
 
-func (f *Fake) loadMethodsForInterface() {
-	methods := typeutil.IntuitiveMethodSet(f.Target.Type(), nil)
+// interfaceMethodSet identifies the methods that are exported for a given
+// interface.
+func interfaceMethodSet(t types.Type) []*rawMethod {
+	if t == nil {
+		return nil
+	}
+	var result []*rawMethod
+	methods := typeutil.IntuitiveMethodSet(t, nil)
 	for i := range methods {
-		sig := methods[i].Type().(*types.Signature)
-		f.addTypesForMethod(sig)
+		if methods[i].Obj() == nil || methods[i].Type() == nil {
+			continue
+		}
+		fun, ok := methods[i].Obj().(*types.Func)
+		if !ok {
+			continue
+		}
+		if methods[i].Type() == nil {
+			continue
+		}
+		sig, ok := methods[i].Type().(*types.Signature)
+		if !ok {
+			continue
+		}
+		result = append(result, &rawMethod{
+			Func:      fun,
+			Signature: sig,
+		})
+	}
+
+	return result
+}
+
+func (f *Fake) loadMethods() {
+	var methods []*rawMethod
+	if f.Mode == Package {
+		methods = packageMethodSet(f.Package)
+	} else {
+		if !f.IsInterface() || f.Target == nil || f.Target.Type() == nil {
+			return
+		}
+		methods = interfaceMethodSet(f.Target.Type())
+	}
+
+	for i := range methods {
+		f.addTypesForMethod(methods[i].Signature)
 	}
 
 	importsMap := f.importsMap()
 	for i := range methods {
-		sig := methods[i].Type().(*types.Signature)
-		fun := methods[i].Obj().(*types.Func)
-		method := methodForSignature(sig, f.Name, fun.Name(), importsMap)
+		method := methodForSignature(methods[i].Signature, f.Name, f.TargetAlias, methods[i].Func.Name(), importsMap)
 		f.Methods = append(f.Methods, method)
 	}
 }

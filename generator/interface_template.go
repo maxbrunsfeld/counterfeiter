@@ -1,8 +1,8 @@
 package generator
 
 import (
-	"html/template"
 	"strings"
+	"text/template"
 )
 
 var interfaceFuncs template.FuncMap = template.FuncMap{

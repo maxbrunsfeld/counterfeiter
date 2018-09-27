@@ -1,17 +1,19 @@
 package generator
 
 import (
-	"log"
 	"strings"
 )
 
+// Returns is a slice of Return.
 type Returns []Return
 
+// Return is the result of a method's invocation.
 type Return struct {
 	Name string
 	Type string
 }
 
+// HasLength is true if there are returns, else false.
 func (r Returns) HasLength() bool {
 	return len(r) > 0
 }
@@ -39,7 +41,6 @@ func (r Returns) AsArgs() string {
 
 	rets := []string{}
 	for i := range r {
-		log.Println(r[i].Type)
 		rets = append(rets, r[i].Type)
 	}
 	return strings.Join(rets, ", ")

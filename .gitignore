@@ -45,3 +45,4 @@ fixtures/packagegen/packagegenfakes
 .idea
 integration/testdata/output
 /counterfeiter
+.envrc

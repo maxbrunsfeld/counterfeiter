@@ -17,13 +17,12 @@ type Import struct {
 func (f *Fake) AddImport(alias string, path string) Import {
 	path = unvendor(strings.TrimSpace(path))
 	alias = strings.TrimSpace(alias)
-	log.Printf("Adding import: %s > %s\n", alias, path)
 	for i := range f.Imports {
 		if f.Imports[i].Path == path {
 			return f.Imports[i]
 		}
 	}
-
+	log.Printf("Adding import: %s > %s\n", alias, path)
 	result := Import{
 		Alias: alias,
 		Path:  path,

@@ -1,8 +1,8 @@
 package generator
 
 import (
-	"html/template"
 	"strings"
+	"text/template"
 )
 
 var functionFuncs template.FuncMap = template.FuncMap{
@@ -21,21 +21,21 @@ import (
 )
 
 type {{.Name}} struct {
-	Stub func({{.Method.Params.AsArgs}}) {{.Method.Returns.AsReturnSignature}}
+	Stub func({{.Function.Params.AsArgs}}) {{.Function.Returns.AsReturnSignature}}
 	mutex sync.RWMutex
 	argsForCall []struct{
-		{{- range .Method.Params}}
+		{{- range .Function.Params}}
 		{{.Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
 		{{- end}}
 	}
-	{{- if .Method.Returns.HasLength}}
+	{{- if .Function.Returns.HasLength}}
 	returns struct{
-		{{- range .Method.Returns}}
+		{{- range .Function.Returns}}
 		{{UnExport .Name}} {{.Type}}
 		{{- end}}
 	}
 	returnsOnCall map[int]struct{
-		{{- range .Method.Returns}}
+		{{- range .Function.Returns}}
 		{{UnExport .Name}} {{.Type}}
 		{{- end}}
 	}
@@ -44,8 +44,8 @@ type {{.Name}} struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *{{.Method.FakeName}}) Spy({{.Method.Params.AsNamedArgsWithTypes}}) {{.Method.Returns.AsReturnSignature}} {
-	{{- range .Method.Params.Slices}}
+func (fake *{{.Function.FakeName}}) Spy({{.Function.Params.AsNamedArgsWithTypes}}) {{.Function.Returns.AsReturnSignature}} {
+	{{- range .Function.Params.Slices}}
 	var {{UnExport .Name}}Copy {{.Type}}
 	if {{UnExport .Name}} != nil {
 		{{UnExport .Name}}Copy = make({{.Type}}, len({{UnExport .Name}}))
@@ -53,67 +53,67 @@ func (fake *{{.Method.FakeName}}) Spy({{.Method.Params.AsNamedArgsWithTypes}}) {
 	}
 	{{- end}}
 	fake.mutex.Lock()
-	{{if .Method.Returns.HasLength}}ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
+	{{if .Function.Returns.HasLength}}ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	{{end}}fake.argsForCall = append(fake.argsForCall, struct{
-		{{- range .Method.Params}}
+		{{- range .Function.Params}}
 		{{.Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
 		{{- end}}
-	}{ {{- .Method.Params.AsNamedArgs -}} })
-	fake.recordInvocation("{{.TargetName}}", []interface{}{ {{- if .Method.Params.HasLength}}{{.Method.Params.AsNamedArgs}}{{end -}} })
+	}{ {{- .Function.Params.AsNamedArgs -}} })
+	fake.recordInvocation("{{.TargetName}}", []interface{}{ {{- if .Function.Params.HasLength}}{{.Function.Params.AsNamedArgs}}{{end -}} })
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
-		{{if .Method.Returns.HasLength}}return fake.Stub({{.Method.Params.AsNamedArgsForInvocation}}){{else}}fake.Stub({{.Method.Params.AsNamedArgsForInvocation}}){{end}}
+		{{if .Function.Returns.HasLength}}return fake.Stub({{.Function.Params.AsNamedArgsForInvocation}}){{else}}fake.Stub({{.Function.Params.AsNamedArgsForInvocation}}){{end}}
 	}
-	{{- if .Method.Returns.HasLength}}
+	{{- if .Function.Returns.HasLength}}
 	if specificReturn {
-		return {{.Method.Returns.WithPrefix "ret."}}
+		return {{.Function.Returns.WithPrefix "ret."}}
 	}
-	return {{.Method.Returns.WithPrefix "fake.returns."}}
+	return {{.Function.Returns.WithPrefix "fake.returns."}}
 	{{- end}}
 }
 
-func (fake *{{.Method.FakeName}}) CallCount() int {
+func (fake *{{.Function.FakeName}}) CallCount() int {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
 	return len(fake.argsForCall)
 }
 
-{{if .Method.Params.HasLength -}}
-func (fake *{{.Method.FakeName}}) ArgsForCall(i int) {{.Method.Params.AsReturnSignature}} {
+{{if .Function.Params.HasLength -}}
+func (fake *{{.Function.FakeName}}) ArgsForCall(i int) {{.Function.Params.AsReturnSignature}} {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
-	return {{.Method.Params.WithPrefix "fake.argsForCall[i]."}}
+	return {{.Function.Params.WithPrefix "fake.argsForCall[i]."}}
 }
 {{- end}}
 
-{{if .Method.Returns.HasLength -}}
-func (fake *{{.Method.FakeName}}) Returns({{.Method.Returns.AsNamedArgsWithTypes}}) {
+{{if .Function.Returns.HasLength -}}
+func (fake *{{.Function.FakeName}}) Returns({{.Function.Returns.AsNamedArgsWithTypes}}) {
 	fake.Stub = nil
 	fake.returns = struct {
-		{{- range .Method.Returns}}
+		{{- range .Function.Returns}}
 		{{UnExport .Name}} {{.Type}}
 		{{- end}}
-	}{ {{- .Method.Returns.AsNamedArgs -}} }
+	}{ {{- .Function.Returns.AsNamedArgs -}} }
 }
 
-func (fake *{{.Method.FakeName}}) ReturnsOnCall(i int, {{.Method.Returns.AsNamedArgsWithTypes}}) {
+func (fake *{{.Function.FakeName}}) ReturnsOnCall(i int, {{.Function.Returns.AsNamedArgsWithTypes}}) {
 	fake.Stub = nil
 	if fake.returnsOnCall == nil {
 		fake.returnsOnCall = make(map[int]struct {
-			{{- range .Method.Returns}}
+			{{- range .Function.Returns}}
 			{{UnExport .Name}} {{.Type}}
 			{{- end}}
 		})
 	}
 	fake.returnsOnCall[i] = struct {
-		{{- range .Method.Returns}}
+		{{- range .Function.Returns}}
 		{{UnExport .Name}} {{.Type}}
 		{{- end}}
-	}{ {{- .Method.Returns.AsNamedArgs -}} }
+	}{ {{- .Function.Returns.AsNamedArgs -}} }
 }
 {{- end}}
 
-func (fake *{{.Method.FakeName}}) Invocations() map[string][][]interface{} {
+func (fake *{{.Function.FakeName}}) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.mutex.RLock()

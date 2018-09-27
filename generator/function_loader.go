@@ -16,7 +16,7 @@ func (f *Fake) loadMethodForFunction() error {
 	}
 	f.addTypesForMethod(sig)
 	importsMap := f.importsMap()
-	method := methodForSignature(sig, f.Name, f.TargetName, importsMap)
-	f.Method = method
+	function := methodForSignature(sig, f.Name, f.TargetAlias, f.TargetName, importsMap)
+	f.Function = function
 	return nil
 }
