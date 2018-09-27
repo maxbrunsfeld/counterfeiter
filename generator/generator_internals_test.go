@@ -236,14 +236,16 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					err := f.findPackage()
 					Expect(err).NotTo(HaveOccurred())
 					methods := packageMethodSet(f.Package)
-					Expect(len(methods)).To(Equal(52))
+					Expect(len(methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
+					Expect(len(methods)).To(BeNumerically("<=", 52))
 				})
 
 				it("can load the methods", func() {
 					err := f.findPackage()
 					Expect(err).NotTo(HaveOccurred())
 					f.loadMethods()
-					Expect(len(f.Methods)).To(Equal(52))
+					Expect(len(f.Methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
+					Expect(len(f.Methods)).To(BeNumerically("<=", 52))
 					Expect(len(f.Imports)).To(Equal(2))
 				})
 			})
