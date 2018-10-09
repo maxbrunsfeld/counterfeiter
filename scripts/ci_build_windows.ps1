@@ -17,7 +17,8 @@ echo "getting test dependencies..."
 echo "----------------------------"
 echo ""
 
-go get -t .
+cd $GOPATH\src\github.com\maxbrunsfeld\counterfeiter
+go get -t ./...
 if ($LASTEXITCODE -ne 0) {
   ExitWithCode -exitcode $LASTEXITCODE
 }
