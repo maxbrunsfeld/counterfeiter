@@ -4,6 +4,7 @@ clone_folder: c:\gopath\src\github.com\maxbrunsfeld\counterfeiter
 
 environment:
   GOPATH: c:\gopath
+  GO111MODULE: off
 
 install:
   - echo %PATH%
