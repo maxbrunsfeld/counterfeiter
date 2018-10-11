@@ -18,13 +18,15 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	var (
-		baseDir         string
-		relativeDir     string
-		originalGopath  string
-		testDir         string
-		copyDirFunc     func()
-		copyFileFunc    func(name string)
-		writeToTestData bool
+		baseDir             string
+		relativeDir         string
+		originalGopath      string
+		originalGo111module string
+		testDir             string
+		copyDirFunc         func()
+		copyFileFunc        func(name string)
+		initModuleFunc      func()
+		writeToTestData     bool
 	)
 
 	name := "working with a GOPATH"
@@ -34,6 +36,12 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		RegisterTestingT(t)
+		originalGo111module = os.Getenv("GO111MODULE")
+		if useGopath {
+			os.Setenv("GO111MODULE", "off")
+		} else {
+			os.Setenv("GO111MODULE", "on")
+		}
 		originalGopath = os.Getenv("GOPATH")
 		var err error
 		testDir, err = ioutil.TempDir("", "counterfeiter-integration")
@@ -73,12 +81,22 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 			err = ioutil.WriteFile(filepath.Join(baseDir, name), b, 0755)
 			Expect(err).ToNot(HaveOccurred())
 		}
+		initModuleFunc = func() {
+			copyFileFunc("blank.go")
+			err := ioutil.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/fixtures"), 0755)
+			Expect(err).ToNot(HaveOccurred())
+		}
 		// Set this to true to write the output of tests to the testdata/output
 		// directory 🙃 happy debugging!
 		writeToTestData = false
 	})
 
 	it.After(func() {
+		if originalGo111module != "" {
+			os.Setenv("GO111MODULE", originalGo111module)
+		} else {
+			os.Unsetenv("GO111MODULE")
+		}
 		if originalGopath != "" {
 			os.Setenv("GOPATH", originalGopath)
 		} else {
@@ -93,6 +111,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 
 	when("generating a fake for stdlib interfaces", func() {
 		it("succeeds", func() {
+			initModuleFunc()
 			f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "custom", baseDir)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
@@ -110,6 +129,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 
 	when("generating an interface for a package", func() {
 		it("succeeds", func() {
+			initModuleFunc()
 			f, err := generator.NewFake(generator.Package, "", "os", "Os", "custom", baseDir)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails

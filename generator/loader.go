@@ -5,6 +5,7 @@ import (
 	"go/types"
 	"log"
 	"reflect"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -16,11 +17,24 @@ func (f *Fake) loadPackages() error {
 		Dir:   f.WorkingDirectory,
 		Tests: true,
 	}, f.TargetPackage)
-	log.Printf("loaded %v packages\n", len(p))
+	if err != nil {
+		return err
+	}
+	for i := range p {
+		if len(p[i].Errors) > 0 {
+			if err == nil {
+				err = p[i].Errors[0]
+			}
+			for j := range p[i].Errors {
+				log.Printf("error loading packages: %v", strings.TrimPrefix(fmt.Sprintf("%v", p[i].Errors[j]), "-: "))
+			}
+		}
+	}
 	if err != nil {
 		return err
 	}
 	f.Packages = p
+	log.Printf("loaded %v packages\n", len(f.Packages))
 	return nil
 }
 

@@ -1,9 +1,14 @@
 language: go
+
 go:
-  - "1.10"
   - 1.11
   - tip
+
+env:
+  - GO111MODULE=on
+
+install: true
+
+script: scripts/ci.sh
+
 sudo : false # uses new containerized infrastructure
-go_import_path: github.com/maxbrunsfeld/counterfeiter
-install: scripts/deps.sh
-script: scripts/test.sh
