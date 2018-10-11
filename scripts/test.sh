@@ -6,21 +6,27 @@ cd "$(dirname "$0")/.."
 
 # counterfeit all the things
 echo
+echo "Installing counterfeiter..."
+echo
+go install .
+
+# counterfeit all the things
+echo
 echo "Generating fakes used by tests..."
 echo
-scripts/make_fakes.sh
+go generate ./...
 
 # check that the fakes compile
 echo
 echo "Ensuring generated fakes compile..."
 echo
-find ./fixtures/ -type d -name '*fakes' -print0 | xargs -0 go build
+go build -v ./...
 
 # run the tests using the fakes
 echo
 echo "Running tests..."
 echo
-go list ./... | grep -v /vendored | xargs go test -v -race
+go test -race ./...
 
 # remove any generated fakes
 # this is important because users may have the repo

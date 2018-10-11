@@ -13,31 +13,28 @@ function ExitWithCode
     exit
 }
 
-echo "getting test dependencies..."
-echo "----------------------------"
+echo "installing counterfeiter..."
+echo "---------------------------"
 echo ""
-
-cd $GOPATH\src\github.com\maxbrunsfeld\counterfeiter
-go get -t ./...
+go install .
 if ($LASTEXITCODE -ne 0) {
   ExitWithCode -exitcode $LASTEXITCODE
 }
-
-echo "building counterfeiter..."
-echo "-------------------------"
-echo ""
-go build github.com/maxbrunsfeld/counterfeiter
-if ($LASTEXITCODE -ne 0) {
-  ExitWithCode -exitcode $LASTEXITCODE
-}
-
-remove-item ./counterfeiter.exe
+set-alias counterfeiter counterfeiter.exe
 
 echo "generating fakes..."
 echo "-------------------"
 echo ""
-set-alias counterfeiter counterfeiter.exe
+
 go generate ./...
+if ($LASTEXITCODE -ne 0) {
+  ExitWithCode -exitcode $LASTEXITCODE
+}
+
+echo "ensuring generated fakes compile..."
+echo "-----------------------------------"
+echo ""
+go build -v ./...
 if ($LASTEXITCODE -ne 0) {
   ExitWithCode -exitcode $LASTEXITCODE
 }
