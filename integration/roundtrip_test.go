@@ -196,38 +196,4 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 			t("AliasV1", "", "dup_packagesfakes")
 		})
 	})
-
-	when("working with vendored packages", func() {
-		t := func(interfaceName string, offset string, fakePackageName string) {
-			when("working with "+interfaceName, func() {
-				it.Before(func() {
-					if useGopath {
-						baseDir = filepath.Join(baseDir, "vendored")
-					}
-					relativeDir = filepath.Join(relativeDir, "vendored")
-					copyDirFunc()
-				})
-
-				it("succeeds", func() {
-					pkgPath := "github.com/maxbrunsfeld/counterfeiter/fixtures/vendored"
-					if offset != "" {
-						pkgPath = pkgPath + "/" + offset
-					}
-					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, baseDir)
-					Expect(err).NotTo(HaveOccurred())
-					b, err := f.Generate(true) // Flip to false to see output if goimports fails
-					Expect(err).NotTo(HaveOccurred())
-					if writeToTestData {
-						WriteOutput(b, filepath.Join("testdata", "output", "vendored_"+strings.ToLower(interfaceName), "actual.go"))
-					}
-					WriteOutput(b, filepath.Join(baseDir, offset, fakePackageName, "fake_"+strings.ToLower(interfaceName)+".go"))
-					RunBuild(filepath.Join(baseDir, offset, fakePackageName))
-				})
-			})
-		}
-
-		if useGopath {
-			t("BarVendoredParameter", "bar", "barfakes")
-		}
-	})
 }
