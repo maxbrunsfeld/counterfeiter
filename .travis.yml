@@ -3,7 +3,7 @@ language: go
 matrix:
   include:
   - go: "1.10.x"
-    script: go get -u -t ./... && scripts/ci.sh
+    script: scripts/deps.sh && scripts/ci.sh
   - go: "1.11.x"
     script: scripts/ci.sh
   - go: "tip"
