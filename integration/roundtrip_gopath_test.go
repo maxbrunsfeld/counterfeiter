@@ -2,8 +2,8 @@ package integration_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,8 +37,8 @@ func RunBuild(baseDir string) {
 	cmd.Stderr = stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Println(stdout.String())
-		log.Println(stderr.String())
+		fmt.Println(stdout.String())
+		fmt.Println(stderr.String())
 	}
 	Expect(err).NotTo(HaveOccurred())
 }
