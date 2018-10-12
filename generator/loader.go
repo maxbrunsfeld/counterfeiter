@@ -22,7 +22,7 @@ func (f *Fake) loadPackages() error {
 	}
 	for i := range p {
 		if len(p[i].Errors) > 0 {
-			if err == nil {
+			if i == 0 {
 				err = p[i].Errors[0]
 			}
 			for j := range p[i].Errors {
