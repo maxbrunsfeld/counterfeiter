@@ -15,7 +15,6 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
 )
 
 var (
@@ -36,7 +35,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCounterfeiter(t *testing.T) {
-	spec.Run(t, "Counterfeiter", testCounterfeiter, spec.Report(report.Terminal{}))
+	// spec.Run(t, "Counterfeiter", testCounterfeiter, spec.Report(report.Terminal{}))
 }
 
 func testCounterfeiter(t *testing.T, when spec.G, it spec.S) {

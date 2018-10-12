@@ -6,3 +6,4 @@ go list -f '{{ join .Imports "\n"}}{{"\n"}}{{ join .TestImports "\n" }}{{"\n"}}{
     | sort \
     | uniq \
     | xargs go get -v
+go get -u golang.org/x/tools/...

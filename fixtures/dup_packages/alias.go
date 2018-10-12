@@ -1,14 +1,14 @@
-package dup_packages
+package dup_packages // import "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages"
 
 import (
 	"github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a"
-	av1 "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/v1"
-	"github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/v1"
+	afoo "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/foo"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo"
 )
 
 //go:generate counterfeiter . AliasV1
 type AliasV1 interface {
 	a.A
-	av1.I
-	v1.I
+	afoo.I
+	foo.I
 }

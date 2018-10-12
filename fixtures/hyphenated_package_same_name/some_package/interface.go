@@ -1,4 +1,4 @@
-package some_package
+package some_package // import "github.com/maxbrunsfeld/counterfeiter/fixtures/hyphenated_package_same_name/some_package"
 
 import "github.com/maxbrunsfeld/counterfeiter/fixtures/hyphenated_package_same_name/hyphen-ated/some_package"
 

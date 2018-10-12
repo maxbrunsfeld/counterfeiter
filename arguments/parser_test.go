@@ -7,12 +7,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"testing"
-
-	"github.com/maxbrunsfeld/counterfeiter/terminal/terminalfakes"
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
@@ -33,8 +30,6 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	var symlinkEvaler SymlinkEvaler
 	var fileStatReader FileStatReader
 
-	var ui *terminalfakes.FakeUI
-
 	var failWasCalled bool
 	var failWasCalledWithMessage string
 	var failWasCalledWithArgs []interface{}
@@ -45,7 +40,6 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			cwd,
 			symlinkEvaler,
 			fileStatReader,
-			ui,
 		)
 		parsedArgs = subject.ParseArguments(args...)
 	}
@@ -65,8 +59,6 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			return "/home/test-user/workspace"
 		}
 
-		ui = new(terminalfakes.FakeUI)
-
 		symlinkEvaler = func(input string) (string, error) {
 			return input, nil
 		}
@@ -84,12 +76,12 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 		it("doesn't parse extraneous arguments", func() {
 			Expect(parsedArgs.InterfaceName).To(Equal(""))
-			Expect(parsedArgs.FakeImplName).To(Equal(""))
+			Expect(parsedArgs.FakeImplName).To(Equal("Os"))
 		})
 
 		when("given a stdlib package", func() {
 			it("sets arguments as expected", func() {
-				Expect(parsedArgs.SourcePackageDir).To(Equal(path.Join(runtime.GOROOT(), "src/os")))
+				Expect(parsedArgs.SourcePackageDir).To(Equal("os"))
 				Expect(parsedArgs.OutputPath).To(Equal(path.Join(cwd(), "osshim")))
 				Expect(parsedArgs.DestinationPackageName).To(Equal("osshim"))
 			})
@@ -113,7 +105,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("provides a path for the interface source", func() {
-			Expect(parsedArgs.ImportPath).To(Equal("someonesinterfaces"))
+			Expect(parsedArgs.PackagePath).To(Equal("someonesinterfaces"))
 		})
 
 		it("treats the last segment as the interface to counterfeit", func() {
@@ -147,7 +139,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("provides a path for the interface source", func() {
-			Expect(parsedArgs.ImportPath).To(Equal("io"))
+			Expect(parsedArgs.PackagePath).To(Equal("io"))
 		})
 
 		it("treats the last segment as the interface to counterfeit", func() {

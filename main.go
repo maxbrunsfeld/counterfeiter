@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"go/format"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
-	"github.com/maxbrunsfeld/counterfeiter/locator"
-	"github.com/maxbrunsfeld/counterfeiter/model"
-	"github.com/maxbrunsfeld/counterfeiter/terminal"
 )
 
 func main() {
+	log.SetFlags(log.Lshortfile)
+	if !isDebug() {
+		log.SetOutput(ioutil.Discard)
+	}
 	flag.Parse()
 	args := flag.Args()
 
@@ -31,95 +32,33 @@ func main() {
 		cwd,
 		filepath.EvalSymlinks,
 		os.Stat,
-		terminal.NewUI(),
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
-
-	outputPath := parsedArgs.OutputPath
-	destinationPackage := parsedArgs.DestinationPackageName
-
-	if parsedArgs.GenerateInterfaceAndShimFromPackageDirectory {
-		generateInterfaceAndShim(parsedArgs.SourcePackageDir, outputPath, destinationPackage, parsedArgs.PrintToStdOut)
-	} else {
-		generateFake(parsedArgs.InterfaceName, parsedArgs.SourcePackageDir, parsedArgs.ImportPath, outputPath, destinationPackage, parsedArgs.FakeImplName, parsedArgs.PrintToStdOut)
-	}
+	generate(cwd(), parsedArgs)
 }
 
-func generateFake(interfaceName, sourcePackageDir, importPath, outputPath, destinationPackage, fakeName string, printToStdOut bool) {
-	var err error
-	var iface *model.InterfaceToFake
-	if sourcePackageDir == "" {
-		iface, err = locator.GetInterfaceFromImportPath(interfaceName, importPath)
-	} else {
-		iface, err = locator.GetInterfaceFromFilePath(interfaceName, sourcePackageDir)
-	}
-	if err != nil {
-		fail("%v", err)
-	}
-
-	var code string
-	code, err = generator.CodeGenerator{
-		Model:       *iface,
-		StructName:  fakeName,
-		PackageName: destinationPackage,
-	}.GenerateFake()
-
-	if err != nil {
-		fail("%v", err)
-	}
-
-	printCode(code, outputPath, printToStdOut)
-	reportDone(printToStdOut, outputPath, fakeName)
+func isDebug() bool {
+	debug := os.Getenv("COUNTERFEITER_DEBUG")
+	return debug != ""
 }
 
-func generateInterfaceAndShim(sourceDir string, outputPath string, outPackage string, printToStdOut bool) {
-	var code string
-	functions, err := locator.GetFunctionsFromDirectory(path.Base(sourceDir), sourceDir)
+func generate(workingDir string, args arguments.ParsedArguments) {
+	reportStarting(args.PrintToStdOut, args.OutputPath, args.FakeImplName)
+	mode := generator.InterfaceOrFunction
+	if args.GenerateInterfaceAndShimFromPackageDirectory {
+		mode = generator.Package
+	}
+	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, workingDir)
+	if err != nil {
+		fail("%v", err)
+	}
+	b, err := f.Generate(true)
 	if err != nil {
 		fail("%v", err)
 	}
 
-	interfaceName := strings.ToUpper(path.Base(sourceDir))[:1] + path.Base(sourceDir)[1:]
-
-	code, err = generator.InterfaceGenerator{
-		Model:                  functions,
-		Package:                sourceDir,
-		DestinationInterface:   interfaceName,
-		DestinationPackageName: outPackage,
-	}.GenerateInterface()
-
-	if err != nil {
-		fail("%v", err)
-	}
-	interfacePath := path.Join(outputPath, path.Base(sourceDir)+".go")
-	interfaceDir := path.Dir(interfacePath)
-
-	printCode(code, interfacePath, printToStdOut)
-
-	reportDone(printToStdOut, interfacePath, interfaceName)
-
-	sourcePackage := path.Base(sourceDir)
-
-	iface, err := locator.GetInterfaceFromFilePath(interfaceName, interfaceDir)
-	if err != nil {
-		fail("%v", err)
-	}
-
-	code, err = generator.ShimGenerator{
-		Model:         *iface,
-		StructName:    interfaceName + "Shim",
-		PackageName:   outPackage,
-		SourcePackage: sourcePackage,
-	}.GenerateReal()
-
-	if err != nil {
-		fail("%v", err)
-	}
-
-	realPath := path.Join(interfaceDir, outPackage+".go")
-
-	printCode(code, realPath, printToStdOut)
-	reportDone(printToStdOut, realPath, interfaceName+"Shim")
+	printCode(string(b), args.OutputPath, args.PrintToStdOut)
+	reportDoneSimple(args.PrintToStdOut)
 }
 
 func printCode(code, outputPath string, printToStdOut bool) {
@@ -144,6 +83,37 @@ func printCode(code, outputPath string, printToStdOut bool) {
 			fail("Couldn't write to fake file - %v", err)
 		}
 	}
+}
+
+func reportStarting(printToStdOut bool, outputPath, fakeName string) {
+	rel, err := filepath.Rel(cwd(), outputPath)
+	if err != nil {
+		fail("%v", err)
+	}
+
+	var writer io.Writer
+	if printToStdOut {
+		writer = os.Stderr
+	} else {
+		writer = os.Stdout
+	}
+
+	msg := fmt.Sprintf("Writing `%s` to `%s`... ", fakeName, rel)
+	if isDebug() {
+		msg = msg + "\n"
+	}
+	fmt.Fprint(writer, msg)
+}
+
+func reportDoneSimple(printToStdOut bool) {
+	var writer io.Writer
+	if printToStdOut {
+		writer = os.Stderr
+	} else {
+		writer = os.Stdout
+	}
+
+	fmt.Fprint(writer, "Done\n")
 }
 
 func reportDone(printToStdOut bool, outputPath, fakeName string) {
@@ -171,7 +141,7 @@ func cwd() string {
 }
 
 func fail(s string, args ...interface{}) {
-	fmt.Printf(s+"\n", args...)
+	fmt.Printf("\n"+s+"\n", args...)
 	os.Exit(1)
 }
 

@@ -91,7 +91,7 @@ Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interfac
 
 ### Running The Tests For `counterfeiter`
 
-If you want to run the tests for `counterfeiter` (perhaps, because you want to contribute a PR), all you have to do is run `scripts/test.sh`.
+If you want to run the tests for `counterfeiter` (perhaps, because you want to contribute a PR), all you have to do is run `scripts/ci.sh`.
 
 ### Contributions
 
