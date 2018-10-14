@@ -180,6 +180,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		t("SecondInterface", "multiple_interfaces.go")
 		t("RequestFactory", "request_factory.go")
 		t("ReusesArgTypes", "reuses_arg_types.go")
+		t("SomethingWithForeignInterface", "something_remote.go", filepath.Join("aliased_package", "in_aliased_package.go"))
 		t("Something", "something.go")
 		t("SomethingFactory", "typed_function.go")
 
