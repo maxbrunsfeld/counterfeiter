@@ -34,6 +34,12 @@ func (f *Fake) AddImport(alias string, path string) Import {
 // SortImports sorts imports alphabetically.
 func (f *Fake) sortImports() {
 	sort.SliceStable(f.Imports, func(i, j int) bool {
+		if f.Imports[i].Path == "sync" {
+			return true
+		}
+		if f.Imports[j].Path == "sync" {
+			return false
+		}
 		return f.Imports[i].Path < f.Imports[j].Path
 	})
 }

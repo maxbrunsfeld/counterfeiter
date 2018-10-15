@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -88,7 +89,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		}
 		// Set this to true to write the output of tests to the testdata/output
 		// directory 🙃 happy debugging!
-		writeToTestData = false
+		// writeToTestData = true
 	})
 
 	it.After(func() {
@@ -143,9 +144,14 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when(name, func() {
-		t := func(interfaceName string, filename string, files ...string) {
+		t := func(interfaceName string, filename string, subDir string, files ...string) {
 			when("working with "+filename, func() {
 				it.Before(func() {
+					if subDir != "" {
+						baseDir = filepath.Join(baseDir, subDir)
+						relativeDir = filepath.Join(relativeDir, subDir)
+					}
+					log.Println(testDir)
 					copyFileFunc(filename)
 					for i := range files {
 						copyFileFunc(files[i])
@@ -153,10 +159,14 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("succeeds", func() {
-					if !useGopath {
-						WriteOutput([]byte("module github.com/maxbrunsfeld/counterfeiter/fixtures\n"), filepath.Join(baseDir, "go.mod"))
+					suffix := strings.Replace(subDir, "\\", "/", -1)
+					if suffix != "" {
+						suffix = "/" + suffix
 					}
-					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, "github.com/maxbrunsfeld/counterfeiter/fixtures", "Fake"+interfaceName, "fixturesfakes", baseDir)
+					if !useGopath {
+						WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
+					}
+					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", baseDir)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
@@ -168,22 +178,23 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 		}
-		t("SomethingElse", "compound_return.go")
-		t("DotImports", "dot_imports.go")
-		t("EmbedsInterfaces", "embeds_interfaces.go", filepath.Join("another_package", "types.go"))
-		t("AliasedInterface", "aliased_interfaces.go", filepath.Join("another_package", "types.go"))
-		t("HasImports", "has_imports.go")
-		t("HasOtherTypes", "has_other_types.go", "other_types.go")
-		t("HasVarArgs", "has_var_args.go")
-		t("HasVarArgsWithLocalTypes", "has_var_args.go")
-		t("ImportsGoHyphenPackage", "imports_go_hyphen_package.go", filepath.Join("go-hyphenpackage", "fixture.go"))
-		t("FirstInterface", "multiple_interfaces.go")
-		t("SecondInterface", "multiple_interfaces.go")
-		t("RequestFactory", "request_factory.go")
-		t("ReusesArgTypes", "reuses_arg_types.go")
-		t("SomethingWithForeignInterface", "something_remote.go", filepath.Join("aliased_package", "in_aliased_package.go"))
-		t("Something", "something.go")
-		t("SomethingFactory", "typed_function.go")
+		t("SomethingElse", "compound_return.go", "")
+		t("DotImports", "dot_imports.go", "")
+		t("EmbedsInterfaces", "embeds_interfaces.go", "", filepath.Join("another_package", "types.go"))
+		t("AliasedInterface", "aliased_interfaces.go", "", filepath.Join("another_package", "types.go"))
+		t("HasImports", "has_imports.go", "")
+		t("HasOtherTypes", "has_other_types.go", "", "other_types.go")
+		t("HasVarArgs", "has_var_args.go", "")
+		t("HasVarArgsWithLocalTypes", "has_var_args.go", "")
+		t("ImportsGoHyphenPackage", "imports_go_hyphen_package.go", "", filepath.Join("go-hyphenpackage", "fixture.go"))
+		t("FirstInterface", "multiple_interfaces.go", "")
+		t("SecondInterface", "multiple_interfaces.go", "")
+		t("RequestFactory", "request_factory.go", "")
+		t("ReusesArgTypes", "reuses_arg_types.go", "")
+		t("SomethingWithForeignInterface", "something_remote.go", "", filepath.Join("aliased_package", "in_aliased_package.go"))
+		t("Something", "something.go", "")
+		t("SomethingFactory", "typed_function.go", "")
+		t("SyncSomething", "interface.go", "sync")
 
 		when("working with duplicate packages", func() {
 			t := func(interfaceName string, offset string, fakePackageName string) {

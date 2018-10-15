@@ -61,14 +61,10 @@ func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName 
 		Mode:               fakeMode,
 		DestinationPackage: destinationPackage,
 		WorkingDirectory:   workingDir,
-		Imports: []Import{
-			Import{
-				Alias: "sync",
-				Path:  "sync",
-			},
-		},
+		Imports:            []Import{},
 	}
 
+	f.AddImport("sync", "sync")
 	err := f.loadPackages()
 	if err != nil {
 		return nil, err

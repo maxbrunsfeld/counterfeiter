@@ -101,6 +101,20 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			f = &Fake{}
 		})
 
+		when("there are imports", func() {
+			it.Before(func() {
+				f.AddImport("sync", "sync")
+				f.AddImport("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/sync")
+				f.AddImport("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync")
+			})
+
+			it("always leaves the built-in sync in position 0", func() {
+				f.sortImports()
+				Expect(f.Imports[0].Alias).To(Equal("sync"))
+				Expect(f.Imports[0].Path).To(Equal("sync"))
+			})
+		})
+
 		when("inspecting the target", func() {
 			when("the target is not set", func() {
 				it("IsInterface() is false", func() {
@@ -341,6 +355,45 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						Alias: "fooa",
 						Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo",
 					}))
+				})
+
+				when("there is a package named sync", func() {
+					it.Before(func() {
+						f.Imports = []Import{
+							Import{
+								Alias: "sync",
+								Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync",
+							},
+							Import{
+								Alias: "sync",
+								Path:  "sync",
+							},
+							Import{
+								Alias: "sync",
+								Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/sync",
+							},
+						}
+					})
+
+					it("preserves the stdlib sync alias", func() {
+						m := f.aliasMap()
+						Expect(m).To(HaveLen(1))
+						f.disambiguateAliases()
+						m = f.aliasMap()
+						Expect(m).To(HaveLen(3))
+						Expect(m["sync"]).To(ConsistOf(Import{
+							Alias: "sync",
+							Path:  "sync",
+						}))
+						Expect(m["syncb"]).To(ConsistOf(Import{
+							Alias: "syncb",
+							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/sync",
+						}))
+						Expect(m["synca"]).To(ConsistOf(Import{
+							Alias: "synca",
+							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync",
+						}))
+					})
 				})
 			})
 		})
