@@ -171,6 +171,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		t("SomethingElse", "compound_return.go")
 		t("DotImports", "dot_imports.go")
 		t("EmbedsInterfaces", "embeds_interfaces.go", filepath.Join("another_package", "types.go"))
+		t("AliasedInterface", "aliased_interfaces.go", filepath.Join("another_package", "types.go"))
 		t("HasImports", "has_imports.go")
 		t("HasOtherTypes", "has_other_types.go", "other_types.go")
 		t("HasVarArgs", "has_var_args.go")
