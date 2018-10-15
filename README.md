@@ -1,4 +1,4 @@
-# `counterfeiter` [![Build Status](https://travis-ci.org/maxbrunsfeld/counterfeiter.svg?branch=master)](https://travis-ci.org/maxbrunsfeld/counterfeiter) [![Build status](https://ci.appveyor.com/api/projects/status/rctt5jkx7sdhp8fv?svg=true)](https://ci.appveyor.com/project/joefitzgerald/counterfeiter)
+# `counterfeiter` [![Build Status](https://travis-ci.org/maxbrunsfeld/counterfeiter.svg?branch=master)](https://travis-ci.org/maxbrunsfeld/counterfeiter) [![Build status](https://ci.appveyor.com/api/projects/status/0j2v7pt06lp9yanm/branch/master?svg=true)](https://ci.appveyor.com/project/maxbrunsfeld/counterfeiter/branch/master)
 
 When writing unit-tests for an object, it is often useful to have fake implementations
 of the object's collaborators. In go, such fake implementations cannot be generated
@@ -35,12 +35,12 @@ Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interfac
 
 ### Using Test Doubles In Your Tests
 
-Instantiate fakes with `new`:
+Instantiate fakes`:
 
 ```go
 import "my-repo/path/to/foo/foofakes"
 
-var fake = new(foofakes.FakeMySpecialInterface)
+var fake = &foofakes.FakeMySpecialInterface{}
 ```
 
 Fakes record the arguments they were called with:
