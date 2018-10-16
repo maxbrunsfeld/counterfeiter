@@ -58,6 +58,8 @@ func (fake *FakeWriteCloser) CloseCallCount() int {
 }
 
 func (fake *FakeWriteCloser) CloseReturns(result1 error) {
+	fake.closeMutex.Lock()
+	defer fake.closeMutex.Unlock()
 	fake.CloseStub = nil
 	fake.closeReturns = struct {
 		result1 error
@@ -65,6 +67,8 @@ func (fake *FakeWriteCloser) CloseReturns(result1 error) {
 }
 
 func (fake *FakeWriteCloser) CloseReturnsOnCall(i int, result1 error) {
+	fake.closeMutex.Lock()
+	defer fake.closeMutex.Unlock()
 	fake.CloseStub = nil
 	if fake.closeReturnsOnCall == nil {
 		fake.closeReturnsOnCall = make(map[int]struct {
@@ -113,6 +117,8 @@ func (fake *FakeWriteCloser) WriteArgsForCall(i int) []byte {
 }
 
 func (fake *FakeWriteCloser) WriteReturns(result1 int, result2 error) {
+	fake.writeMutex.Lock()
+	defer fake.writeMutex.Unlock()
 	fake.WriteStub = nil
 	fake.writeReturns = struct {
 		result1 int
@@ -121,6 +127,8 @@ func (fake *FakeWriteCloser) WriteReturns(result1 int, result2 error) {
 }
 
 func (fake *FakeWriteCloser) WriteReturnsOnCall(i int, result1 int, result2 error) {
+	fake.writeMutex.Lock()
+	defer fake.writeMutex.Unlock()
 	fake.WriteStub = nil
 	if fake.writeReturnsOnCall == nil {
 		fake.writeReturnsOnCall = make(map[int]struct {
