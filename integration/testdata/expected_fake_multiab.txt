@@ -62,6 +62,12 @@ func (fake *FakeMultiAB) MineCallCount() int {
 	return len(fake.mineArgsForCall)
 }
 
+func (fake *FakeMultiAB) MineCalls(stub func() foo.S) {
+	fake.mineMutex.Lock()
+	defer fake.mineMutex.Unlock()
+	fake.MineStub = stub
+}
+
 func (fake *FakeMultiAB) MineReturns(result1 foo.S) {
 	fake.mineMutex.Lock()
 	defer fake.mineMutex.Unlock()
@@ -106,6 +112,12 @@ func (fake *FakeMultiAB) FromACallCount() int {
 	return len(fake.fromAArgsForCall)
 }
 
+func (fake *FakeMultiAB) FromACalls(stub func() fooa.S) {
+	fake.fromAMutex.Lock()
+	defer fake.fromAMutex.Unlock()
+	fake.FromAStub = stub
+}
+
 func (fake *FakeMultiAB) FromAReturns(result1 fooa.S) {
 	fake.fromAMutex.Lock()
 	defer fake.fromAMutex.Unlock()
@@ -148,6 +160,12 @@ func (fake *FakeMultiAB) FromBCallCount() int {
 	fake.fromBMutex.RLock()
 	defer fake.fromBMutex.RUnlock()
 	return len(fake.fromBArgsForCall)
+}
+
+func (fake *FakeMultiAB) FromBCalls(stub func() foob.S) {
+	fake.fromBMutex.Lock()
+	defer fake.fromBMutex.Unlock()
+	fake.FromBStub = stub
 }
 
 func (fake *FakeMultiAB) FromBReturns(result1 foob.S) {

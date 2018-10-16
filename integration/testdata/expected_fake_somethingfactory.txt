@@ -48,6 +48,12 @@ func (fake *FakeSomethingFactory) CallCount() int {
 	return len(fake.argsForCall)
 }
 
+func (fake *FakeSomethingFactory) Calls(stub func(string, map[string]interface{}) string) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
+	fake.Stub = stub
+}
+
 func (fake *FakeSomethingFactory) ArgsForCall(i int) (string, map[string]interface{}) {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
