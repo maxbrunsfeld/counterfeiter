@@ -88,6 +88,8 @@ func (fake *{{.Function.FakeName}}) ArgsForCall(i int) {{.Function.Params.AsRetu
 
 {{if .Function.Returns.HasLength -}}
 func (fake *{{.Function.FakeName}}) Returns({{.Function.Returns.AsNamedArgsWithTypes}}) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	fake.returns = struct {
 		{{- range .Function.Returns}}
@@ -97,6 +99,8 @@ func (fake *{{.Function.FakeName}}) Returns({{.Function.Returns.AsNamedArgsWithT
 }
 
 func (fake *{{.Function.FakeName}}) ReturnsOnCall(i int, {{.Function.Returns.AsNamedArgsWithTypes}}) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	if fake.returnsOnCall == nil {
 		fake.returnsOnCall = make(map[int]struct {

@@ -55,6 +55,8 @@ func (fake *FakeSomethingFactory) ArgsForCall(i int) (string, map[string]interfa
 }
 
 func (fake *FakeSomethingFactory) Returns(result1 string) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	fake.returns = struct {
 		result1 string
@@ -62,6 +64,8 @@ func (fake *FakeSomethingFactory) Returns(result1 string) {
 }
 
 func (fake *FakeSomethingFactory) ReturnsOnCall(i int, result1 string) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	if fake.returnsOnCall == nil {
 		fake.returnsOnCall = make(map[int]struct {

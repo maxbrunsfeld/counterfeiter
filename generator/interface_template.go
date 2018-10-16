@@ -97,6 +97,8 @@ func (fake *{{.FakeName}}) {{.Name}}ArgsForCall(i int) {{.Params.AsReturnSignatu
 
 {{if .Returns.HasLength -}}
 func (fake *{{.FakeName}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
+	fake.{{UnExport .Name}}Mutex.Lock()
+	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = nil
 	fake.{{UnExport .Name}}Returns = struct {
 		{{- range .Returns}}
@@ -106,6 +108,8 @@ func (fake *{{.FakeName}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
 }
 
 func (fake *{{.FakeName}}) {{.Name}}ReturnsOnCall(i int, {{.Returns.AsNamedArgsWithTypes}}) {
+	fake.{{UnExport .Name}}Mutex.Lock()
+	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = nil
 	if fake.{{UnExport .Name}}ReturnsOnCall == nil {
 		fake.{{UnExport .Name}}ReturnsOnCall = make(map[int]struct {

@@ -63,6 +63,8 @@ func (fake *FakeMultiAB) MineCallCount() int {
 }
 
 func (fake *FakeMultiAB) MineReturns(result1 foo.S) {
+	fake.mineMutex.Lock()
+	defer fake.mineMutex.Unlock()
 	fake.MineStub = nil
 	fake.mineReturns = struct {
 		result1 foo.S
@@ -70,6 +72,8 @@ func (fake *FakeMultiAB) MineReturns(result1 foo.S) {
 }
 
 func (fake *FakeMultiAB) MineReturnsOnCall(i int, result1 foo.S) {
+	fake.mineMutex.Lock()
+	defer fake.mineMutex.Unlock()
 	fake.MineStub = nil
 	if fake.mineReturnsOnCall == nil {
 		fake.mineReturnsOnCall = make(map[int]struct {
@@ -103,6 +107,8 @@ func (fake *FakeMultiAB) FromACallCount() int {
 }
 
 func (fake *FakeMultiAB) FromAReturns(result1 fooa.S) {
+	fake.fromAMutex.Lock()
+	defer fake.fromAMutex.Unlock()
 	fake.FromAStub = nil
 	fake.fromAReturns = struct {
 		result1 fooa.S
@@ -110,6 +116,8 @@ func (fake *FakeMultiAB) FromAReturns(result1 fooa.S) {
 }
 
 func (fake *FakeMultiAB) FromAReturnsOnCall(i int, result1 fooa.S) {
+	fake.fromAMutex.Lock()
+	defer fake.fromAMutex.Unlock()
 	fake.FromAStub = nil
 	if fake.fromAReturnsOnCall == nil {
 		fake.fromAReturnsOnCall = make(map[int]struct {
@@ -143,6 +151,8 @@ func (fake *FakeMultiAB) FromBCallCount() int {
 }
 
 func (fake *FakeMultiAB) FromBReturns(result1 foob.S) {
+	fake.fromBMutex.Lock()
+	defer fake.fromBMutex.Unlock()
 	fake.FromBStub = nil
 	fake.fromBReturns = struct {
 		result1 foob.S
@@ -150,6 +160,8 @@ func (fake *FakeMultiAB) FromBReturns(result1 foob.S) {
 }
 
 func (fake *FakeMultiAB) FromBReturnsOnCall(i int, result1 foob.S) {
+	fake.fromBMutex.Lock()
+	defer fake.fromBMutex.Unlock()
 	fake.FromBStub = nil
 	if fake.fromBReturnsOnCall == nil {
 		fake.fromBReturnsOnCall = make(map[int]struct {
