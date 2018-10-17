@@ -57,6 +57,12 @@ func (fake *FakeWriteCloser) CloseCallCount() int {
 	return len(fake.closeArgsForCall)
 }
 
+func (fake *FakeWriteCloser) CloseCalls(stub func() error) {
+	fake.closeMutex.Lock()
+	defer fake.closeMutex.Unlock()
+	fake.CloseStub = stub
+}
+
 func (fake *FakeWriteCloser) CloseReturns(result1 error) {
 	fake.closeMutex.Lock()
 	defer fake.closeMutex.Unlock()
@@ -107,6 +113,12 @@ func (fake *FakeWriteCloser) WriteCallCount() int {
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
 	return len(fake.writeArgsForCall)
+}
+
+func (fake *FakeWriteCloser) WriteCalls(stub func([]byte) (int, error)) {
+	fake.writeMutex.Lock()
+	defer fake.writeMutex.Unlock()
+	fake.WriteStub = stub
 }
 
 func (fake *FakeWriteCloser) WriteArgsForCall(i int) []byte {

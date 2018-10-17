@@ -78,6 +78,12 @@ func (fake *{{.Function.FakeName}}) CallCount() int {
 	return len(fake.argsForCall)
 }
 
+func (fake *{{.Function.FakeName}}) Calls(stub func({{.Function.Params.AsArgs}}) {{.Function.Returns.AsReturnSignature}}) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
+	fake.Stub = stub
+}
+
 {{if .Function.Params.HasLength -}}
 func (fake *{{.Function.FakeName}}) ArgsForCall(i int) {{.Function.Params.AsReturnSignature}} {
 	fake.mutex.RLock()
