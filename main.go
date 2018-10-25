@@ -9,12 +9,35 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime/debug"
+	"runtime/pprof"
 
 	"github.com/maxbrunsfeld/counterfeiter/arguments"
 	"github.com/maxbrunsfeld/counterfeiter/generator"
 )
 
 func main() {
+	debug.SetGCPercent(-1)
+	profile := false
+	if os.Getenv("COUNTERFEITER_PROFILE") != "" {
+		profile = true
+	}
+	if profile {
+		p, err := filepath.Abs(filepath.Join(".", "counterfeiter.profile"))
+		if err != nil {
+			fail("%v", err)
+		}
+		f, err := os.Create(p)
+		if err != nil {
+			fail("%v", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			fail("%v", err)
+		}
+		fmt.Printf("Profile: %s\n", p)
+		defer pprof.StopCPUProfile()
+	}
+
 	log.SetFlags(log.Lshortfile)
 	if !isDebug() {
 		log.SetOutput(ioutil.Discard)
@@ -44,21 +67,26 @@ func isDebug() bool {
 
 func generate(workingDir string, args arguments.ParsedArguments) {
 	reportStarting(args.PrintToStdOut, args.OutputPath, args.FakeImplName)
-	mode := generator.InterfaceOrFunction
-	if args.GenerateInterfaceAndShimFromPackageDirectory {
-		mode = generator.Package
-	}
-	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, workingDir)
-	if err != nil {
-		fail("%v", err)
-	}
-	b, err := f.Generate(true)
+
+	b, err := doGenerate(workingDir, args)
 	if err != nil {
 		fail("%v", err)
 	}
 
 	printCode(string(b), args.OutputPath, args.PrintToStdOut)
 	reportDoneSimple(args.PrintToStdOut)
+}
+
+func doGenerate(workingDir string, args arguments.ParsedArguments) ([]byte, error) {
+	mode := generator.InterfaceOrFunction
+	if args.GenerateInterfaceAndShimFromPackageDirectory {
+		mode = generator.Package
+	}
+	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, workingDir)
+	if err != nil {
+		return nil, err
+	}
+	return f.Generate(true)
 }
 
 func printCode(code, outputPath string, printToStdOut bool) {

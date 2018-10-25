@@ -45,3 +45,5 @@ fixtures/vendored/bar/barfakes
 fixtures/vendored/baz/bazfakes
 fixtures/vendored/vendoredfakes
 integration/testdata/output
+*.profile
+*.bench
