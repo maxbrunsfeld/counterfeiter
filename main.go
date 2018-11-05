@@ -61,8 +61,7 @@ func main() {
 }
 
 func isDebug() bool {
-	debug := os.Getenv("COUNTERFEITER_DEBUG")
-	return debug != ""
+	return os.Getenv("COUNTERFEITER_DEBUG") != ""
 }
 
 func generate(workingDir string, args arguments.ParsedArguments) {
