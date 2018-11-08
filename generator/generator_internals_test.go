@@ -429,5 +429,22 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(export("TheExportedThing")).To(Equal("TheExportedThing"))
 			})
 		})
+
+		when("isExported()", func() {
+			it("returns false for an empty string", func() {
+				Expect(isExported("")).To(BeFalse())
+				Expect(isExported(" ")).To(BeFalse())
+			})
+
+			it("returns true when the first rune is upper case", func() {
+				Expect(isExported("Identifier")).To(BeTrue())
+				Expect(isExported("Ʊpsilon")).To(BeTrue())
+			})
+
+			it("returns false when the first rune not upper case", func() {
+				Expect(isExported("identifier")).To(BeFalse())
+				Expect(isExported("ʊpsilon")).To(BeFalse())
+			})
+		})
 	})
 }

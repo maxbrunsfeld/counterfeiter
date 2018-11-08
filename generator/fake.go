@@ -123,6 +123,11 @@ func export(s string) string {
 	return string(unicode.ToUpper(r)) + s[n:]
 }
 
+func isExported(s string) bool {
+	r, _ := utf8.DecodeRuneInString(s)
+	return unicode.IsUpper(r)
+}
+
 // Generate uses the Fake to generate an implementation, optionally running
 // goimports on the output.
 func (f *Fake) Generate(runImports bool) ([]byte, error) {
