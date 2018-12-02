@@ -42,6 +42,10 @@ func main() {
 	if !isDebug() {
 		log.SetOutput(ioutil.Discard)
 	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		fail("could not determine working directory: %v", err)
+	}
 	flag.Parse()
 	args := flag.Args()
 
@@ -57,7 +61,7 @@ func main() {
 		os.Stat,
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
-	generate(cwd(), parsedArgs)
+	generate(cwd, parsedArgs)
 }
 
 func isDebug() bool {
@@ -157,14 +161,6 @@ func reportDone(printToStdOut bool, outputPath, fakeName string) {
 	}
 
 	fmt.Fprint(writer, fmt.Sprintf("Wrote `%s` to `%s`\n", fakeName, rel))
-}
-
-func cwd() string {
-	dir, err := os.Getwd()
-	if err != nil {
-		fail("Error - couldn't determine current working directory")
-	}
-	return dir
 }
 
 func fail(s string, args ...interface{}) {
