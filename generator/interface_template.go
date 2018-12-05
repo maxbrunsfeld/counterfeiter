@@ -162,6 +162,10 @@ func (fake *{{.Name}}) recordInvocation(key string, args []interface{}) {
 }
 
 {{if IsExported .TargetName -}}
+{{- if eq .TargetAlias .DestinationPackage }}
+var _ {{.TargetName}} = new({{.Name}})
+{{- else }}
 var _ {{.TargetAlias}}.{{.TargetName}} = new({{.Name}})
+{{- end}}
 {{- end}}
 `
