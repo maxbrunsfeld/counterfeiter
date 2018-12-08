@@ -65,7 +65,7 @@ Expect(num).To(Equal(3))
 Expect(err).To(Equal(errors.New("the-error")))
 ```
 
-For more examples of using the `counterfeiter` API, look at [some of the provided examples](https://github.com/maxbrunsfeld/counterfeiter/blob/master/counterfeiter_test.go).
+For more examples of using the `counterfeiter` API, look at [some of the provided examples](https://github.com/maxbrunsfeld/counterfeiter/blob/master/generated_fakes_test.go).
 
 ### Using `go generate`
 
