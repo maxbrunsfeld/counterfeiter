@@ -114,15 +114,6 @@ func unexport(s string) string {
 	return string(unicode.ToLower(r)) + s[n:]
 }
 
-func export(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return ""
-	}
-	r, n := utf8.DecodeRuneInString(s)
-	return string(unicode.ToUpper(r)) + s[n:]
-}
-
 func isExported(s string) bool {
 	r, _ := utf8.DecodeRuneInString(s)
 	return unicode.IsUpper(r)

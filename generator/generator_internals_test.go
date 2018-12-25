@@ -415,21 +415,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("export()", func() {
-			it("is a no-op on an empty string", func() {
-				Expect(export("")).To(Equal(""))
-				Expect(export(" ")).To(Equal(""))
-			})
-
-			it("makes the first letter uppercase", func() {
-				Expect(export("theUnexportedThing")).To(Equal("TheUnexportedThing"))
-			})
-
-			it("leaves exported things unchanged", func() {
-				Expect(export("TheExportedThing")).To(Equal("TheExportedThing"))
-			})
-		})
-
 		when("isExported()", func() {
 			it("returns false for an empty string", func() {
 				Expect(isExported("")).To(BeFalse())
