@@ -46,9 +46,7 @@ type Method struct {
 	FakePackage string
 	Name        string
 	Params      Params
-	Args        string
 	Returns     Returns
-	Rets        string
 }
 
 // NewFake returns a Fake that loads the package and finds the interface or the
