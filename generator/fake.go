@@ -42,10 +42,9 @@ type Fake struct {
 
 // Method is a method of the interface.
 type Method struct {
-	FakePackage string
-	Name        string
-	Params      Params
-	Returns     Returns
+	Name    string
+	Params  Params
+	Returns Returns
 }
 
 // NewFake returns a Fake that loads the package and finds the interface or the
