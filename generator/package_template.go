@@ -34,7 +34,7 @@ type {{.Name}} interface {
 type {{.Name}}Shim struct {}
 
 {{- range .Methods}}
-func (p *{{.FakeName}}Shim) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.AsReturnSignature}} {
+func (p *{{$.Name}}Shim) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.AsReturnSignature}} {
   {{if .Returns.HasLength}}return {{end}}{{.FakePackage}}.{{.Name}}({{.Params.AsNamedArgsForInvocation}})
 }
 {{end}}

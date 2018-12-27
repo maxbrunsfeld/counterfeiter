@@ -89,7 +89,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Package).NotTo(BeNil())
 				Expect(f.Methods).To(HaveLen(0))
 				Expect(f.Function.Name).To(Equal("HandlerFunc"))
-				Expect(f.Function.FakeName).To(Equal("FakeHandlerFunc"))
 				Expect(f.Function.Params).To(HaveLen(2))
 				Expect(f.Function.Returns).To(BeEmpty())
 			})

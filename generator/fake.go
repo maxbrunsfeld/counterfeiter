@@ -42,7 +42,6 @@ type Fake struct {
 
 // Method is a method of the interface.
 type Method struct {
-	FakeName    string
 	FakePackage string
 	Name        string
 	Params      Params
