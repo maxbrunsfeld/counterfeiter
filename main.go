@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"go/format"
@@ -17,21 +18,25 @@ import (
 
 func main() {
 	debug.SetGCPercent(-1)
-	profile := false
-	if os.Getenv("COUNTERFEITER_PROFILE") != "" {
-		profile = true
+
+	if err := run(); err != nil {
+		fail("%v", err)
 	}
+}
+
+func run() error {
+	profile := os.Getenv("COUNTERFEITER_PROFILE") != ""
 	if profile {
 		p, err := filepath.Abs(filepath.Join(".", "counterfeiter.profile"))
 		if err != nil {
-			fail("%v", err)
+			return err
 		}
 		f, err := os.Create(p)
 		if err != nil {
-			fail("%v", err)
+			return err
 		}
 		if err := pprof.StartCPUProfile(f); err != nil {
-			fail("%v", err)
+			return err
 		}
 		fmt.Printf("Profile: %s\n", p)
 		defer pprof.StopCPUProfile()
@@ -45,8 +50,12 @@ func main() {
 	args := flag.Args()
 
 	if len(args) < 1 {
-		fail("%s", usage)
-		return
+		return errors.New(usage)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return errors.New("Error - couldn't determine current working directory")
 	}
 
 	argumentParser := arguments.NewArgumentParser(
@@ -56,23 +65,28 @@ func main() {
 		os.Stat,
 	)
 	parsedArgs := argumentParser.ParseArguments(args...)
-	generate(cwd(), parsedArgs)
+	return generate(cwd, parsedArgs)
 }
 
 func isDebug() bool {
 	return os.Getenv("COUNTERFEITER_DEBUG") != ""
 }
 
-func generate(workingDir string, args arguments.ParsedArguments) {
-	reportStarting(args.OutputPath, args.FakeImplName)
+func generate(workingDir string, args arguments.ParsedArguments) error {
+	if err := reportStarting(workingDir, args.OutputPath, args.FakeImplName); err != nil {
+		return err
+	}
 
 	b, err := doGenerate(workingDir, args)
 	if err != nil {
-		fail("%v", err)
+		return err
 	}
 
-	printCode(string(b), args.OutputPath, args.PrintToStdOut)
+	if err := printCode(string(b), args.OutputPath, args.PrintToStdOut); err != nil {
+		return err
+	}
 	fmt.Fprint(os.Stderr, "Done\n")
+	return nil
 }
 
 func doGenerate(workingDir string, args arguments.ParsedArguments) ([]byte, error) {
@@ -87,34 +101,34 @@ func doGenerate(workingDir string, args arguments.ParsedArguments) ([]byte, erro
 	return f.Generate(true)
 }
 
-func printCode(code, outputPath string, printToStdOut bool) {
+func printCode(code, outputPath string, printToStdOut bool) error {
 	newCode, err := format.Source([]byte(code))
 	if err != nil {
-		fail("%v", err)
+		return err
 	}
 
 	code = string(newCode)
 
 	if printToStdOut {
 		fmt.Println(code)
-	} else {
-		os.MkdirAll(filepath.Dir(outputPath), 0777)
-		file, err := os.Create(outputPath)
-		if err != nil {
-			fail("Couldn't create fake file - %v", err)
-		}
-
-		_, err = file.WriteString(code)
-		if err != nil {
-			fail("Couldn't write to fake file - %v", err)
-		}
 	}
+	os.MkdirAll(filepath.Dir(outputPath), 0777)
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("Couldn't create fake file - %v", err)
+	}
+
+	_, err = file.WriteString(code)
+	if err != nil {
+		return fmt.Errorf("Couldn't write to fake file - %v", err)
+	}
+	return nil
 }
 
-func reportStarting(outputPath, fakeName string) {
-	rel, err := filepath.Rel(cwd(), outputPath)
+func reportStarting(workingDir string, outputPath, fakeName string) error {
+	rel, err := filepath.Rel(workingDir, outputPath)
 	if err != nil {
-		fail("%v", err)
+		return err
 	}
 
 	msg := fmt.Sprintf("Writing `%s` to `%s`... ", fakeName, rel)
@@ -122,14 +136,7 @@ func reportStarting(outputPath, fakeName string) {
 		msg = msg + "\n"
 	}
 	fmt.Fprint(os.Stderr, msg)
-}
-
-func cwd() string {
-	dir, err := os.Getwd()
-	if err != nil {
-		fail("Error - couldn't determine current working directory")
-	}
-	return dir
+	return nil
 }
 
 func fail(s string, args ...interface{}) {
