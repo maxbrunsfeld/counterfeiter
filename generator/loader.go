@@ -70,7 +70,7 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = unvendor(pkg.PkgPath)
-	t := f.AddImport(pkg.Name, f.TargetPackage)
+	t := f.Imports.Add(pkg.Name, f.TargetPackage)
 	f.TargetAlias = t.Alias
 	if f.Mode != Package {
 		f.TargetName = target.Name()
@@ -113,7 +113,7 @@ func (f *Fake) addImportsFor(typ types.Type) {
 		f.addImportsFor(t.Elem())
 	case *types.Named:
 		if t.Obj() != nil && t.Obj().Pkg() != nil {
-			f.AddImport(t.Obj().Pkg().Name(), t.Obj().Pkg().Path())
+			f.Imports.Add(t.Obj().Pkg().Name(), t.Obj().Pkg().Path())
 		}
 	case *types.Slice:
 		f.addImportsFor(t.Elem())
@@ -126,17 +126,4 @@ func (f *Fake) addImportsFor(typ types.Type) {
 	default:
 		log.Printf("!!! WARNING: Missing case for type %s\n", reflect.TypeOf(typ).String())
 	}
-}
-
-func typeFor(typ types.Type, importsMap map[string]Import) string {
-	if typ == nil {
-		return ""
-	}
-	return types.TypeString(typ, func(p *types.Package) string {
-		imp, ok := importsMap[unvendor(p.Path())]
-		if ok {
-			return imp.Alias
-		}
-		return ""
-	})
 }

@@ -19,12 +19,12 @@ func (f *Fake) addTypesForMethod(sig *types.Signature) {
 	}
 }
 
-func methodForSignature(sig *types.Signature, fakeName string, fakePackage string, methodName string, importsMap map[string]Import) Method {
+func methodForSignature(sig *types.Signature, fakeName string, fakePackage string, methodName string, imports Imports) Method {
 	params := []Param{}
 	for i := 0; i < sig.Params().Len(); i++ {
 		param := sig.Params().At(i)
 		isVariadic := i == sig.Params().Len()-1 && sig.Variadic()
-		typ := typeFor(param.Type(), importsMap)
+		typ := types.TypeString(param.Type(), imports.AliasForPackage)
 		if isVariadic {
 			typ = "..." + typ[2:] // Change []string to ...string
 		}
@@ -41,7 +41,7 @@ func methodForSignature(sig *types.Signature, fakeName string, fakePackage strin
 		ret := sig.Results().At(i)
 		r := Return{
 			Name: fmt.Sprintf("result%v", i+1),
-			Type: typeFor(ret.Type(), importsMap),
+			Type: types.TypeString(ret.Type(), imports.AliasForPackage),
 		}
 		returns = append(returns, r)
 	}
@@ -101,9 +101,8 @@ func (f *Fake) loadMethods() {
 		f.addTypesForMethod(methods[i].Signature)
 	}
 
-	importsMap := f.importsMap()
 	for i := range methods {
-		method := methodForSignature(methods[i].Signature, f.Name, f.TargetAlias, methods[i].Func.Name(), importsMap)
+		method := methodForSignature(methods[i].Signature, f.Name, f.TargetAlias, methods[i].Func.Name(), f.Imports)
 		f.Methods = append(f.Methods, method)
 	}
 }
