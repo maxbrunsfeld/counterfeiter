@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"go/format"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -65,7 +64,7 @@ func isDebug() bool {
 }
 
 func generate(workingDir string, args arguments.ParsedArguments) {
-	reportStarting(args.PrintToStdOut, args.OutputPath, args.FakeImplName)
+	reportStarting(args.OutputPath, args.FakeImplName)
 
 	b, err := doGenerate(workingDir, args)
 	if err != nil {
@@ -73,7 +72,7 @@ func generate(workingDir string, args arguments.ParsedArguments) {
 	}
 
 	printCode(string(b), args.OutputPath, args.PrintToStdOut)
-	reportDoneSimple(args.PrintToStdOut)
+	fmt.Fprint(os.Stderr, "Done\n")
 }
 
 func doGenerate(workingDir string, args arguments.ParsedArguments) ([]byte, error) {
@@ -112,35 +111,17 @@ func printCode(code, outputPath string, printToStdOut bool) {
 	}
 }
 
-func reportStarting(printToStdOut bool, outputPath, fakeName string) {
+func reportStarting(outputPath, fakeName string) {
 	rel, err := filepath.Rel(cwd(), outputPath)
 	if err != nil {
 		fail("%v", err)
-	}
-
-	var writer io.Writer
-	if printToStdOut {
-		writer = os.Stderr
-	} else {
-		writer = os.Stdout
 	}
 
 	msg := fmt.Sprintf("Writing `%s` to `%s`... ", fakeName, rel)
 	if isDebug() {
 		msg = msg + "\n"
 	}
-	fmt.Fprint(writer, msg)
-}
-
-func reportDoneSimple(printToStdOut bool) {
-	var writer io.Writer
-	if printToStdOut {
-		writer = os.Stderr
-	} else {
-		writer = os.Stdout
-	}
-
-	fmt.Fprint(writer, "Done\n")
+	fmt.Fprint(os.Stderr, msg)
 }
 
 func cwd() string {
