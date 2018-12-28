@@ -143,22 +143,6 @@ func reportDoneSimple(printToStdOut bool) {
 	fmt.Fprint(writer, "Done\n")
 }
 
-func reportDone(printToStdOut bool, outputPath, fakeName string) {
-	rel, err := filepath.Rel(cwd(), outputPath)
-	if err != nil {
-		fail("%v", err)
-	}
-
-	var writer io.Writer
-	if printToStdOut {
-		writer = os.Stderr
-	} else {
-		writer = os.Stdout
-	}
-
-	fmt.Fprint(writer, fmt.Sprintf("Wrote `%s` to `%s`\n", fakeName, rel))
-}
-
 func cwd() string {
 	dir, err := os.Getwd()
 	if err != nil {
