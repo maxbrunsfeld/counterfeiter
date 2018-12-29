@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/packages"
+	"golang.org/x/tools/imports"
 )
 
 func (f *Fake) loadPackages() error {
@@ -69,7 +70,7 @@ func (f *Fake) findPackage() error {
 	}
 	f.Target = target
 	f.Package = pkg
-	f.TargetPackage = unvendor(pkg.PkgPath)
+	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
 	t := f.Imports.Add(pkg.Name, f.TargetPackage)
 	f.TargetAlias = t.Alias
 	if f.Mode != Package {

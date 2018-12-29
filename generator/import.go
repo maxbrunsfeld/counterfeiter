@@ -3,6 +3,8 @@ package generator
 import (
 	"go/types"
 	"strings"
+
+	"golang.org/x/tools/imports"
 )
 
 // Imports indexes imports by package path and alias so that all imports have a
@@ -29,7 +31,7 @@ type Import struct {
 // Fake.Imports.
 func (i *Imports) Add(alias string, path string) Import {
 	// TODO: why is there extra whitespace on these args?
-	path = unvendor(strings.TrimSpace(path))
+	path = imports.VendorlessPath(strings.TrimSpace(path))
 	alias = strings.TrimSpace(alias)
 
 	imp, exists := i.ByPkgPath[path]
@@ -48,18 +50,6 @@ func (i *Imports) Add(alias string, path string) Import {
 	return result
 }
 
-// TODO: what version of go required this?
-func unvendor(s string) string {
-	// Devendorize for use in import statement.
-	if i := strings.LastIndex(s, "/vendor/"); i >= 0 {
-		return s[i+len("/vendor/"):]
-	}
-	if strings.HasPrefix(s, "vendor/") {
-		return s[len("vendor/"):]
-	}
-	return s
-}
-
 func uniqueAliasForImport(alias string, imports map[string]Import) string {
 	for i := 0; ; i++ {
 		newAlias := alias + string('a'+byte(i))
@@ -71,5 +61,5 @@ func uniqueAliasForImport(alias string, imports map[string]Import) string {
 
 // AliasForPackage returns a package alias for the package.
 func (i *Imports) AliasForPackage(p *types.Package) string {
-	return i.ByPkgPath[unvendor(p.Path())].Alias
+	return i.ByPkgPath[imports.VendorlessPath(p.Path())].Alias
 }
