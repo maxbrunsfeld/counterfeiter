@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-var packageFuncs template.FuncMap = template.FuncMap{
+var packageFuncs = template.FuncMap{
 	"ToLower":  strings.ToLower,
 	"UnExport": unexport,
 	"Replace":  strings.Replace,
@@ -17,7 +17,7 @@ package {{.DestinationPackage}}
 
 import (
 	{{- range $index, $import := .Imports.ByAlias}}
-	{{$import.Alias}} "{{$import.PkgPath}}"
+	{{$import}}
 	{{- end}}
 )
 
