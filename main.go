@@ -111,6 +111,7 @@ func printCode(code, outputPath string, printToStdOut bool) error {
 
 	if printToStdOut {
 		fmt.Println(code)
+		return nil
 	}
 	os.MkdirAll(filepath.Dir(outputPath), 0777)
 	file, err := os.Create(outputPath)
