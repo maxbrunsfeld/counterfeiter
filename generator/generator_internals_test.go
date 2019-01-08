@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"io/ioutil"
 	"log"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestGenerator(t *testing.T) {
-	// log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
+	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	spec.Run(t, "Generator", testGenerator, spec.Report(report.Terminal{}))
 }
@@ -54,12 +55,18 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Name).To(Equal("FakeFileInfo"))
 				Expect(f.Mode).To(Equal(InterfaceOrFunction))
 				Expect(f.DestinationPackage).To(Equal("osfakes"))
-				Expect(f.Imports).To(HaveLen(3))
-				Expect(f.Imports).To(ConsistOf(
-					Import{Alias: "os", Path: "os"},
-					Import{Alias: "sync", Path: "sync"},
-					Import{Alias: "time", Path: "time"},
-				))
+				Expect(f.Imports).To(BeEquivalentTo(Imports{
+					ByAlias: map[string]Import{
+						"os":   {Alias: "os", PkgPath: "os"},
+						"sync": {Alias: "sync", PkgPath: "sync"},
+						"time": {Alias: "time", PkgPath: "time"},
+					},
+					ByPkgPath: map[string]Import{
+						"os":   {Alias: "os", PkgPath: "os"},
+						"sync": {Alias: "sync", PkgPath: "sync"},
+						"time": {Alias: "time", PkgPath: "time"},
+					},
+				}))
 				Expect(f.Function).To(BeZero())
 				Expect(f.Packages).NotTo(BeNil())
 				Expect(f.Package).NotTo(BeNil())
@@ -79,11 +86,16 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Name).To(Equal("FakeHandlerFunc"))
 				Expect(f.Mode).To(Equal(InterfaceOrFunction))
 				Expect(f.DestinationPackage).To(Equal("httpfakes"))
-				Expect(f.Imports).To(HaveLen(2))
-				Expect(f.Imports).To(ConsistOf(
-					Import{Alias: "http", Path: "net/http"},
-					Import{Alias: "sync", Path: "sync"},
-				))
+				Expect(f.Imports).To(BeEquivalentTo(Imports{
+					ByAlias: map[string]Import{
+						"http": {Alias: "http", PkgPath: "net/http"},
+						"sync": {Alias: "sync", PkgPath: "sync"},
+					},
+					ByPkgPath: map[string]Import{
+						"net/http": {Alias: "http", PkgPath: "net/http"},
+						"sync":     {Alias: "sync", PkgPath: "sync"},
+					},
+				}))
 				Expect(f.Function).NotTo(BeZero())
 				Expect(f.Packages).NotTo(BeNil())
 				Expect(f.Package).NotTo(BeNil())
@@ -97,20 +109,29 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 	when("manually constructing a fake", func() {
 		it.Before(func() {
-			f = &Fake{}
+			f = &Fake{Imports: newImports()}
 		})
 
-		when("there are imports", func() {
+		when("duplicate import package names are added", func() {
 			it.Before(func() {
-				f.AddImport("sync", "sync")
-				f.AddImport("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/sync")
-				f.AddImport("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync")
+				f.Imports.Add("sync", "sync")
+				f.Imports.Add("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/sync")
+				f.Imports.Add("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync")
 			})
 
-			it("always leaves the built-in sync in position 0", func() {
-				f.sortImports()
-				Expect(f.Imports[0].Alias).To(Equal("sync"))
-				Expect(f.Imports[0].Path).To(Equal("sync"))
+			it("all packages have unique aliases", func() {
+				Expect(f.Imports).To(BeEquivalentTo(Imports{
+					ByAlias: map[string]Import{
+						"sync":  {Alias: "sync", PkgPath: "sync"},
+						"synca": {Alias: "synca", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/sync"},
+						"syncb": {Alias: "syncb", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync"},
+					},
+					ByPkgPath: map[string]Import{
+						"sync": {Alias: "sync", PkgPath: "sync"},
+						"github.com/maxbrunsfeld/counterfeiter/fixtures/sync":      {Alias: "synca", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/sync"},
+						"github.com/maxbrunsfeld/counterfeiter/fixtures/othersync": {Alias: "syncb", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync"},
+					},
+				}))
 			})
 		})
 
@@ -259,7 +280,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					f.loadMethods()
 					Expect(len(f.Methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
 					Expect(len(f.Methods)).To(BeNumerically("<=", 53))
-					Expect(len(f.Imports)).To(Equal(2))
+					Expect(len(f.Imports.ByAlias)).To(Equal(2))
 				})
 			})
 		})
@@ -267,132 +288,48 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		when("working with imports", func() {
 			when("there are no imports", func() {
 				it("returns an empty alias map", func() {
-					m := f.aliasMap()
-					Expect(m).To(BeEmpty())
+					Expect(f.Imports.ByAlias).To(BeEmpty())
 				})
 
 				it("turns a vendor path into the correct import", func() {
-					i := f.AddImport("apackage", "github.com/maxbrunsfeld/counterfeiter/fixtures/vendored/vendor/apackage")
+					i := f.Imports.Add("apackage", "github.com/maxbrunsfeld/counterfeiter/fixtures/vendored/vendor/apackage")
 					Expect(i.Alias).To(Equal("apackage"))
-					Expect(i.Path).To(Equal("apackage"))
+					Expect(i.PkgPath).To(Equal("apackage"))
 
-					i = f.AddImport("anotherpackage", "vendor/anotherpackage")
+					i = f.Imports.Add("anotherpackage", "vendor/anotherpackage")
 					Expect(i.Alias).To(Equal("anotherpackage"))
-					Expect(i.Path).To(Equal("anotherpackage"))
+					Expect(i.PkgPath).To(Equal("anotherpackage"))
 				})
 			})
 
 			when("there is a single import", func() {
 				it.Before(func() {
-					f.AddImport("os", "os")
+					f.Imports.Add("os", "os")
 				})
 
 				it("is present in the map", func() {
-					expected := Import{Alias: "os", Path: "os"}
-					m := f.aliasMap()
-					Expect(m).To(HaveLen(1))
-					Expect(m).To(HaveKeyWithValue("os", []Import{expected}))
-				})
-
-				it("returns the existing imports if there is a path match", func() {
-					i := f.AddImport("aliasedos", "os")
-					Expect(i.Alias).To(Equal("os"))
-					Expect(i.Path).To(Equal("os"))
-					Expect(f.Imports).To(HaveLen(1))
-					Expect(f.Imports[0].Alias).To(Equal("os"))
-					Expect(f.Imports[0].Path).To(Equal("os"))
-				})
-			})
-
-			when("there are imports", func() {
-				it.Before(func() {
-					f.Imports = []Import{
-						Import{
-							Alias: "dup_packages",
-							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages",
+					Expect(f.Imports).To(BeEquivalentTo(Imports{
+						ByAlias: map[string]Import{
+							"os": {Alias: "os", PkgPath: "os"},
 						},
-						Import{
-							Alias: "foo",
-							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/foo",
+						ByPkgPath: map[string]Import{
+							"os": {Alias: "os", PkgPath: "os"},
 						},
-						Import{
-							Alias: "foo",
-							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo",
-						},
-						Import{
-							Alias: "sync",
-							Path:  "sync",
-						},
-					}
-				})
-
-				it("collects duplicates", func() {
-					m := f.aliasMap()
-					Expect(m).To(HaveLen(3))
-					Expect(m).To(HaveKey("dup_packages"))
-					Expect(m).To(HaveKey("sync"))
-					Expect(m).To(HaveKey("foo"))
-					Expect(m["foo"]).To(ConsistOf(
-						Import{
-							Alias: "foo",
-							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/foo",
-						},
-						Import{
-							Alias: "foo",
-							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo",
-						},
-					))
-				})
-
-				it("disambiguates aliases", func() {
-					m := f.aliasMap()
-					Expect(m).To(HaveLen(3))
-					f.disambiguateAliases()
-					m = f.aliasMap()
-					Expect(m).To(HaveLen(4))
-					Expect(m["fooa"]).To(ConsistOf(Import{
-						Alias: "fooa",
-						Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo",
 					}))
 				})
 
-				when("there is a package named sync", func() {
-					it.Before(func() {
-						f.Imports = []Import{
-							Import{
-								Alias: "sync",
-								Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync",
-							},
-							Import{
-								Alias: "sync",
-								Path:  "sync",
-							},
-							Import{
-								Alias: "sync",
-								Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/sync",
-							},
-						}
-					})
-
-					it("preserves the stdlib sync alias", func() {
-						m := f.aliasMap()
-						Expect(m).To(HaveLen(1))
-						f.disambiguateAliases()
-						m = f.aliasMap()
-						Expect(m).To(HaveLen(3))
-						Expect(m["sync"]).To(ConsistOf(Import{
-							Alias: "sync",
-							Path:  "sync",
-						}))
-						Expect(m["syncb"]).To(ConsistOf(Import{
-							Alias: "syncb",
-							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/sync",
-						}))
-						Expect(m["synca"]).To(ConsistOf(Import{
-							Alias: "synca",
-							Path:  "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync",
-						}))
-					})
+				it("returns the existing imports if there is a path match", func() {
+					i := f.Imports.Add("aliasedos", "os")
+					Expect(i.Alias).To(Equal("os"))
+					Expect(i.PkgPath).To(Equal("os"))
+					Expect(f.Imports).To(BeEquivalentTo(Imports{
+						ByAlias: map[string]Import{
+							"os": {Alias: "os", PkgPath: "os"},
+						},
+						ByPkgPath: map[string]Import{
+							"os": {Alias: "os", PkgPath: "os"},
+						},
+					}))
 				})
 			})
 		})

@@ -2,8 +2,10 @@ package generator
 
 import "strings"
 
+// Params is a slice of Param.
 type Params []Param
 
+// Param is an argument to a function.
 type Param struct {
 	Name       string
 	Type       string
@@ -11,6 +13,7 @@ type Param struct {
 	IsSlice    bool
 }
 
+// Slices returns those params that are a slice.
 func (p Params) Slices() Params {
 	var result Params
 	for i := range p {
@@ -21,10 +24,14 @@ func (p Params) Slices() Params {
 	return result
 }
 
+// HasLength returns true if there are params. It returns false if there are no
+// params.
 func (p Params) HasLength() bool {
 	return len(p) > 0
 }
 
+// WithPrefix builds a string representing a functions parameters, and adds a
+// prefix to each.
 func (p Params) WithPrefix(prefix string) string {
 	if len(p) == 0 {
 		return ""
@@ -41,6 +48,8 @@ func (p Params) WithPrefix(prefix string) string {
 	return strings.Join(params, ", ")
 }
 
+// AsArgs builds a string that represents the parameters to a function as
+// arguments to a function invocation.
 func (p Params) AsArgs() string {
 	if len(p) == 0 {
 		return ""
@@ -53,6 +62,8 @@ func (p Params) AsArgs() string {
 	return strings.Join(params, ", ")
 }
 
+// AsNamedArgsWithTypes builds a string that represents parameters as named
+// arugments to a function, with associated types.
 func (p Params) AsNamedArgsWithTypes() string {
 	if len(p) == 0 {
 		return ""
@@ -65,6 +76,7 @@ func (p Params) AsNamedArgsWithTypes() string {
 	return strings.Join(params, ", ")
 }
 
+// AsNamedArgs builds a string that represents parameters as named arguments.
 func (p Params) AsNamedArgs() string {
 	if len(p) == 0 {
 		return ""
@@ -81,6 +93,8 @@ func (p Params) AsNamedArgs() string {
 	return strings.Join(params, ", ")
 }
 
+// AsNamedArgsForInvocation builds a string that represents a function's
+// arguments as required for invocation of the function.
 func (p Params) AsNamedArgsForInvocation() string {
 	if len(p) == 0 {
 		return ""
@@ -97,6 +111,8 @@ func (p Params) AsNamedArgsForInvocation() string {
 	return strings.Join(params, ", ")
 }
 
+// AsReturnSignature builds a string representing signature for the params of
+// a function.
 func (p Params) AsReturnSignature() string {
 	if len(p) == 0 {
 		return ""

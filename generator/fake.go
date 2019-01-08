@@ -34,7 +34,7 @@ type Fake struct {
 	TargetAlias        string
 	TargetName         string
 	TargetPackage      string
-	Imports            []Import
+	Imports            Imports
 	Methods            []Method
 	Function           Method
 }
@@ -55,10 +55,10 @@ func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName 
 		Name:               fakeName,
 		Mode:               fakeMode,
 		DestinationPackage: destinationPackage,
-		Imports:            []Import{},
+		Imports:            newImports(),
 	}
 
-	f.AddImport("sync", "sync")
+	f.Imports.Add("sync", "sync")
 	err := f.loadPackages(workingDir)
 	if err != nil {
 		return nil, err
