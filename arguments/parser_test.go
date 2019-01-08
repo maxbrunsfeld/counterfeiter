@@ -26,7 +26,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	var args []string
 
 	var fail FailHandler
-	var cwd CurrentWorkingDir
+	var cwd string
 	var symlinkEvaler SymlinkEvaler
 	var fileStatReader FileStatReader
 
@@ -55,9 +55,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			failWasCalledWithArgs = args
 
 		}
-		cwd = func() string {
-			return "/home/test-user/workspace"
-		}
+		cwd = "/home/test-user/workspace"
 
 		symlinkEvaler = func(input string) (string, error) {
 			return input, nil
@@ -82,7 +80,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		when("given a stdlib package", func() {
 			it("sets arguments as expected", func() {
 				Expect(parsedArgs.SourcePackageDir).To(Equal("os"))
-				Expect(parsedArgs.OutputPath).To(Equal(path.Join(cwd(), "osshim")))
+				Expect(parsedArgs.OutputPath).To(Equal(path.Join(cwd, "osshim")))
 				Expect(parsedArgs.DestinationPackageName).To(Equal("osshim"))
 			})
 		})
@@ -115,7 +113,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		it("snake cases the filename for the output directory", func() {
 			Expect(parsedArgs.OutputPath).To(Equal(
 				filepath.Join(
-					cwd(),
+					cwd,
 					"workspacefakes",
 					"fake_an_interface.go",
 				),
@@ -237,7 +235,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 					Expect(failWasCalledWithArgs).To(HaveLen(1))
 
 					arg := failWasCalledWithArgs[0]
-					Expect(arg).To(Equal(path.Join(cwd(), "my/my5package")))
+					Expect(arg).To(Equal(path.Join(cwd, "my/my5package")))
 				})
 			})
 
@@ -256,7 +254,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 					Expect(failWasCalledWithArgs).To(HaveLen(1))
 
 					arg := failWasCalledWithArgs[0]
-					Expect(arg).To(Equal(path.Join(cwd(), "my/my5package")))
+					Expect(arg).To(Equal(path.Join(cwd, "my/my5package")))
 				})
 			})
 		})

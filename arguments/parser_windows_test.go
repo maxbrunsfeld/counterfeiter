@@ -24,7 +24,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	var args []string
 
 	var fail FailHandler
-	var cwd CurrentWorkingDir
+	var cwd string
 	var symlinkEvaler SymlinkEvaler
 	var fileStatReader FileStatReader
 
@@ -54,9 +54,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			failWasCalledWithMessage = msg
 			failWasCalledWithArgs = args
 		}
-		cwd = func() string {
-			return "C:\\Users\\test-user\\workspace"
-		}
+		cwd = "C:\\Users\\test-user\\workspace"
 
 		symlinkEvaler = func(input string) (string, error) {
 			return input, nil
