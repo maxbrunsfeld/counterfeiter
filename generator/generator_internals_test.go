@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"io/ioutil"
 	"log"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestGenerator(t *testing.T) {
-	// log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
+	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	spec.Run(t, "Generator", testGenerator, spec.Report(report.Terminal{}))
 }

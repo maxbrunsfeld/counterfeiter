@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-var interfaceFuncs template.FuncMap = template.FuncMap{
+var interfaceFuncs = template.FuncMap{
 	"ToLower":    strings.ToLower,
 	"UnExport":   unexport,
 	"Replace":    strings.Replace,
