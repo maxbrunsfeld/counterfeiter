@@ -1,7 +1,9 @@
 package generator
 
 import (
+	"fmt"
 	"go/types"
+	"path"
 	"strings"
 
 	"golang.org/x/tools/imports"
@@ -25,6 +27,16 @@ func newImports() Imports {
 type Import struct {
 	Alias   string
 	PkgPath string
+}
+
+// String returns a string that may be used as an import line in a go source
+// file. Imports with aliases that match the package basename are printed without
+// an alias.
+func (i Import) String() string {
+	if path.Base(i.PkgPath) == i.Alias {
+		return `"` + i.PkgPath + `"`
+	}
+	return fmt.Sprintf(`%s "%s"`, i.Alias, i.PkgPath)
 }
 
 // Add creates an import with the given alias and path, and adds it to

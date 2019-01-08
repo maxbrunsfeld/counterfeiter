@@ -17,7 +17,7 @@ package {{.DestinationPackage}}
 
 import (
 	{{- range $index, $import := .Imports.ByAlias}}
-	{{$import.Alias}} "{{$import.PkgPath}}"
+	{{$import}}
 	{{- end}}
 )
 

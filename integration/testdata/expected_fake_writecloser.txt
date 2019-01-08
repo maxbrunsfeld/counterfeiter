@@ -2,8 +2,8 @@
 package custom
 
 import (
-	io "io"
-	sync "sync"
+	"io"
+	"sync"
 )
 
 type FakeWriteCloser struct {
