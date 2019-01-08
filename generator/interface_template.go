@@ -48,7 +48,7 @@ type {{.Name}} struct {
 }
 
 {{range .Methods -}}
-func (fake *{{.FakeName}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.AsReturnSignature}} {
+func (fake *{{$.Name}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.AsReturnSignature}} {
 	{{- range .Params.Slices}}
 	var {{UnExport .Name}}Copy {{.Type}}
 	if {{UnExport .Name}} != nil {
@@ -81,20 +81,20 @@ func (fake *{{.FakeName}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Return
 	{{- end}}
 }
 
-func (fake *{{.FakeName}}) {{.Name}}CallCount() int {
+func (fake *{{$.Name}}) {{.Name}}CallCount() int {
 	fake.{{UnExport .Name}}Mutex.RLock()
 	defer fake.{{UnExport .Name}}Mutex.RUnlock()
 	return len(fake.{{UnExport .Name}}ArgsForCall)
 }
 
-func (fake *{{.FakeName}}) {{.Name}}Calls(stub func({{.Params.AsArgs}}) {{.Returns.AsReturnSignature}}) {
+func (fake *{{$.Name}}) {{.Name}}Calls(stub func({{.Params.AsArgs}}) {{.Returns.AsReturnSignature}}) {
 	fake.{{UnExport .Name}}Mutex.Lock()
 	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = stub
 }
 
 {{if .Params.HasLength -}}
-func (fake *{{.FakeName}}) {{.Name}}ArgsForCall(i int) {{.Params.AsReturnSignature}} {
+func (fake *{{$.Name}}) {{.Name}}ArgsForCall(i int) {{.Params.AsReturnSignature}} {
 	fake.{{UnExport .Name}}Mutex.RLock()
 	defer fake.{{UnExport .Name}}Mutex.RUnlock()
 	argsForCall := fake.{{UnExport .Name}}ArgsForCall[i]
@@ -103,7 +103,7 @@ func (fake *{{.FakeName}}) {{.Name}}ArgsForCall(i int) {{.Params.AsReturnSignatu
 {{- end}}
 
 {{if .Returns.HasLength -}}
-func (fake *{{.FakeName}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
+func (fake *{{$.Name}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
 	fake.{{UnExport .Name}}Mutex.Lock()
 	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = nil
@@ -114,7 +114,7 @@ func (fake *{{.FakeName}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
 	}{ {{- .Returns.AsNamedArgs -}} }
 }
 
-func (fake *{{.FakeName}}) {{.Name}}ReturnsOnCall(i int, {{.Returns.AsNamedArgsWithTypes}}) {
+func (fake *{{$.Name}}) {{.Name}}ReturnsOnCall(i int, {{.Returns.AsNamedArgsWithTypes}}) {
 	fake.{{UnExport .Name}}Mutex.Lock()
 	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = nil
