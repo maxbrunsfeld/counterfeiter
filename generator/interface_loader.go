@@ -19,7 +19,7 @@ func (f *Fake) addTypesForMethod(sig *types.Signature) {
 	}
 }
 
-func methodForSignature(sig *types.Signature, fakeName string, fakePackage string, methodName string, importsMap map[string]Import) Method {
+func methodForSignature(sig *types.Signature, methodName string, importsMap map[string]Import) Method {
 	params := []Param{}
 	for i := 0; i < sig.Params().Len(); i++ {
 		param := sig.Params().At(i)
@@ -46,11 +46,9 @@ func methodForSignature(sig *types.Signature, fakeName string, fakePackage strin
 		returns = append(returns, r)
 	}
 	return Method{
-		FakeName:    fakeName,
-		FakePackage: fakePackage,
-		Name:        methodName,
-		Returns:     returns,
-		Params:      params,
+		Name:    methodName,
+		Returns: returns,
+		Params:  params,
 	}
 }
 
@@ -100,7 +98,7 @@ func (f *Fake) loadMethods() {
 
 	importsMap := f.importsMap()
 	for i := range methods {
-		method := methodForSignature(methods[i].Signature, f.Name, f.TargetAlias, methods[i].Func.Name(), importsMap)
+		method := methodForSignature(methods[i].Signature, methods[i].Func.Name(), importsMap)
 		f.Methods = append(f.Methods, method)
 	}
 }
