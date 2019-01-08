@@ -10,11 +10,11 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func (f *Fake) loadPackages() error {
+func (f *Fake) loadPackages(workingDir string) error {
 	log.Println("loading packages...")
 	p, err := packages.Load(&packages.Config{
 		Mode:  packages.LoadSyntax,
-		Dir:   f.WorkingDirectory,
+		Dir:   workingDir,
 		Tests: true,
 	}, f.TargetPackage)
 	if err != nil {

@@ -70,9 +70,6 @@ func interfaceMethodSet(t types.Type) []*rawMethod {
 		if !ok {
 			continue
 		}
-		if methods[i].Type() == nil {
-			continue
-		}
 		sig, ok := methods[i].Type().(*types.Signature)
 		if !ok {
 			continue

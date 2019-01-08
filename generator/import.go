@@ -56,14 +56,12 @@ func unvendor(s string) string {
 }
 
 func (f *Fake) hasDuplicateAliases() bool {
-	hasDuplicates := false
 	for _, imports := range f.aliasMap() {
 		if len(imports) > 1 {
-			hasDuplicates = true
-			break
+			return true
 		}
 	}
-	return hasDuplicates
+	return false
 }
 
 func (f *Fake) printAliases() {
