@@ -37,7 +37,6 @@ type Fake struct {
 	Imports            []Import
 	Methods            []Method
 	Function           Method
-	WorkingDirectory   string
 }
 
 // Method is a method of the interface.
@@ -56,12 +55,11 @@ func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName 
 		Name:               fakeName,
 		Mode:               fakeMode,
 		DestinationPackage: destinationPackage,
-		WorkingDirectory:   workingDir,
 		Imports:            []Import{},
 	}
 
 	f.AddImport("sync", "sync")
-	err := f.loadPackages()
+	err := f.loadPackages(workingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -108,15 +106,6 @@ func unexport(s string) string {
 	}
 	r, n := utf8.DecodeRuneInString(s)
 	return string(unicode.ToLower(r)) + s[n:]
-}
-
-func export(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return ""
-	}
-	r, n := utf8.DecodeRuneInString(s)
-	return string(unicode.ToUpper(r)) + s[n:]
 }
 
 func isExported(s string) bool {
