@@ -19,7 +19,7 @@ func (f *Fake) addTypesForMethod(sig *types.Signature) {
 	}
 }
 
-func methodForSignature(sig *types.Signature, methodName strin, imports Imports) Method {
+func methodForSignature(sig *types.Signature, methodName string, imports Imports) Method {
 	params := []Param{}
 	for i := 0; i < sig.Params().Len(); i++ {
 		param := sig.Params().At(i)
