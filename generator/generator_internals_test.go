@@ -89,7 +89,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Package).NotTo(BeNil())
 				Expect(f.Methods).To(HaveLen(0))
 				Expect(f.Function.Name).To(Equal("HandlerFunc"))
-				Expect(f.Function.FakeName).To(Equal("FakeHandlerFunc"))
 				Expect(f.Function.Params).To(HaveLen(2))
 				Expect(f.Function.Returns).To(BeEmpty())
 			})
@@ -131,7 +130,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					f.Mode = InterfaceOrFunction
 					f.TargetPackage = "os"
 					f.TargetName = "FileInfo"
-					err := f.loadPackages()
+					err := f.loadPackages("")
 					Expect(err).NotTo(HaveOccurred())
 					err = f.findPackage()
 					Expect(err).NotTo(HaveOccurred())
@@ -151,7 +150,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					f.Mode = InterfaceOrFunction
 					f.TargetPackage = "net/http"
 					f.TargetName = "HandlerFunc"
-					err := f.loadPackages()
+					err := f.loadPackages("")
 					Expect(err).NotTo(HaveOccurred())
 					err = f.findPackage()
 					Expect(err).NotTo(HaveOccurred())
@@ -171,7 +170,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					f.Mode = InterfaceOrFunction
 					f.TargetPackage = "net/http"
 					f.TargetName = "Client"
-					err := f.loadPackages()
+					err := f.loadPackages("")
 					Expect(err).NotTo(HaveOccurred())
 					err = f.findPackage()
 					Expect(err).To(HaveOccurred())
@@ -196,7 +195,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				it.Before(func() {
 					f.TargetPackage = "os"
 					f.TargetName = "FileInfo"
-					err := f.loadPackages()
+					err := f.loadPackages("")
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
@@ -210,7 +209,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			when("targeting a nonexistent package", func() {
 				it("returns an error", func() {
 					f.TargetPackage = "counterfeiternonexistentpackage"
-					err := f.loadPackages()
+					err := f.loadPackages("")
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -218,7 +217,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			when("targeting the os package", func() {
 				it.Before(func() {
 					f.TargetPackage = "os"
-					err := f.loadPackages()
+					err := f.loadPackages("")
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -412,21 +411,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			it("leaves unexported things unchanged", func() {
 				Expect(unexport("theUnexportedThing")).To(Equal("theUnexportedThing"))
-			})
-		})
-
-		when("export()", func() {
-			it("is a no-op on an empty string", func() {
-				Expect(export("")).To(Equal(""))
-				Expect(export(" ")).To(Equal(""))
-			})
-
-			it("makes the first letter uppercase", func() {
-				Expect(export("theUnexportedThing")).To(Equal("TheUnexportedThing"))
-			})
-
-			it("leaves exported things unchanged", func() {
-				Expect(export("TheExportedThing")).To(Equal("TheExportedThing"))
 			})
 		})
 

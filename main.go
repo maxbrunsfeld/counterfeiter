@@ -82,7 +82,7 @@ func generate(workingDir string, args arguments.ParsedArguments) error {
 		return err
 	}
 
-	if err := printCode(string(b), args.OutputPath, args.PrintToStdOut); err != nil {
+	if err := printCode(b, args.OutputPath, args.PrintToStdOut); err != nil {
 		return err
 	}
 	fmt.Fprint(os.Stderr, "Done\n")
@@ -101,16 +101,14 @@ func doGenerate(workingDir string, args arguments.ParsedArguments) ([]byte, erro
 	return f.Generate(true)
 }
 
-func printCode(code, outputPath string, printToStdOut bool) error {
-	newCode, err := format.Source([]byte(code))
+func printCode(code []byte, outputPath string, printToStdOut bool) error {
+	formattedCode, err := format.Source(code)
 	if err != nil {
 		return err
 	}
 
-	code = string(newCode)
-
 	if printToStdOut {
-		fmt.Println(code)
+    fmt.Println(string(formattedCode))
 		return nil
 	}
 	os.MkdirAll(filepath.Dir(outputPath), 0777)
@@ -119,7 +117,7 @@ func printCode(code, outputPath string, printToStdOut bool) error {
 		return fmt.Errorf("Couldn't create fake file - %v", err)
 	}
 
-	_, err = file.WriteString(code)
+  _, err = file.Write(formattedCode)
 	if err != nil {
 		return fmt.Errorf("Couldn't write to fake file - %v", err)
 	}
