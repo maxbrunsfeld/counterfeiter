@@ -45,7 +45,7 @@ type {{.Name}} struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *{{.Function.FakeName}}) Spy({{.Function.Params.AsNamedArgsWithTypes}}) {{.Function.Returns.AsReturnSignature}} {
+func (fake *{{.Name}}) Spy({{.Function.Params.AsNamedArgsWithTypes}}) {{.Function.Returns.AsReturnSignature}} {
 	{{- range .Function.Params.Slices}}
 	var {{UnExport .Name}}Copy {{.Type}}
 	if {{UnExport .Name}} != nil {
@@ -73,20 +73,20 @@ func (fake *{{.Function.FakeName}}) Spy({{.Function.Params.AsNamedArgsWithTypes}
 	{{- end}}
 }
 
-func (fake *{{.Function.FakeName}}) CallCount() int {
+func (fake *{{.Name}}) CallCount() int {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
 	return len(fake.argsForCall)
 }
 
-func (fake *{{.Function.FakeName}}) Calls(stub func({{.Function.Params.AsArgs}}) {{.Function.Returns.AsReturnSignature}}) {
+func (fake *{{.Name}}) Calls(stub func({{.Function.Params.AsArgs}}) {{.Function.Returns.AsReturnSignature}}) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.Stub = stub
 }
 
 {{if .Function.Params.HasLength -}}
-func (fake *{{.Function.FakeName}}) ArgsForCall(i int) {{.Function.Params.AsReturnSignature}} {
+func (fake *{{.Name}}) ArgsForCall(i int) {{.Function.Params.AsReturnSignature}} {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
 	return {{.Function.Params.WithPrefix "fake.argsForCall[i]."}}
@@ -94,7 +94,7 @@ func (fake *{{.Function.FakeName}}) ArgsForCall(i int) {{.Function.Params.AsRetu
 {{- end}}
 
 {{if .Function.Returns.HasLength -}}
-func (fake *{{.Function.FakeName}}) Returns({{.Function.Returns.AsNamedArgsWithTypes}}) {
+func (fake *{{.Name}}) Returns({{.Function.Returns.AsNamedArgsWithTypes}}) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.Stub = nil
@@ -105,7 +105,7 @@ func (fake *{{.Function.FakeName}}) Returns({{.Function.Returns.AsNamedArgsWithT
 	}{ {{- .Function.Returns.AsNamedArgs -}} }
 }
 
-func (fake *{{.Function.FakeName}}) ReturnsOnCall(i int, {{.Function.Returns.AsNamedArgsWithTypes}}) {
+func (fake *{{.Name}}) ReturnsOnCall(i int, {{.Function.Returns.AsNamedArgsWithTypes}}) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.Stub = nil
@@ -124,7 +124,7 @@ func (fake *{{.Function.FakeName}}) ReturnsOnCall(i int, {{.Function.Returns.AsN
 }
 {{- end}}
 
-func (fake *{{.Function.FakeName}}) Invocations() map[string][][]interface{} {
+func (fake *{{.Name}}) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.mutex.RLock()

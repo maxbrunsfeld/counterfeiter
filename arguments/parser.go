@@ -17,7 +17,7 @@ type ArgumentParser interface {
 
 func NewArgumentParser(
 	failHandler FailHandler,
-	currentWorkingDir CurrentWorkingDir,
+	currentWorkingDir string,
 	symlinkEvaler SymlinkEvaler,
 	fileStatReader FileStatReader,
 ) ArgumentParser {
@@ -55,7 +55,7 @@ func (argParser *argumentParser) parseInterfaceArgs(args ...string) ParsedArgume
 	} else {
 		fullyQualifiedInterface := strings.Split(args[0], ".")
 		interfaceName = fullyQualifiedInterface[len(fullyQualifiedInterface)-1]
-		rootDestinationDir = argParser.currentWorkingDir()
+		rootDestinationDir = argParser.currentWorkingDir
 		packagePath = strings.Join(fullyQualifiedInterface[:len(fullyQualifiedInterface)-1], ".")
 	}
 
@@ -99,7 +99,7 @@ func (argParser *argumentParser) parsePackageArgs(args ...string) ParsedArgument
 		// TODO: sensible checking of dirs and symlinks
 		outputPath = *outputPathFlag
 	} else {
-		outputPath = path.Join(argParser.currentWorkingDir(), packageName)
+		outputPath = path.Join(argParser.currentWorkingDir, packageName)
 	}
 
 	log.Printf("Parsed Arguments:\nPackage Name: %s\nDestination Package Name: %s", packagePath, packageName)
@@ -116,7 +116,7 @@ func (argParser *argumentParser) parsePackageArgs(args ...string) ParsedArgument
 
 type argumentParser struct {
 	failHandler       FailHandler
-	currentWorkingDir CurrentWorkingDir
+	currentWorkingDir string
 	symlinkEvaler     SymlinkEvaler
 	fileStatReader    FileStatReader
 }
@@ -162,7 +162,7 @@ func (argParser *argumentParser) getOutputPath(rootDestinationDir, fakeName, out
 		return filepath.Join(rootDestinationDir, packageNameForPath(rootDestinationDir), snakeCaseName+".go")
 	} else {
 		if !filepath.IsAbs(outputPathFlagValue) {
-			outputPathFlagValue = filepath.Join(argParser.currentWorkingDir(), outputPathFlagValue)
+			outputPathFlagValue = filepath.Join(argParser.currentWorkingDir, outputPathFlagValue)
 		}
 		return outputPathFlagValue
 	}
@@ -175,7 +175,7 @@ func packageNameForPath(pathToPackage string) string {
 
 func (argParser *argumentParser) getSourceDir(path string) string {
 	if !filepath.IsAbs(path) {
-		path = filepath.Join(argParser.currentWorkingDir(), path)
+		path = filepath.Join(argParser.currentWorkingDir, path)
 	}
 
 	evaluatedPath, err := argParser.symlinkEvaler(path)

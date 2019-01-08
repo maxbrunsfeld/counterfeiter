@@ -39,10 +39,9 @@ func (i Import) String() string {
 	return fmt.Sprintf(`%s "%s"`, i.Alias, i.PkgPath)
 }
 
-// AddImport creates an import with the given alias and path, and adds it to
+// Add creates an import with the given alias and path, and adds it to
 // Fake.Imports.
 func (i *Imports) Add(alias string, path string) Import {
-	// TODO: why is there extra whitespace on these args?
 	path = imports.VendorlessPath(strings.TrimSpace(path))
 	alias = strings.TrimSpace(alias)
 
@@ -51,7 +50,7 @@ func (i *Imports) Add(alias string, path string) Import {
 		return imp
 	}
 
-	imp, exists = i.ByAlias[alias]
+	_, exists = i.ByAlias[alias]
 	if exists {
 		alias = uniqueAliasForImport(alias, i.ByAlias)
 	}
