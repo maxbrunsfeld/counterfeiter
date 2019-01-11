@@ -108,7 +108,7 @@ func printCode(code []byte, outputPath string, printToStdOut bool) error {
 	}
 
 	if printToStdOut {
-    fmt.Println(string(formattedCode))
+		fmt.Println(string(formattedCode))
 		return nil
 	}
 	os.MkdirAll(filepath.Dir(outputPath), 0777)
@@ -117,7 +117,7 @@ func printCode(code []byte, outputPath string, printToStdOut bool) error {
 		return fmt.Errorf("Couldn't create fake file - %v", err)
 	}
 
-  _, err = file.Write(formattedCode)
+	_, err = file.Write(formattedCode)
 	if err != nil {
 		return fmt.Errorf("Couldn't write to fake file - %v", err)
 	}

@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCounterfeiter(t *testing.T) {
-	// spec.Run(t, "Counterfeiter", testCounterfeiter, spec.Report(report.Terminal{}))
+	// spec.Run(t, "Counterfeiter", testCounterfeiter, spec.Report(reporter.Rainbow{}))
 }
 
 func testCounterfeiter(t *testing.T, when spec.G, it spec.S) {

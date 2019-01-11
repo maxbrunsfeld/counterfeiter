@@ -5,16 +5,16 @@ import (
 	"log"
 	"testing"
 
+	"github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
 	"golang.org/x/tools/go/packages"
 )
 
 func TestGenerator(t *testing.T) {
 	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
-	spec.Run(t, "Generator", testGenerator, spec.Report(report.Terminal{}))
+	spec.Run(t, "Generator", testGenerator, spec.Report(reporter.Rainbow{}))
 }
 
 func testGenerator(t *testing.T, when spec.G, it spec.S) {

@@ -11,13 +11,13 @@ import (
 
 	"testing"
 
+	"github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
 )
 
 func TestParsingArguments(t *testing.T) {
-	spec.Run(t, "ParsingArguments", testParsingArguments, spec.Report(report.Terminal{}))
+	spec.Run(t, "ParsingArguments", testParsingArguments, spec.Report(reporter.Rainbow{}))
 }
 
 func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
