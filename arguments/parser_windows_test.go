@@ -3,6 +3,8 @@
 package arguments
 
 import (
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -44,6 +46,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		RegisterTestingT(t)
+		log.SetOutput(ioutil.Discard)
 		*packageFlag = false
 		failWasCalled = false
 		failWasCalledWithMessage = ""
