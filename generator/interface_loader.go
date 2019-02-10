@@ -46,7 +46,8 @@ func methodForSignature(sig *types.Signature, methodName string, imports Imports
 		returns = append(returns, r)
 	}
 	return Method{
-		Name:    strings.Title(methodName),
+		Name:    methodName,
+		Title:   strings.Title(methodName),
 		Returns: returns,
 		Params:  params,
 	}
