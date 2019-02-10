@@ -81,20 +81,20 @@ func (fake *{{$.Name}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.A
 	{{- end}}
 }
 
-func (fake *{{$.Name}}) {{.Name}}CallCount() int {
+func (fake *{{$.Name}}) {{.Title}}CallCount() int {
 	fake.{{UnExport .Name}}Mutex.RLock()
 	defer fake.{{UnExport .Name}}Mutex.RUnlock()
 	return len(fake.{{UnExport .Name}}ArgsForCall)
 }
 
-func (fake *{{$.Name}}) {{.Name}}Calls(stub func({{.Params.AsArgs}}) {{.Returns.AsReturnSignature}}) {
+func (fake *{{$.Name}}) {{.Title}}Calls(stub func({{.Params.AsArgs}}) {{.Returns.AsReturnSignature}}) {
 	fake.{{UnExport .Name}}Mutex.Lock()
 	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = stub
 }
 
 {{if .Params.HasLength -}}
-func (fake *{{$.Name}}) {{.Name}}ArgsForCall(i int) {{.Params.AsReturnSignature}} {
+func (fake *{{$.Name}}) {{.Title}}ArgsForCall(i int) {{.Params.AsReturnSignature}} {
 	fake.{{UnExport .Name}}Mutex.RLock()
 	defer fake.{{UnExport .Name}}Mutex.RUnlock()
 	argsForCall := fake.{{UnExport .Name}}ArgsForCall[i]
@@ -103,7 +103,7 @@ func (fake *{{$.Name}}) {{.Name}}ArgsForCall(i int) {{.Params.AsReturnSignature}
 {{- end}}
 
 {{if .Returns.HasLength -}}
-func (fake *{{$.Name}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
+func (fake *{{$.Name}}) {{.Title}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
 	fake.{{UnExport .Name}}Mutex.Lock()
 	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = nil
@@ -114,7 +114,7 @@ func (fake *{{$.Name}}) {{.Name}}Returns({{.Returns.AsNamedArgsWithTypes}}) {
 	}{ {{- .Returns.AsNamedArgs -}} }
 }
 
-func (fake *{{$.Name}}) {{.Name}}ReturnsOnCall(i int, {{.Returns.AsNamedArgsWithTypes}}) {
+func (fake *{{$.Name}}) {{.Title}}ReturnsOnCall(i int, {{.Returns.AsNamedArgsWithTypes}}) {
 	fake.{{UnExport .Name}}Mutex.Lock()
 	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	fake.{{.Name}}Stub = nil

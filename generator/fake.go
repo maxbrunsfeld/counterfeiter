@@ -42,6 +42,7 @@ type Fake struct {
 // Method is a method of the interface.
 type Method struct {
 	Name    string
+	Title   string
 	Params  Params
 	Returns Returns
 }
