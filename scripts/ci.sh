@@ -3,7 +3,7 @@
 set -eu
 
 cd "$(dirname "$0")/.."
-
+pwd
 # counterfeit all the things
 echo
 echo "Installing counterfeiter..."
