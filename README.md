@@ -85,7 +85,7 @@ go generate ./...
 You can use the following command to invoke `counterfeiter` from within a go module:
 
 ```shell
-gobin -m -run github.com/maxbrunsfeld/counterfeiter
+gobin -m -run github.com/maxbrunsfeld/counterfeiter/v6
 
 USAGE
 	counterfeiter
