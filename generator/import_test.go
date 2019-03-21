@@ -1,8 +1,9 @@
 package generator
 
 import (
-	gΩ "github.com/onsi/gomega"
 	"testing"
+
+	"github.com/onsi/gomega"
 )
 
 func TestImport_String(t *testing.T) {
@@ -30,8 +31,8 @@ func TestImport_String(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			o := gΩ.NewGomegaWithT(t)
-			o.Expect(tc.imp.String()).To(gΩ.Equal(tc.expected))
+			o := gomega.NewGomegaWithT(t)
+			o.Expect(tc.imp.String()).To(gomega.Equal(tc.expected))
 		})
 	}
 }

@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 
-	"github.com/maxbrunsfeld/counterfeiter/generator"
+	"github.com/maxbrunsfeld/counterfeiter/v6/generator"
 )
 
 func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
@@ -54,7 +54,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		}
 
 		if useGopath {
-			baseDir = filepath.Join(testDir, "src", "github.com", "maxbrunsfeld", "counterfeiter", "fixtures")
+			baseDir = filepath.Join(testDir, "src", "github.com", "maxbrunsfeld", "counterfeiter", "v6", "fixtures")
 		} else {
 			baseDir = testDir
 		}
@@ -84,7 +84,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		}
 		initModuleFunc = func() {
 			copyFileFunc("blank.go")
-			err := ioutil.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/fixtures"), 0755)
+			err := ioutil.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures"), 0755)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		// Set this to true to write the output of tests to the testdata/output
@@ -164,9 +164,9 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 						suffix = "/" + suffix
 					}
 					if !useGopath {
-						WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
+						WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
 					}
-					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", baseDir)
+					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", baseDir)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
@@ -208,7 +208,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 					})
 
 					it("succeeds", func() {
-						pkgPath := "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages"
+						pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages"
 						if offset != "" {
 							pkgPath = pkgPath + "/" + offset
 						}

@@ -22,21 +22,21 @@ var (
 	pathToCounterfeiter string
 )
 
-func TestMain(m *testing.M) {
-	var err error
-	pathToCounterfeiter, err = gexec.Build("github.com/maxbrunsfeld/counterfeiter")
-	if err != nil {
-		panic(err)
-	}
+// func TestMain(m *testing.M) {
+// 	var err error
+// 	pathToCounterfeiter, err = gexec.Build("github.com/maxbrunsfeld/counterfeiter/v6")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+//
+// 	result := m.Run()
+// 	gexec.CleanupBuildArtifacts()
+// 	os.Exit(result)
+// }
 
-	result := m.Run()
-	gexec.CleanupBuildArtifacts()
-	os.Exit(result)
-}
-
-func TestCounterfeiter(t *testing.T) {
-	// spec.Run(t, "Counterfeiter", testCounterfeiter, spec.Report(reporter.Rainbow{}))
-}
+// func TestCounterfeiter(t *testing.T) {
+// 	spec.Run(t, "Counterfeiter", testCounterfeiter, spec.Report(reporter.Rainbow{}))
+// }
 
 func testCounterfeiter(t *testing.T, when spec.G, it spec.S) {
 	var pathToCLI string

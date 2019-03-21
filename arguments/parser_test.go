@@ -13,7 +13,7 @@ import (
 
 	"testing"
 
-	"github.com/joefitzgerald/rainbow-reporter"
+	reporter "github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 )

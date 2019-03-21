@@ -5,10 +5,10 @@ import (
 
 	"testing"
 
-	"github.com/maxbrunsfeld/counterfeiter/fixtures"
-	"github.com/maxbrunsfeld/counterfeiter/fixtures/fixturesfakes"
+	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures"
+	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/fixturesfakes"
 
-	"github.com/joefitzgerald/rainbow-reporter"
+	reporter "github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 )

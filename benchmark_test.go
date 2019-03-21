@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/maxbrunsfeld/counterfeiter/arguments"
+	"github.com/maxbrunsfeld/counterfeiter/v6/arguments"
 )
 
 func BenchmarkSingleRun(b *testing.B) {
