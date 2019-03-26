@@ -162,6 +162,13 @@ Expect(err).To(Equal(errors.New("the-error")))
 
 For more examples of using the `counterfeiter` API, look at [some of the provided examples](https://github.com/maxbrunsfeld/counterfeiter/blob/master/generated_fakes_test.go).
 
+### Generating Test Doubles For Third Party Interfaces
+
+For third party interfaces, you can specify the interface using the alternative syntax `<package>.<interface>`, for example:
+```shell
+gobin -m -run github.com/maxbrunsfeld/counterfeiter/v6 github.com/go-redis/redis.Pipeliner
+```
+
 ### Running The Tests For `counterfeiter`
 
 If you want to run the tests for `counterfeiter` (perhaps, because you want to contribute a PR), all you have to do is run `scripts/ci.sh`.
