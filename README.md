@@ -12,7 +12,7 @@ automatically at runtime, and writing them by hand can be quite arduous.
 
 > Each major Go release is supported until there are two newer major releases. For example, Go 1.5 was supported until the Go 1.7 release, and Go 1.6 was supported until the Go 1.8 release. We fix critical problems, including [critical security problems](https://golang.org/security), in supported releases as needed by issuing minor revisions (for example, Go 1.6.1, Go 1.6.2, and so on).
 
-If you are having problems with `counterfieter` and are not using a supported version of go, please update to use a supported version of go before opening an issue.
+If you are having problems with `counterfeiter` and are not using a supported version of go, please update to use a supported version of go before opening an issue.
 
 ### Using `counterfeiter`
 
