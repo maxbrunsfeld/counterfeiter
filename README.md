@@ -20,15 +20,7 @@ We recommend you use [`go modules`](https://blog.golang.org/using-go-modules) wh
 
 Typically, `counterfeiter` is used in `go generate` directives. It can be frustrating when you change your interface declaration and suddenly all of your generated code is suddenly out-of-date. The best practice here is to use the [`go generate` command](https://blog.golang.org/generate) to make it easier to keep your test doubles up to date.
 
-#### Step 1 - Install `gobin`
-
-`gobin` is used to execute a binary by specifying a package path. This allows you to run a specific version of a tool.
-
-```shell
-GO111MODULE=off go get -u github.com/myitcv/gobin
-```
-
-#### Step 2 - Create `tools.go`
+#### Step 1 - Create `tools.go`
 
 You can take a dependency on tools by creating a `tools.go` file, as described in [How can I track tool dependencies for a module?](https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module). This ensures that everyone working with your module is using the same version of each tool you use.
 
@@ -49,7 +41,7 @@ import (
 // during the development process but not otherwise depended on by built code.
 ```
 
-#### Step 3 - Add `go generate` Directives
+#### Step 2 - Add `go:generate` Directives
 
 You can add directives right next to your interface definitions (or not), in any `.go` file in your module.
 
@@ -60,7 +52,7 @@ $ cat myinterface.go
 ```go
 package foo
 
-//go:generate gobin -m -run github.com/maxbrunsfeld/counterfeiter/v6 . MySpecialInterface
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . MySpecialInterface
 
 type MySpecialInterface interface {
 	DoThings(string, uint64) (int, error)
@@ -72,7 +64,7 @@ $ go generate ./...
 Writing `FakeMySpecialInterface` to `foofakes/fake_my_special_interface.go`... Done
 ```
 
-#### Step 4 - Run `go generate`
+#### Step 3 - Run `go generate`
 
 You can run `go generate` in the directory with your directive, or in the root of your module (to ensure you generate for all packages in your module):
 
@@ -80,12 +72,29 @@ You can run `go generate` in the directory with your directive, or in the root o
 go generate ./...
 ```
 
+#### Step 4: Speeding Up `counterfeiter`
+
+Invoking `counterfeiter` using `go run` (as seen in the examples throughout) causes the `counterfeiter` binary to be rebuilt for every `//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6` directive. This is fine if you have a small number of directives in your module.
+
+However, if you have multiple `go:generate` directives for `counterfeiter` in your module, the cost of repeatedly building the binary starts to become significant.
+
+You can speed up your total `go generate` execution time by leveraging caching. [`gobin`](https://github.com/myitcv/gobin) will build and cache the `counterfeiter` binary and can be used instead of `go run` to execute `counterfeiter`. Like `go run`, `gobin` respects the version constraints expressed in `go.mod`.
+
+> To install `gobin`:
+>
+> ```
+> shell
+> GO111MODULE=off go get -u github.com/myitcv/gobin
+> ```
+>
+> To use `gobin` in your `//go:generate` directives instead of `go run`, replace `//go:generate go run` with `//go:generate gobin -m -run`.
+
 #### Invoking `counterfeiter` from the shell
 
 You can use the following command to invoke `counterfeiter` from within a go module:
 
 ```shell
-gobin -m -run github.com/maxbrunsfeld/counterfeiter/v6
+go run github.com/maxbrunsfeld/counterfeiter/v6
 
 USAGE
 	counterfeiter
@@ -124,7 +133,7 @@ type MySpecialInterface interface {
 ```
 
 ```shell
-$ gobin -m -run github.com/maxbrunsfeld/counterfeiter/v6 path/to/foo MySpecialInterface
+$ go run github.com/maxbrunsfeld/counterfeiter/v6 path/to/foo MySpecialInterface
 Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
 ```
 
@@ -165,8 +174,9 @@ For more examples of using the `counterfeiter` API, look at [some of the provide
 ### Generating Test Doubles For Third Party Interfaces
 
 For third party interfaces, you can specify the interface using the alternative syntax `<package>.<interface>`, for example:
+
 ```shell
-gobin -m -run github.com/maxbrunsfeld/counterfeiter/v6 github.com/go-redis/redis.Pipeliner
+go run github.com/maxbrunsfeld/counterfeiter/v6 github.com/go-redis/redis.Pipeliner
 ```
 
 ### Running The Tests For `counterfeiter`
