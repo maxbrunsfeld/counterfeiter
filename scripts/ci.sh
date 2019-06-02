@@ -8,25 +8,25 @@ pwd
 echo
 echo "Installing counterfeiter..."
 echo
-go install .
+GO111MODULE=on go install .
 
 # counterfeit all the things
 echo
 echo "Generating fakes used by tests..."
 echo
-go generate ./...
+GO111MODULE=on go generate ./...
 
 # check that the fakes compile
 echo
 echo "Ensuring generated fakes compile..."
 echo
-go build -v ./...
+GO111MODULE=on go build -v ./...
 
 # run the tests using the fakes
 echo
 echo "Running tests..."
 echo
-go test -race ./...
+GO111MODULE=on go test -race ./...
 
 # remove any generated fakes
 # this is important because users may have the repo
