@@ -17,7 +17,7 @@ func BenchmarkSingleRun(b *testing.B) {
 	}
 	log.SetOutput(ioutil.Discard)
 
-	args := arguments.ParsedArguments{
+	args := &arguments.ParsedArguments{
 		GenerateInterfaceAndShimFromPackageDirectory: false,
 		SourcePackageDir:       workingDir,
 		PackagePath:            workingDir,

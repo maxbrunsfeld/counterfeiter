@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"go/format"
 	"io/ioutil"
@@ -46,33 +45,24 @@ func run() error {
 	if !isDebug() {
 		log.SetOutput(ioutil.Discard)
 	}
-	flag.Parse()
-	args := flag.Args()
-
-	if len(args) < 1 {
-		return errors.New(usage)
-	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
 		return errors.New("Error - couldn't determine current working directory")
 	}
 
-	argumentParser := arguments.NewArgumentParser(
-		fail,
-		cwd,
-		filepath.EvalSymlinks,
-		os.Stat,
-	)
-	parsedArgs := argumentParser.ParseArguments(args...)
-	return generate(cwd, parsedArgs)
+	a, err := arguments.New(os.Args, cwd, filepath.EvalSymlinks, os.Stat)
+	if err != nil {
+		return err
+	}
+	return generate(cwd, a)
 }
 
 func isDebug() bool {
 	return os.Getenv("COUNTERFEITER_DEBUG") != ""
 }
 
-func generate(workingDir string, args arguments.ParsedArguments) error {
+func generate(workingDir string, args *arguments.ParsedArguments) error {
 	if err := reportStarting(workingDir, args.OutputPath, args.FakeImplName); err != nil {
 		return err
 	}
@@ -89,7 +79,7 @@ func generate(workingDir string, args arguments.ParsedArguments) error {
 	return nil
 }
 
-func doGenerate(workingDir string, args arguments.ParsedArguments) ([]byte, error) {
+func doGenerate(workingDir string, args *arguments.ParsedArguments) ([]byte, error) {
 	mode := generator.InterfaceOrFunction
 	if args.GenerateInterfaceAndShimFromPackageDirectory {
 		mode = generator.Package

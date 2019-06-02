@@ -1,9 +1,10 @@
 // +build !windows
 
-package arguments
+package arguments_test
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"time"
 
 	"testing"
+
+	"github.com/maxbrunsfeld/counterfeiter/v6/arguments"
 
 	reporter "github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
@@ -23,59 +26,41 @@ func TestParsingArguments(t *testing.T) {
 }
 
 func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
-	var subject ArgumentParser
-	var parsedArgs ParsedArguments
-	var args []string
-
-	var fail FailHandler
-	var cwd string
-	var symlinkEvaler SymlinkEvaler
-	var fileStatReader FileStatReader
-
-	var failWasCalled bool
-	var failWasCalledWithMessage string
-	var failWasCalledWithArgs []interface{}
+	var (
+		err        error
+		parsedArgs *arguments.ParsedArguments
+		args       []string
+		workingDir string
+		evaler     arguments.Evaler
+		stater     arguments.Stater
+	)
 
 	justBefore := func() {
-		subject = NewArgumentParser(
-			fail,
-			cwd,
-			symlinkEvaler,
-			fileStatReader,
-		)
-		parsedArgs = subject.ParseArguments(args...)
+		parsedArgs, err = arguments.New(args, workingDir, evaler, stater)
 	}
 
 	it.Before(func() {
 		RegisterTestingT(t)
 		log.SetOutput(ioutil.Discard)
-		*packageFlag = false
-		failWasCalled = false
-		*outputPathFlag = ""
-		fail = func(msg string, args ...interface{}) {
-			failWasCalled = true
-			failWasCalledWithMessage = msg
-			failWasCalledWithArgs = args
+		workingDir = "/home/test-user/workspace"
 
-		}
-		cwd = "/home/test-user/workspace"
-
-		symlinkEvaler = func(input string) (string, error) {
+		evaler = func(input string) (string, error) {
 			return input, nil
 		}
-		fileStatReader = func(filename string) (os.FileInfo, error) {
+		stater = func(filename string) (os.FileInfo, error) {
 			return fakeFileInfo(filename, true), nil
 		}
 	})
 
 	when("when the -p flag is provided", func() {
 		it.Before(func() {
-			args = []string{"os"}
-			*packageFlag = true
+			args = []string{"counterfeiter", "-p", "os"}
 			justBefore()
 		})
 
 		it("doesn't parse extraneous arguments", func() {
+			Expect(err).To(Succeed())
+			Expect(parsedArgs.GenerateInterfaceAndShimFromPackageDirectory).To(BeTrue())
 			Expect(parsedArgs.InterfaceName).To(Equal(""))
 			Expect(parsedArgs.FakeImplName).To(Equal("Os"))
 		})
@@ -83,21 +68,19 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		when("given a stdlib package", func() {
 			it("sets arguments as expected", func() {
 				Expect(parsedArgs.SourcePackageDir).To(Equal("os"))
-				Expect(parsedArgs.OutputPath).To(Equal(path.Join(cwd, "osshim")))
+				Expect(parsedArgs.OutputPath).To(Equal(path.Join(workingDir, "osshim")))
 				Expect(parsedArgs.DestinationPackageName).To(Equal("osshim"))
 			})
 		})
-
-		when("given a relative path to a path to a package", func() {})
 	})
 
 	when("when a single argument is provided", func() {
 		it.Before(func() {
-			args = []string{"someonesinterfaces.AnInterface"}
+			args = []string{"counterfeiter", "someonesinterfaces.AnInterface"}
 			justBefore()
 		})
 
-		it("indicates to not print to stdout", func() {
+		it("sets PrintToStdOut to false", func() {
 			Expect(parsedArgs.PrintToStdOut).To(BeFalse())
 		})
 
@@ -116,7 +99,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		it("snake cases the filename for the output directory", func() {
 			Expect(parsedArgs.OutputPath).To(Equal(
 				filepath.Join(
-					cwd,
+					workingDir,
 					"workspacefakes",
 					"fake_an_interface.go",
 				),
@@ -126,8 +109,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 	when("when a single argument is provided with the output directory", func() {
 		it.Before(func() {
-			*outputPathFlag = "/tmp/foo"
-			args = []string{"io.Writer"}
+			args = []string{"counterfeiter", "-o", "/tmp/foo", "io.Writer"}
 			justBefore()
 		})
 
@@ -154,7 +136,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 	when("when two arguments are provided", func() {
 		it.Before(func() {
-			args = []string{"my/my5package", "MySpecialInterface"}
+			args = []string{"counterfeiter", "my/my5package", "MySpecialInterface"}
 			justBefore()
 		})
 
@@ -186,7 +168,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 		when("when the interface is unexported", func() {
 			it.Before(func() {
-				args = []string{"my/mypackage", "mySpecialInterface"}
+				args = []string{"counterfeiter", "my/mypackage", "mySpecialInterface"}
 				justBefore()
 			})
 
@@ -212,7 +194,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 			when("when the first arg is a path to a file", func() {
 				it.Before(func() {
-					fileStatReader = func(filename string) (os.FileInfo, error) {
+					stater = func(filename string) (os.FileInfo, error) {
 						return fakeFileInfo(filename, false), nil
 					}
 					justBefore()
@@ -225,39 +207,29 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 			when("when evaluating symlinks fails", func() {
 				it.Before(func() {
-					symlinkEvaler = func(input string) (string, error) {
+					evaler = func(input string) (string, error) {
 						return "", errors.New("aww shucks")
 					}
 					justBefore()
 				})
 
-				it("should have a reasonably useful message", func() {
-					Expect(failWasCalled).To(BeTrue())
-					Expect(failWasCalledWithMessage).To(Equal("No such file/directory/package: '%s'"))
-
-					Expect(failWasCalledWithArgs).To(HaveLen(1))
-
-					arg := failWasCalledWithArgs[0]
-					Expect(arg).To(Equal(path.Join(cwd, "my/my5package")))
+				it("should return an error with a useful message", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal(fmt.Sprintf("No such file/directory/package [%s]: aww shucks", path.Join(workingDir, "my/my5package"))))
 				})
 			})
 
 			when("when the file stat cannot be read", func() {
 				it.Before(func() {
-					fileStatReader = func(_ string) (os.FileInfo, error) {
+					stater = func(_ string) (os.FileInfo, error) {
 						return fakeFileInfo("", false), errors.New("submarine-shoutout")
 					}
 					justBefore()
 				})
 
-				it("should call its fail handler with a useful message", func() {
-					Expect(failWasCalled).To(BeTrue())
-					Expect(failWasCalledWithMessage).To(Equal("No such file/directory/package: '%s'"))
-
-					Expect(failWasCalledWithArgs).To(HaveLen(1))
-
-					arg := failWasCalledWithArgs[0]
-					Expect(arg).To(Equal(path.Join(cwd, "my/my5package")))
+				it("should return an error with a useful message", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal(fmt.Sprintf("No such file/directory/package [%s]: submarine-shoutout", path.Join(workingDir, "my/my5package"))))
 				})
 			})
 		})
@@ -265,7 +237,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 	when("when the output dir contains characters inappropriate for a package name", func() {
 		it.Before(func() {
-			args = []string{"@my-special-package[]{}", "MySpecialInterface"}
+			args = []string{"counterfeiter", "@my-special-package[]{}", "MySpecialInterface"}
 			justBefore()
 		})
 
@@ -277,7 +249,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	when("when three arguments are provided", func() {
 		when("and the third one is '-'", func() {
 			it.Before(func() {
-				args = []string{"my/mypackage", "MySpecialInterface", "-"}
+				args = []string{"counterfeiter", "my/mypackage", "MySpecialInterface", "-"}
 				justBefore()
 			})
 
@@ -310,7 +282,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 				when("when the first arg is a path to a file", func() {
 					it.Before(func() {
-						fileStatReader = func(filename string) (os.FileInfo, error) {
+						stater = func(filename string) (os.FileInfo, error) {
 							return fakeFileInfo(filename, false), nil
 						}
 					})
@@ -324,7 +296,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 		when("and the third one is some random input", func() {
 			it.Before(func() {
-				args = []string{"my/mypackage", "MySpecialInterface", "WHOOPS"}
+				args = []string{"counterfeiter", "my/mypackage", "MySpecialInterface", "WHOOPS"}
 				justBefore()
 			})
 
@@ -336,7 +308,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 	when("when the output dir contains underscores in package name", func() {
 		it.Before(func() {
-			args = []string{"fake_command_runner", "MySpecialInterface"}
+			args = []string{"counterfeiter", "fake_command_runner", "MySpecialInterface"}
 			justBefore()
 		})
 
