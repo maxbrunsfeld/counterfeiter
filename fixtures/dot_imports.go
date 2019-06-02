@@ -6,7 +6,7 @@ import (
 	. "os"
 )
 
-//go:generate counterfeiter . DotImports
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . DotImports
 type DotImports interface {
 	DoThings(io.Writer, *File) *http.Client
 }

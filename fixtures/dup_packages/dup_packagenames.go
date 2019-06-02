@@ -5,7 +5,7 @@ import (
 	bfoo "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/b/foo"
 )
 
-//go:generate counterfeiter . AB
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . AB
 type AB interface {
 	A() foo.S
 	foo.I

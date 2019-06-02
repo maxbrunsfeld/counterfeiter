@@ -6,7 +6,7 @@ import (
 	some_alias "os"
 )
 
-//go:generate counterfeiter . HasImports
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . HasImports
 type HasImports interface {
 	DoThings(io.Writer, *some_alias.File) *http.Client
 }

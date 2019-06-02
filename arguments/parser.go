@@ -10,7 +10,7 @@ import (
 	"unicode"
 )
 
-//go:generate counterfeiter . ArgumentParser
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ArgumentParser
 type ArgumentParser interface {
 	ParseArguments(...string) ParsedArguments
 }

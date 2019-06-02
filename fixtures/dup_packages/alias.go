@@ -6,7 +6,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/b/foo"
 )
 
-//go:generate counterfeiter . AliasV1
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . AliasV1
 type AliasV1 interface {
 	a.A
 	afoo.I
