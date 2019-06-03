@@ -12,9 +12,9 @@ import (
 	"strings"
 )
 
-func Detect(cwd string, args []string) ([]Invocation, error) {
-	if invokedByGoGenerate() {
-		return invocations(cwd, args)
+func Detect(cwd string, args []string, generateMode bool) ([]Invocation, error) {
+	if generateMode || invokedByGoGenerate() {
+		return invocations(cwd, generateMode)
 	}
 	i, err := NewInvocation("", 0, args)
 	if err != nil {
@@ -45,7 +45,7 @@ func invokedByGoGenerate() bool {
 	return os.Getenv("DOLLAR") == "$"
 }
 
-func invocations(cwd string, args []string) ([]Invocation, error) {
+func invocations(cwd string, generateMode bool) ([]Invocation, error) {
 	var result []Invocation
 	// Find all the go files
 	pkg, err := build.ImportDir(cwd, build.IgnoreVendor)
@@ -59,17 +59,24 @@ func invocations(cwd string, args []string) ([]Invocation, error) {
 	gofiles = append(gofiles, pkg.TestGoFiles...)
 	gofiles = append(gofiles, pkg.XTestGoFiles...)
 	sort.Strings(gofiles)
-	// Find all the generate statements
-	line, err := strconv.Atoi(os.Getenv("GOLINE"))
-	if err != nil {
-		return nil, err
+	var line int
+	if !generateMode {
+		// generateMode means counterfeiter:generate, not go:generate
+		line, err = strconv.Atoi(os.Getenv("GOLINE"))
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	for i := range gofiles {
-		i, err := open(cwd, gofiles[i])
+		i, err := open(cwd, gofiles[i], generateMode)
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, i...)
+		if generateMode {
+			continue
+		}
 		if len(result) > 0 && result[0].File != os.Getenv("GOFILE") {
 			return nil, nil
 		}
@@ -81,9 +88,9 @@ func invocations(cwd string, args []string) ([]Invocation, error) {
 	return result, nil
 }
 
-var re = regexp.MustCompile(`(?mi)^//go:generate (?:go run github\.com/maxbrunsfeld/counterfeiter/v6|gobin -m -run github\.com/maxbrunsfeld/counterfeiter/v6|counterfeiter|counterfeiter.exe)\s+(.*)?\s*$`)
+var re = regexp.MustCompile(`(?mi)^//(go:generate|counterfeiter:generate)\s*(?:go run github\.com/maxbrunsfeld/counterfeiter/v6|gobin -m -run github\.com/maxbrunsfeld/counterfeiter/v6|counterfeiter|counterfeiter.exe)?\s*(.*)?\s*$`)
 
-func open(dir string, file string) ([]Invocation, error) {
+func open(dir string, file string, generateMode bool) ([]Invocation, error) {
 	str, err := ioutil.ReadFile(filepath.Join(dir, file))
 	if err != nil {
 		return nil, err
@@ -98,12 +105,21 @@ func open(dir string, file string) ([]Invocation, error) {
 		if match == nil {
 			continue
 		}
-
-		inv, err := NewInvocation(file, line, stringToArgs(match[1]))
+		inv, err := NewInvocation(file, line, stringToArgs(match[2]))
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, inv)
+
+		if generateMode && match[1] == "counterfeiter:generate" {
+			result = append(result, inv)
+		}
+
+		if !generateMode && match[1] == "go:generate" {
+			if len(inv.Args) == 2 && strings.EqualFold(strings.TrimSpace(inv.Args[1]), "-generate") {
+				continue
+			}
+			result = append(result, inv)
+		}
 	}
 
 	return result, nil

@@ -41,7 +41,7 @@ import (
 // during the development process but not otherwise depended on by built code.
 ```
 
-#### Step 2 - Add `go:generate` Directives
+#### Step 2a - Add `go:generate` Directives
 
 You can add directives right next to your interface definitions (or not), in any `.go` file in your module.
 
@@ -62,6 +62,41 @@ type MySpecialInterface interface {
 ```shell
 $ go generate ./...
 Writing `FakeMySpecialInterface` to `foofakes/fake_my_special_interface.go`... Done
+```
+
+#### Step 2b - Add `counterfeiter:generate` Directives
+
+If you plan to have many directives in a single package, consider using this
+option. You can add directives right next to your interface definitions
+(or not), in any `.go` file in your module.
+
+```shell
+$ cat myinterface.go
+```
+
+```go
+package foo
+
+// You only need **one** of these per package!
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+// You will add lots of directives like these in the same package...
+//counterfeiter:generate . MySpecialInterface
+type MySpecialInterface interface {
+	DoThings(string, uint64) (int, error)
+}
+
+// Like this...
+//counterfeiter:generate . MyOtherInterface
+type MyOtherInterface interface {
+	DoOtherThings(string, uint64) (int, error)
+}
+```
+
+```shell
+$ go generate ./...
+Writing `FakeMySpecialInterface` to `foofakes/fake_my_special_interface.go`... Done
+Writing `FakeMyOtherInterface` to `foofakes/fake_my_other_interface.go`... Done
 ```
 
 #### Step 3 - Run `go generate`
@@ -98,7 +133,7 @@ go run github.com/maxbrunsfeld/counterfeiter/v6
 
 USAGE
 	counterfeiter
-		[-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate] [-o <output-path>] [-p] [--fake-name <fake-name>]
 		[<source-path>] <interface> [-]
 ```
 
@@ -112,7 +147,7 @@ $ counterfeiter
 
 USAGE
 	counterfeiter
-		[-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate] [-o <output-path>] [-p] [--fake-name <fake-name>]
 		[<source-path>] <interface> [-]
 ```
 

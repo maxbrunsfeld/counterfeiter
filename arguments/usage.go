@@ -3,7 +3,7 @@ package arguments
 const usage = `
 USAGE
 	counterfeiter
-		[-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
 		[<source-path>] <interface> [-]
 
 ARGUMENTS
@@ -26,6 +26,31 @@ ARGUMENTS
 		Write code to standard out instead of to a file
 
 OPTIONS
+	-generate
+		Identify all //counterfeiter:generate directives in .go file in the
+		current working directory and generate fakes for them. You can pass
+		arguments as usual.
+
+		NOTE: This is not the same as //go:generate directives
+		(used with the 'go generate' command), but it can be combined with
+		go generate by adding the following to a .go file:
+
+		# runs counterfeiter in generate mode
+		//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+	example:
+		Add the following to a .go file:
+
+		//counterfeiter:generate . MyInterface
+		//counterfeiter:generate . MyOtherInterface
+		//counterfeiter:generate . MyThirdInterface
+
+		# run counterfeiter
+		counterfeiter -generate
+		# writes "FakeMyInterface" to ./mypackagefakes/fake_my_interface.go
+		# writes "FakeMyOtherInterface" to ./mypackagefakes/fake_my_other_interface.go
+		# writes "FakeMyThirdInterface" to ./mypackagefakes/fake_my_third_interface.go
+
 	-o
 		Path to the file or directory for the generated fakes.
 		This also determines the package name that will be used.

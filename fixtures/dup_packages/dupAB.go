@@ -1,6 +1,6 @@
 package dup_packages // import "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages"
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . DupAB
+//counterfeiter:generate . DupAB
 type DupAB interface {
 	DupA
 	DupB

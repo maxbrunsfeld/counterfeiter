@@ -1,6 +1,6 @@
 package fixtures
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . HasOtherTypes
+//counterfeiter:generate . HasOtherTypes
 type HasOtherTypes interface {
 	GetThing(SomeString) SomeFunc
 }
