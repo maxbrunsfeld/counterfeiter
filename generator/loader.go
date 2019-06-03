@@ -20,7 +20,7 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 		return nil
 	}
 	p, err := packages.Load(&packages.Config{
-		Mode:  packages.LoadSyntax,
+		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps | packages.NeedTypes,
 		Dir:   workingDir,
 		Tests: true,
 	}, f.TargetPackage)
