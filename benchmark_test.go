@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/maxbrunsfeld/counterfeiter/v6/arguments"
+	"github.com/maxbrunsfeld/counterfeiter/v6/generator"
 )
 
 func BenchmarkSingleRun(b *testing.B) {
@@ -28,8 +29,9 @@ func BenchmarkSingleRun(b *testing.B) {
 		PrintToStdOut:          false,
 	}
 
+	cache := &generator.Cache{}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		doGenerate(workingDir, args)
+		doGenerate(workingDir, args, cache)
 	}
 }
