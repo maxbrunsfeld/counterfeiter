@@ -6,7 +6,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/another_package"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . EmbedsInterfaces
+//counterfeiter:generate . EmbedsInterfaces
 type EmbedsInterfaces interface {
 	http.Handler
 	another_package.AnotherInterface

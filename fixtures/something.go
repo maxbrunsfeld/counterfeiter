@@ -1,6 +1,6 @@
 package fixtures
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Something
+//counterfeiter:generate . Something
 type Something interface {
 	DoThings(string, uint64) (int, error)
 	DoNothing()

@@ -39,11 +39,33 @@ func testRunner(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates an invocation", func() {
-			i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"})
+			i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"}, false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(i).NotTo(BeNil())
 			Expect(i).To(HaveLen(1))
 			Expect(i[0].Args).To(HaveLen(3))
+			Expect(i[0].Args[1]).To(Equal("."))
+			Expect(i[0].Args[2]).To(Equal("AliasedInterface"))
+		})
+	})
+
+	when("counterfeiter is invoked in generate mode", func() {
+		it.Before(func() {
+			os.Unsetenv("DOLLAR")
+			os.Unsetenv("GOFILE")
+			os.Unsetenv("GOLINE")
+			os.Unsetenv("GOPACKAGE")
+		})
+
+		it("creates invocations", func() {
+			i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"}, true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(i).NotTo(BeNil())
+			Expect(len(i)).To(Equal(17))
+			Expect(i[0].File).To(Equal("aliased_interfaces.go"))
+			Expect(i[0].Line).To(Equal(7))
+			Expect(i[0].Args).To(HaveLen(3))
+			Expect(i[0].Args[0]).To(Equal("counterfeiter"))
 			Expect(i[0].Args[1]).To(Equal("."))
 			Expect(i[0].Args[2]).To(Equal("AliasedInterface"))
 		})
@@ -57,11 +79,11 @@ func testRunner(t *testing.T, when spec.G, it spec.S) {
 			os.Setenv("GOPACKAGE", "fixtures")
 		})
 
-		it("creates invocations", func() {
-			i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"})
+		it("creates invocations but does not include generate mode as an invocation", func() {
+			i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"}, false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(i).NotTo(BeNil())
-			Expect(len(i)).To(BeNumerically(">", 10))
+			Expect(len(i)).To(Equal(1))
 			Expect(i[0].File).To(Equal("aliased_interfaces.go"))
 			Expect(i[0].Line).To(Equal(5))
 			Expect(i[0].Args).To(HaveLen(3))
@@ -76,7 +98,7 @@ func testRunner(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("has no invocations", func() {
-				i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "SomeOtherInterface"})
+				i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"}, false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(i).To(HaveLen(0))
 			})
@@ -88,7 +110,7 @@ func testRunner(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("has no invocations", func() {
-				i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "SomeOtherInterface"})
+				i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"}, false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(i).To(HaveLen(0))
 			})

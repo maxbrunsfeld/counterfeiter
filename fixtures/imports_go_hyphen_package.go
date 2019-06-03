@@ -4,7 +4,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/go-hyphenpackage"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ImportsGoHyphenPackage
+//counterfeiter:generate . ImportsGoHyphenPackage
 type ImportsGoHyphenPackage interface {
 	UseHyphenType(hyphenpackage.HyphenType)
 }
