@@ -35,6 +35,11 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		false,
 		"whether or not to generate a package shim",
 	)
+	generateFlag := fs.Bool(
+		"generate",
+		false,
+		"Identify all //counterfeiter:generate directives in the current working directory and generate fakes for them",
+	)
 
 	err := fs.Parse(args[1:])
 	if err != nil {
@@ -48,6 +53,7 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 	result := &ParsedArguments{
 		PrintToStdOut: any(args, "-"),
 		GenerateInterfaceAndShimFromPackageDirectory: packageMode,
+		GenerateMode: *generateFlag,
 	}
 	err = result.parseSourcePackageDir(packageMode, workingDir, evaler, stater, fs.Args())
 	if err != nil {
@@ -175,6 +181,7 @@ type ParsedArguments struct {
 	FakeImplName  string // the name of the struct implementing the given interface
 
 	PrintToStdOut bool
+	GenerateMode  bool
 }
 
 func fixupUnexportedNames(interfaceName string) string {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"go/format"
 	"io/ioutil"
@@ -60,17 +59,13 @@ func run() error {
 		cache = &generator.Cache{}
 	}
 	var invocations []command.Invocation
-	fs := flag.NewFlagSet("counterfeiter", flag.ContinueOnError)
-	generateFlag := fs.Bool(
-		"generate",
-		false,
-		"Identify all //counterfeiter:generate directives in the current working directory and generate fakes for them",
-	)
-	err = fs.Parse(os.Args[1:])
-	if err != nil {
-		return err
+	var args *arguments.ParsedArguments
+	args, _ = arguments.New(os.Args, cwd, filepath.EvalSymlinks, os.Stat)
+	generateMode := false
+	if args != nil {
+		generateMode = args.GenerateMode
 	}
-	invocations, err = command.Detect(cwd, os.Args, *generateFlag)
+	invocations, err = command.Detect(cwd, os.Args, generateMode)
 	if err != nil {
 		return err
 	}
