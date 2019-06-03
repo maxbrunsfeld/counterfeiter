@@ -13,7 +13,7 @@ import (
 
 func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	log.Println("loading packages...")
-	p, ok := c.Load(workingDir)
+	p, ok := c.Load(f.TargetPackage)
 	if ok {
 		f.Packages = p
 		log.Printf("loaded %v packages from cache\n", len(f.Packages))
@@ -41,7 +41,7 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 		return err
 	}
 	f.Packages = p
-	c.Store(workingDir, p)
+	c.Store(f.TargetPackage, p)
 	log.Printf("loaded %v packages\n", len(f.Packages))
 	return nil
 }

@@ -8,16 +8,16 @@ type Cache struct {
 
 type FakeCache struct{}
 
-func (c *FakeCache) Load(workingDir string) ([]*packages.Package, bool)    { return nil, false }
-func (c *FakeCache) Store(workingDir string, packages []*packages.Package) {}
+func (c *FakeCache) Load(packagePath string) ([]*packages.Package, bool)    { return nil, false }
+func (c *FakeCache) Store(packagePath string, packages []*packages.Package) {}
 
 type Cacher interface {
-	Load(workingDir string) ([]*packages.Package, bool)
-	Store(workingDir string, packages []*packages.Package)
+	Load(packagePath string) ([]*packages.Package, bool)
+	Store(packagePath string, packages []*packages.Package)
 }
 
-func (c *Cache) Load(workingDir string) ([]*packages.Package, bool) {
-	p, ok := c.packageMap[workingDir]
+func (c *Cache) Load(packagePath string) ([]*packages.Package, bool) {
+	p, ok := c.packageMap[packagePath]
 	if !ok {
 		return nil, false
 	}
@@ -25,9 +25,9 @@ func (c *Cache) Load(workingDir string) ([]*packages.Package, bool) {
 	return packages, ok
 }
 
-func (c *Cache) Store(workingDir string, packages []*packages.Package) {
+func (c *Cache) Store(packagePath string, packages []*packages.Package) {
 	if c.packageMap == nil {
 		c.packageMap = map[string]interface{}{}
 	}
-	c.packageMap[workingDir] = packages
+	c.packageMap[packagePath] = packages
 }
