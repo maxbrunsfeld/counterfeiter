@@ -33,19 +33,27 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 	packageFlag := fs.Bool(
 		"p",
 		false,
-		"whether or not to generate a package shim",
+		"Whether or not to generate a package shim",
 	)
 	generateFlag := fs.Bool(
 		"generate",
 		false,
 		"Identify all //counterfeiter:generate directives in the current working directory and generate fakes for them",
 	)
+	helpFlag := fs.Bool(
+		"help",
+		false,
+		"Display this help",
+	)
 
 	err := fs.Parse(args[1:])
 	if err != nil {
 		return nil, err
 	}
-	if len(fs.Args()) == 0 {
+	if *helpFlag {
+		return nil, errors.New(usage)
+	}
+	if len(fs.Args()) == 0 && !*generateFlag {
 		return nil, errors.New(usage)
 	}
 
@@ -54,6 +62,9 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		PrintToStdOut: any(args, "-"),
 		GenerateInterfaceAndShimFromPackageDirectory: packageMode,
 		GenerateMode: *generateFlag,
+	}
+	if *generateFlag {
+		return result, nil
 	}
 	err = result.parseSourcePackageDir(packageMode, workingDir, evaler, stater, fs.Args())
 	if err != nil {
