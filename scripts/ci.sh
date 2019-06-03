@@ -38,7 +38,7 @@ GO111MODULE=on go test -race ./...
 echo
 echo "Removing generated files..."
 echo
-find ./v6/fixtures/ -path '*fakes/fake*.go' -print0 | xargs -0 rm -rf
+find ./fixtures/ -path '*fakes/fake*.go' -print0 | xargs -0 rm -rf
 
 echo "
  _______  _     _  _______  _______  _______

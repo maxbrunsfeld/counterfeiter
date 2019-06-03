@@ -1,13 +1,12 @@
 package arguments
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"go/build"
 	"path"
 	"path/filepath"
-	"encoding/json"
 	"regexp"
 	"strings"
 	"unicode"
@@ -160,9 +159,6 @@ func (a *ParsedArguments) parsePackagePath(packageMode bool, args []string) {
 
 	if a.PackagePath == "" {
 		a.PackagePath = a.SourcePackageDir
-	}
-	if strings.HasPrefix(a.PackagePath, build.Default.GOPATH) {
-		a.PackagePath = strings.Replace(a.PackagePath, build.Default.GOPATH+"/src/", "", -1)
 	}
 }
 
