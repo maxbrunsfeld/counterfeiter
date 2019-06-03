@@ -113,7 +113,8 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 	when("generating a fake for stdlib interfaces", func() {
 		it("succeeds", func() {
 			initModuleFunc()
-			f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "custom", baseDir)
+			cache := &generator.FakeCache{}
+			f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "custom", baseDir, cache)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
 			Expect(err).NotTo(HaveOccurred())
@@ -131,7 +132,8 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 	when("generating an interface for a package", func() {
 		it("succeeds", func() {
 			initModuleFunc()
-			f, err := generator.NewFake(generator.Package, "", "os", "Os", "custom", baseDir)
+			cache := &generator.FakeCache{}
+			f, err := generator.NewFake(generator.Package, "", "os", "Os", "custom", baseDir, cache)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
 			Expect(err).NotTo(HaveOccurred())
@@ -166,7 +168,8 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 					if !useGopath {
 						WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
 					}
-					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", baseDir)
+					cache := &generator.FakeCache{}
+					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", baseDir, cache)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
@@ -212,7 +215,8 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 						if offset != "" {
 							pkgPath = pkgPath + "/" + offset
 						}
-						f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, baseDir)
+						cache := &generator.FakeCache{}
+						f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, baseDir, cache)
 						Expect(err).NotTo(HaveOccurred())
 						b, err := f.Generate(false) // Flip to false to see output if goimports fails
 						Expect(err).NotTo(HaveOccurred())

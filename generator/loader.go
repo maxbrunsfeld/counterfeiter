@@ -11,8 +11,14 @@ import (
 	"golang.org/x/tools/imports"
 )
 
-func (f *Fake) loadPackages(workingDir string) error {
+func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	log.Println("loading packages...")
+	p, ok := c.Load(f.TargetPackage)
+	if ok {
+		f.Packages = p
+		log.Printf("loaded %v packages from cache\n", len(f.Packages))
+		return nil
+	}
 	p, err := packages.Load(&packages.Config{
 		Mode:  packages.LoadSyntax,
 		Dir:   workingDir,
@@ -35,6 +41,7 @@ func (f *Fake) loadPackages(workingDir string) error {
 		return err
 	}
 	f.Packages = p
+	c.Store(f.TargetPackage, p)
 	log.Printf("loaded %v packages\n", len(f.Packages))
 	return nil
 }

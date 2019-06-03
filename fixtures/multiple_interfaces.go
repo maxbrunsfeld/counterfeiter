@@ -1,11 +1,11 @@
 package fixtures
 
-//go:generate counterfeiter . FirstInterface
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . FirstInterface
 type FirstInterface interface {
 	DoThings()
 }
 
-//go:generate counterfeiter . SecondInterface
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . SecondInterface
 type SecondInterface interface {
 	EmbeddedMethod() string
 }

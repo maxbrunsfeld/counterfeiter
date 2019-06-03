@@ -2,7 +2,7 @@ package dup_packages // import "github.com/maxbrunsfeld/counterfeiter/v6/fixture
 
 import "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/a/foo"
 
-//go:generate counterfeiter . DupA
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . DupA
 type DupA interface {
 	A() foo.S
 }

@@ -1,0 +1,19 @@
+version: 2
+workflows:
+  version: 2
+  test:
+    jobs:
+      - build
+      - build-prior
+jobs:
+  build: &build-template
+    docker:
+      - image: circleci/golang:1.12
+    working_directory: ~/counterfeiter
+    steps:
+      - checkout
+      - run: ~/counterfeiter/scripts/ci.sh
+  build-prior:
+    <<: *build-template
+    docker:
+      - image: circleci/golang:1.11
