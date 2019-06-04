@@ -1,1 +1,1 @@
-module github.com/maxbrunsfeld/counterfeiter/v6/fixtures/hyphenated_package_same_name
+module github.com/maxbrunsfeld/counterfeiter/fixtures/hyphenated_package_same_name

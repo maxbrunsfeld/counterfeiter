@@ -119,21 +119,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		when("duplicate import package names are added", func() {
 			it.Before(func() {
 				f.Imports.Add("sync", "sync")
-				f.Imports.Add("sync", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/sync")
-				f.Imports.Add("sync", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/othersync")
+				f.Imports.Add("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/sync")
+				f.Imports.Add("sync", "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync")
 			})
 
 			it("all packages have unique aliases", func() {
 				Expect(f.Imports).To(BeEquivalentTo(Imports{
 					ByAlias: map[string]Import{
 						"sync":  {Alias: "sync", PkgPath: "sync"},
-						"synca": {Alias: "synca", PkgPath: "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/sync"},
-						"syncb": {Alias: "syncb", PkgPath: "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/othersync"},
+						"synca": {Alias: "synca", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/sync"},
+						"syncb": {Alias: "syncb", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync"},
 					},
 					ByPkgPath: map[string]Import{
 						"sync": {Alias: "sync", PkgPath: "sync"},
-						"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/sync":      {Alias: "synca", PkgPath: "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/sync"},
-						"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/othersync": {Alias: "syncb", PkgPath: "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/othersync"},
+						"github.com/maxbrunsfeld/counterfeiter/fixtures/sync":      {Alias: "synca", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/sync"},
+						"github.com/maxbrunsfeld/counterfeiter/fixtures/othersync": {Alias: "syncb", PkgPath: "github.com/maxbrunsfeld/counterfeiter/fixtures/othersync"},
 					},
 				}))
 			})
@@ -302,7 +302,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("turns a vendor path into the correct import", func() {
-					i := f.Imports.Add("apackage", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/vendored/vendor/apackage")
+					i := f.Imports.Add("apackage", "github.com/maxbrunsfeld/counterfeiter/fixtures/vendored/vendor/apackage")
 					Expect(i.Alias).To(Equal("apackage"))
 					Expect(i.PkgPath).To(Equal("apackage"))
 

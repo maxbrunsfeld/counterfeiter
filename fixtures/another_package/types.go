@@ -1,4 +1,4 @@
-package another_package // import "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/another_package"
+package another_package // import "github.com/maxbrunsfeld/counterfeiter/fixtures/another_package"
 
 type SomeType int
 

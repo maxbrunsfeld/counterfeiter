@@ -1,4 +1,4 @@
-package foo // import "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/b/foo"
+package foo // import "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo"
 
 type S struct{}
 

@@ -1,1 +1,1 @@
-package fixtures // import "github.com/maxbrunsfeld/counterfeiter/v6/fixtures"
+package fixtures // import "github.com/maxbrunsfeld/counterfeiter/fixtures"

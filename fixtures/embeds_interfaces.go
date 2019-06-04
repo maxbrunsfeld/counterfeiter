@@ -3,7 +3,7 @@ package fixtures
 import (
 	"net/http"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/another_package"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures/another_package"
 )
 
 //counterfeiter:generate . EmbedsInterfaces

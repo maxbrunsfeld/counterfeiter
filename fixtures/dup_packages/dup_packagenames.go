@@ -1,8 +1,8 @@
-package dup_packages // import "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages"
+package dup_packages // import "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages"
 
 import (
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/a/foo"
-	bfoo "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/b/foo"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/foo"
+	bfoo "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo"
 )
 
 //counterfeiter:generate . AB

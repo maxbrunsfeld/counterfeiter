@@ -1,8 +1,8 @@
-package foo // import "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/foo"
+package foo // import "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/foo"
 
 import (
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/a/foo"
-	bfoo "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/dup_packages/b/foo"
+	"github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/a/foo"
+	bfoo "github.com/maxbrunsfeld/counterfeiter/fixtures/dup_packages/b/foo"
 )
 
 type S struct{}

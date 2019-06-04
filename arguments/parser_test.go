@@ -14,7 +14,7 @@ import (
 
 	"testing"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/arguments"
+	"github.com/maxbrunsfeld/counterfeiter/arguments"
 
 	reporter "github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
