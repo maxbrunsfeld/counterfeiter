@@ -104,7 +104,7 @@ Writing `FakeMyOtherInterface` to `foofakes/fake_my_other_interface.go`... Done
 You can run `go generate` in the directory with your directive, or in the root of your module (to ensure you generate for all packages in your module):
 
 ```shell
-go generate ./...
+$ go generate ./...
 ```
 
 #### Invoking `counterfeiter` from the shell
@@ -112,7 +112,7 @@ go generate ./...
 You can use the following command to invoke `counterfeiter` from within a go module:
 
 ```shell
-go run github.com/maxbrunsfeld/counterfeiter/v6
+$ go run github.com/maxbrunsfeld/counterfeiter/v6
 
 USAGE
 	counterfeiter
@@ -194,7 +194,7 @@ For more examples of using the `counterfeiter` API, look at [some of the provide
 For third party interfaces, you can specify the interface using the alternative syntax `<package>.<interface>`, for example:
 
 ```shell
-go run github.com/maxbrunsfeld/counterfeiter/v6 github.com/go-redis/redis.Pipeliner
+$ go run github.com/maxbrunsfeld/counterfeiter/v6 github.com/go-redis/redis.Pipeliner
 ```
 
 ### Running The Tests For `counterfeiter`
