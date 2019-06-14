@@ -107,23 +107,6 @@ You can run `go generate` in the directory with your directive, or in the root o
 go generate ./...
 ```
 
-#### Step 4: Speeding Up `counterfeiter`
-
-Invoking `counterfeiter` using `go run` (as seen in the examples throughout) causes the `counterfeiter` binary to be rebuilt for every `//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6` directive. This is fine if you have a small number of directives in your module.
-
-However, if you have multiple `go:generate` directives for `counterfeiter` in your module, the cost of repeatedly building the binary starts to become significant.
-
-You can speed up your total `go generate` execution time by leveraging caching. [`gobin`](https://github.com/myitcv/gobin) will build and cache the `counterfeiter` binary and can be used instead of `go run` to execute `counterfeiter`. Like `go run`, `gobin` respects the version constraints expressed in `go.mod`.
-
-> To install `gobin`:
->
-> ```
-> shell
-> GO111MODULE=off go get -u github.com/myitcv/gobin
-> ```
->
-> To use `gobin` in your `//go:generate` directives instead of `go run`, replace `//go:generate go run` with `//go:generate gobin -m -run`.
-
 #### Invoking `counterfeiter` from the shell
 
 You can use the following command to invoke `counterfeiter` from within a go module:
