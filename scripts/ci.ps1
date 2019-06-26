@@ -13,6 +13,15 @@ function ExitWithCode
     exit
 }
 
+echo "running go vet..."
+echo "-------------------"
+echo ""
+
+go vet ./...
+if ($LASTEXITCODE -ne 0) {
+  ExitWithCode -exitcode $LASTEXITCODE
+}
+
 echo "installing counterfeiter..."
 echo "---------------------------"
 echo ""
