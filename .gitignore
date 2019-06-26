@@ -36,7 +36,6 @@ fixtures/dup_packages/b/foo/foofakes/
 fixtures/dup_packages/dup_packagesfakes/
 fixtures/dup_packages/foo/foofakes/
 fixtures/dup_packages/foo/foofakes/
-fixtures/fixturesfakes/
 fixtures/hyphenated_package_same_name/some_package/some_packagefakes/
 fixtures/packagegen/packagegenfakes
 fixtures/symlinked_fixturesfakes/
