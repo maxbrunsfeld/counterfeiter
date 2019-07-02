@@ -23,6 +23,17 @@ echo "Generating fakes used by tests..."
 echo
 GO111MODULE=on go generate ./...
 
+# validate that the generated fakes match the committed fakes
+echo
+echo "Validating that generated fakes have not changed..."
+echo
+git diff --exit-code
+if output=$(git status --porcelain) && [ ! -z "$output" ]; then
+  echo "the working copy is not clean; make sure that go generate ./... has been run, and"
+  echo "that you have committed or ignored all files before running ./scripts/ci.sh"
+  exit 1
+fi
+
 # check that the fakes compile
 echo
 echo "Ensuring generated fakes compile..."
@@ -34,18 +45,6 @@ echo
 echo "Running tests..."
 echo
 GO111MODULE=on go test -race ./...
-
-# remove any generated fakes
-# this is important because users may have the repo
-# checked out for a long time and acquire cruft.
-# If they come back and git pull after a long time,
-# and some of our internal interfaces have changed,
-# they will likely have old generated fakes that reference
-# files that no longer exist, breaking their local tests
-echo
-echo "Removing generated files..."
-echo
-find ./fixtures/ -path './fixtures/*/*fakes' -print0 | xargs -0 rm -rf
 
 echo "
  _______  _     _  _______  _______  _______
