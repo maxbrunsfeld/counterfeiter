@@ -4,6 +4,13 @@ set -eu
 
 cd "$(dirname "$0")/.."
 pwd
+
+# run go vet to verify everything builds and to check common issues
+echo
+echo "Running go vet..."
+echo
+GO111MODULE=on go vet ./...
+
 # counterfeit all the things
 echo
 echo "Installing counterfeiter..."
