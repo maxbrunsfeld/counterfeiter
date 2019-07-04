@@ -1,4 +1,4 @@
-package inlinestructs
+package fixtures
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type SomeInterface interface {
+type InlineInterface interface {
 	DoSomething(ctx context.Context, body struct {
 		SomeString        string
 		SomeStringPointer *string
