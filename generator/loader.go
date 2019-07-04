@@ -131,6 +131,10 @@ func (f *Fake) addImportsFor(typ types.Type) {
 		return
 	case *types.Signature:
 		f.addTypesForMethod(t)
+	case *types.Struct:
+		for i := 0; i < t.NumFields(); i++ {
+			f.addImportsFor(t.Field(i).Type())
+		}
 	default:
 		log.Printf("!!! WARNING: Missing case for type %s\n", reflect.TypeOf(typ).String())
 	}
