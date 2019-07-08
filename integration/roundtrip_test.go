@@ -192,6 +192,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		t("ImportsGoHyphenPackage", "imports_go_hyphen_package.go", "", filepath.Join("go-hyphenpackage", "fixture.go"))
 		t("FirstInterface", "multiple_interfaces.go", "")
 		t("SecondInterface", "multiple_interfaces.go", "")
+		t("InlineStructParams", "inline_struct_params.go", "")
 		t("RequestFactory", "request_factory.go", "")
 		t("ReusesArgTypes", "reuses_arg_types.go", "")
 		t("SomethingWithForeignInterface", "something_remote.go", "", filepath.Join("aliased_package", "in_aliased_package.go"))
