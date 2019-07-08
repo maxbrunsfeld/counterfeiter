@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-type InlineInterface interface {
+//counterfeiter:generate . InlineStructParams
+type InlineStructParams interface {
 	DoSomething(ctx context.Context, body struct {
 		SomeString        string
 		SomeStringPointer *string
