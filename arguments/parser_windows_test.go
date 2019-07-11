@@ -24,12 +24,12 @@ func TestParsingArguments(t *testing.T) {
 
 func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	var (
-		err error
+		err        error
 		parsedArgs *arguments.ParsedArguments
-		args []string
+		args       []string
 		workingDir string
-		evaler arguments.Evaler
-		stater arguments.Stater
+		evaler     arguments.Evaler
+		stater     arguments.Stater
 	)
 
 	justBefore := func() {
