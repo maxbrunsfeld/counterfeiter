@@ -61,7 +61,7 @@ func testRunner(t *testing.T, when spec.G, it spec.S) {
 			i, err := command.Detect(filepath.Join(".", "..", "fixtures"), []string{"counterfeiter", ".", "AliasedInterface"}, true)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(i).NotTo(BeNil())
-			Expect(len(i)).To(Equal(17))
+			Expect(len(i)).To(Equal(18))
 			Expect(i[0].File).To(Equal("aliased_interfaces.go"))
 			Expect(i[0].Line).To(Equal(7))
 			Expect(i[0].Args).To(HaveLen(3))
