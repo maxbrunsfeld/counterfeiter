@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"go/build"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,6 +23,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		baseDir             string
 		relativeDir         string
 		originalGopath      string
+		originalBuildGopath string
 		originalGo111module string
 		testDir             string
 		copyDirFunc         func()
@@ -44,11 +46,14 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 			os.Setenv("GO111MODULE", "on")
 		}
 		originalGopath = os.Getenv("GOPATH")
+		originalBuildGopath = build.Default.GOPATH
 		var err error
 		testDir, err = ioutil.TempDir("", "counterfeiter-integration")
 		Expect(err).NotTo(HaveOccurred())
 		if useGopath {
 			os.Setenv("GOPATH", testDir)
+			// build.Default only reads the GOPATH env variable once on init
+			build.Default.GOPATH = testDir
 		} else {
 			os.Unsetenv("GOPATH")
 		}
@@ -103,6 +108,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		} else {
 			os.Unsetenv("GOPATH")
 		}
+		build.Default.GOPATH = originalBuildGopath
 		if baseDir == "" {
 			return
 		}
