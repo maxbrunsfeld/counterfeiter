@@ -88,16 +88,26 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
-	t := f.Imports.Add(pkg.Name, f.TargetPackage)
-	f.TargetAlias = t.Alias
-	if f.Mode != Package {
-		f.TargetName = target.Name()
+	if !f.SamePackage || f.TestPackage {
+		t := f.Imports.Add(pkg.Name, f.TargetPackage)
+		f.TargetAlias = t.Alias
 	}
 
 	if f.Mode == InterfaceOrFunction {
+		f.TargetName = target.Name()
 		if !f.IsInterface() && !f.IsFunction() {
-			return fmt.Errorf("cannot generate an fake for %s because it is not an interface or function", f.TargetName)
+			return fmt.Errorf("cannot generate a fake for %s because it is not an interface or function", f.TargetName)
 		}
+		if f.SamePackage {
+			f.DestinationPackage = pkg.Name
+			if f.TestPackage {
+				f.DestinationPackage += "_test"
+			}
+		} else {
+			f.DestinationPackage = restrictToValidPackageName(filepath.Base(f.DestinationPath))
+		}
+	} else {
+		f.DestinationPackage = filepath.Base(f.TargetPackage) + "shim"
 	}
 
 	if f.IsInterface() {

@@ -29,6 +29,7 @@ type Fake struct {
 	Package            *packages.Package
 	Target             *types.TypeName
 	Mode               FakeMode
+	DestinationPath    string
 	DestinationPackage string
 	Name               string
 	TargetAlias        string
@@ -37,6 +38,8 @@ type Fake struct {
 	Imports            Imports
 	Methods            []Method
 	Function           Method
+	SamePackage        bool
+	TestPackage        bool
 }
 
 // Method is a method of the interface.
@@ -48,14 +51,16 @@ type Method struct {
 
 // NewFake returns a Fake that loads the package and finds the interface or the
 // function.
-func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName string, destinationPackage string, workingDir string, cache Cacher) (*Fake, error) {
+func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName string, destinationPath string, testPackage bool, workingDir string, cache Cacher) (*Fake, error) {
 	f := &Fake{
-		TargetName:         targetName,
-		TargetPackage:      packagePath,
-		Name:               fakeName,
-		Mode:               fakeMode,
-		DestinationPackage: destinationPackage,
-		Imports:            newImports(),
+		TargetName:      targetName,
+		TargetPackage:   packagePath,
+		Name:            fakeName,
+		Mode:            fakeMode,
+		DestinationPath: destinationPath,
+		SamePackage:     destinationPath == packagePath,
+		TestPackage:     testPackage,
+		Imports:         newImports(),
 	}
 
 	f.Imports.Add("sync", "sync")
@@ -111,6 +116,16 @@ func unexport(s string) string {
 func isExported(s string) bool {
 	r, _ := utf8.DecodeRuneInString(s)
 	return unicode.IsUpper(r)
+}
+
+func restrictToValidPackageName(input string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
+			return r
+		} else {
+			return -1
+		}
+	}, input)
 }
 
 // Generate uses the Fake to generate an implementation, optionally running

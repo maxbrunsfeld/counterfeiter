@@ -46,6 +46,12 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		"Display this help",
 	)
 
+	testFlag := fs.Bool(
+		"test",
+		false,
+		"Append \"_test\" to pacakge name",
+	)
+
 	err := fs.Parse(args[1:])
 	if err != nil {
 		return nil, err
@@ -73,8 +79,11 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 	result.parseInterfaceName(packageMode, fs.Args())
 	result.parseFakeName(packageMode, *fakeNameFlag, fs.Args())
 	result.parseOutputPath(packageMode, workingDir, *outputPathFlag, fs.Args())
-	result.parseDestinationPackageName(packageMode, fs.Args())
+	result.parseDestinationPackagePath(packageMode, fs.Args())
 	result.parsePackagePath(packageMode, fs.Args())
+	if *testFlag {
+		result.TestPackage = true
+	}
 	return result, nil
 }
 
@@ -139,8 +148,8 @@ func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, o
 	}
 
 	if packageMode {
-		a.parseDestinationPackageName(packageMode, args)
-		a.OutputPath = path.Join(workingDir, a.DestinationPackageName)
+		a.parsePackagePath(packageMode, args)
+		a.OutputPath = path.Join(workingDir, path.Base(a.PackagePath)+"shim")
 		return
 	}
 
@@ -152,14 +161,12 @@ func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, o
 	a.OutputPath = filepath.Join(d, packageNameForPath(d), snakeCaseName+".go")
 }
 
-func (a *ParsedArguments) parseDestinationPackageName(packageMode bool, args []string) {
+func (a *ParsedArguments) parseDestinationPackagePath(packageMode bool, args []string) {
 	if packageMode {
-		a.parsePackagePath(packageMode, args)
-		a.DestinationPackageName = path.Base(a.PackagePath) + "shim"
+		a.DestinationPackagePath = a.OutputPath
 		return
 	}
-
-	a.DestinationPackageName = restrictToValidPackageName(filepath.Base(filepath.Dir(a.OutputPath)))
+	a.DestinationPackagePath = filepath.Dir(a.OutputPath)
 }
 
 func (a *ParsedArguments) parsePackagePath(packageMode bool, args []string) {
@@ -182,11 +189,11 @@ func (a *ParsedArguments) parsePackagePath(packageMode bool, args []string) {
 type ParsedArguments struct {
 	GenerateInterfaceAndShimFromPackageDirectory bool
 
-	SourcePackageDir string // abs path to the dir containing the interface to fake
-	PackagePath      string // package path to the package containing the interface to fake
-	OutputPath       string // path to write the fake file to
-
-	DestinationPackageName string // often the base-dir for OutputPath but must be a valid package name
+	SourcePackageDir       string // abs path to the dir containing the interface to fake
+	PackagePath            string // package path to the package containing the interface to fake
+	OutputPath             string // path to write the fake file to
+	DestinationPackagePath string // path to destination package
+	TestPackage            bool   // append "_test" to package name
 
 	InterfaceName string // the interface to counterfeit
 	FakeImplName  string // the name of the struct implementing the given interface
@@ -240,14 +247,4 @@ func any(slice []string, needle string) bool {
 	}
 
 	return false
-}
-
-func restrictToValidPackageName(input string) string {
-	return strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
-			return r
-		} else {
-			return -1
-		}
-	}, input)
 }

@@ -3,7 +3,7 @@ package arguments
 const usage = `
 USAGE
 	counterfeiter
-		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>] [--test]
 		[<source-path>] <interface> [-]
 
 ARGUMENTS
@@ -83,4 +83,8 @@ OPTIONS
 	example:
 		# writes "CoolThing" to ./mypackagefakes/cool_thing.go
 		counterfeiter --fake-name CoolThing ./mypackage MyInterface
+
+	--test
+		When generating into the same directory as the source interface,
+		append a "_test" suffix to the package name of the generated file.
 `

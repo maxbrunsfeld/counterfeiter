@@ -120,14 +120,15 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		it("succeeds", func() {
 			initModuleFunc()
 			cache := &generator.FakeCache{}
-			f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "custom", baseDir, cache)
+			destinationPath := filepath.Join(baseDir, "fixturesfakes", "fake_write_closer.go")
+			f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", filepath.Dir(destinationPath), false, baseDir, cache)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
 			Expect(err).NotTo(HaveOccurred())
 			if writeToTestData {
 				WriteOutput(b, filepath.Join("testdata", "output", "write_closer", "actual.go"))
 			}
-			WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_write_closer.go"))
+			WriteOutput(b, destinationPath)
 			RunBuild(baseDir)
 			b2, err := ioutil.ReadFile(filepath.Join("testdata", "expected_fake_writecloser.txt"))
 			Expect(err).NotTo(HaveOccurred())
@@ -139,14 +140,15 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		it("succeeds", func() {
 			initModuleFunc()
 			cache := &generator.FakeCache{}
-			f, err := generator.NewFake(generator.Package, "", "os", "Os", "custom", baseDir, cache)
+			destinationPath := filepath.Join(baseDir, "fixturesfakes", "fake_os.go")
+			f, err := generator.NewFake(generator.Package, "", "os", "Os", filepath.Dir(destinationPath), false, baseDir, cache)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
 			Expect(err).NotTo(HaveOccurred())
 			if writeToTestData {
 				WriteOutput(b, filepath.Join("testdata", "output", "package_mode", "actual.go"))
 			}
-			WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_os.go"))
+			WriteOutput(b, destinationPath)
 			RunBuild(baseDir)
 		})
 	})
@@ -175,14 +177,15 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 						WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
 					}
 					cache := &generator.FakeCache{}
-					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", baseDir, cache)
+					destinationPath := filepath.Join(baseDir, "fixturesfakes", "fake_"+filename)
+					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, filepath.Dir(destinationPath), false, baseDir, cache)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
 					if writeToTestData {
 						WriteOutput(b, filepath.Join("testdata", "output", strings.Replace(filename, ".go", "", -1), "actual.go"))
 					}
-					WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_"+filename))
+					WriteOutput(b, destinationPath)
 					RunBuild(baseDir)
 				})
 			})
@@ -205,6 +208,10 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		t("Something", "something.go", "")
 		t("SomethingFactory", "typed_function.go", "")
 		t("SyncSomething", "interface.go", "sync")
+		t("SomeInterface", "interface.go", "same")
+		t("someNotExportedInterface", "notexported.go", "same")
+		t("SomethingFactory", "fn.go", "samefn")
+		t("somethingNotExportedFactory", "notexported.go", "samefn")
 
 		when("working with duplicate packages", func() {
 			t := func(interfaceName string, offset string, fakePackageName string) {
@@ -223,14 +230,15 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 							pkgPath = pkgPath + "/" + offset
 						}
 						cache := &generator.FakeCache{}
-						f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, baseDir, cache)
+						destinationPath := filepath.Join(baseDir, offset, fakePackageName, "fake_"+strings.ToLower(interfaceName)+".go")
+						f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, filepath.Dir(destinationPath), false, baseDir, cache)
 						Expect(err).NotTo(HaveOccurred())
 						b, err := f.Generate(false) // Flip to false to see output if goimports fails
 						Expect(err).NotTo(HaveOccurred())
 						if writeToTestData {
 							WriteOutput(b, filepath.Join("testdata", "output", "dup_"+strings.ToLower(interfaceName), "actual.go"))
 						}
-						WriteOutput(b, filepath.Join(baseDir, offset, fakePackageName, "fake_"+strings.ToLower(interfaceName)+".go"))
+						WriteOutput(b, destinationPath)
 						RunBuild(filepath.Join(baseDir, offset, fakePackageName))
 					})
 				})

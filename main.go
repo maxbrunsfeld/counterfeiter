@@ -113,7 +113,7 @@ func doGenerate(workingDir string, args *arguments.ParsedArguments, cache genera
 	if args.GenerateInterfaceAndShimFromPackageDirectory {
 		mode = generator.Package
 	}
-	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, workingDir, cache)
+	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackagePath, args.TestPackage, workingDir, cache)
 	if err != nil {
 		return nil, err
 	}
