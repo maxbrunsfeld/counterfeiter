@@ -24,9 +24,10 @@ func (fake *FakeImportsGoHyphenPackage) UseHyphenType(arg1 hyphenpackage.HyphenT
 		arg1 hyphenpackage.HyphenType
 	}{arg1})
 	fake.recordInvocation("UseHyphenType", []interface{}{arg1})
+	useHyphenTypeStubCopy := fake.UseHyphenTypeStub
 	fake.useHyphenTypeMutex.Unlock()
-	if fake.UseHyphenTypeStub != nil {
-		fake.UseHyphenTypeStub(arg1)
+	if useHyphenTypeStubCopy != nil {
+		useHyphenTypeStubCopy(arg1)
 	}
 }
 

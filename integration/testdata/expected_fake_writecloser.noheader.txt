@@ -40,9 +40,10 @@ func (fake *FakeWriteCloser) Close() error {
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
 	}{})
 	fake.recordInvocation("Close", []interface{}{})
+	closeStubCopy := fake.CloseStub
 	fake.closeMutex.Unlock()
-	if fake.CloseStub != nil {
-		return fake.CloseStub()
+	if closeStubCopy != nil {
+		return closeStubCopy()
 	}
 	if specificReturn {
 		return ret.result1
@@ -98,9 +99,10 @@ func (fake *FakeWriteCloser) Write(arg1 []byte) (int, error) {
 		arg1 []byte
 	}{arg1Copy})
 	fake.recordInvocation("Write", []interface{}{arg1Copy})
+	writeStubCopy := fake.WriteStub
 	fake.writeMutex.Unlock()
-	if fake.WriteStub != nil {
-		return fake.WriteStub(arg1)
+	if writeStubCopy != nil {
+		return writeStubCopy(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2

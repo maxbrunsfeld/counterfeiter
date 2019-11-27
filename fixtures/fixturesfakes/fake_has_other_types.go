@@ -30,9 +30,10 @@ func (fake *FakeHasOtherTypes) GetThing(arg1 fixtures.SomeString) fixtures.SomeF
 		arg1 fixtures.SomeString
 	}{arg1})
 	fake.recordInvocation("GetThing", []interface{}{arg1})
+	getThingStubCopy := fake.GetThingStub
 	fake.getThingMutex.Unlock()
-	if fake.GetThingStub != nil {
-		return fake.GetThingStub(arg1)
+	if getThingStubCopy != nil {
+		return getThingStubCopy(arg1)
 	}
 	if specificReturn {
 		return ret.result1

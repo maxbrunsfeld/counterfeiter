@@ -30,9 +30,10 @@ func (fake *FakeSomethingElse) ReturnStuff() (int, int) {
 	fake.returnStuffArgsForCall = append(fake.returnStuffArgsForCall, struct {
 	}{})
 	fake.recordInvocation("ReturnStuff", []interface{}{})
+	returnStuffStubCopy := fake.ReturnStuffStub
 	fake.returnStuffMutex.Unlock()
-	if fake.ReturnStuffStub != nil {
-		return fake.ReturnStuffStub()
+	if returnStuffStubCopy != nil {
+		return returnStuffStubCopy()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2

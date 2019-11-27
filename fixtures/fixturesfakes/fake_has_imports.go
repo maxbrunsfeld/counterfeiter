@@ -35,9 +35,10 @@ func (fake *FakeHasImports) DoThings(arg1 io.Writer, arg2 *os.File) *http.Client
 		arg2 *os.File
 	}{arg1, arg2})
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
+	doThingsStubCopy := fake.DoThingsStub
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
-		return fake.DoThingsStub(arg1, arg2)
+	if doThingsStubCopy != nil {
+		return doThingsStubCopy(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1

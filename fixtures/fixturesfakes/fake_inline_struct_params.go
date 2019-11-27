@@ -59,9 +59,10 @@ func (fake *FakeInlineStructParams) DoSomething(arg1 context.Context, arg2 struc
 		}
 	}{arg1, arg2})
 	fake.recordInvocation("DoSomething", []interface{}{arg1, arg2})
+	doSomethingStubCopy := fake.DoSomethingStub
 	fake.doSomethingMutex.Unlock()
-	if fake.DoSomethingStub != nil {
-		return fake.DoSomethingStub(arg1, arg2)
+	if doSomethingStubCopy != nil {
+		return doSomethingStubCopy(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1

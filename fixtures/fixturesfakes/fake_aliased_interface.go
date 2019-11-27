@@ -37,9 +37,10 @@ func (fake *FakeAliasedInterface) AnotherMethod(arg1 []another_package.SomeType,
 		arg5 chan another_package.SomeType
 	}{arg1Copy, arg2, arg3, arg4, arg5})
 	fake.recordInvocation("AnotherMethod", []interface{}{arg1Copy, arg2, arg3, arg4, arg5})
+	anotherMethodStubCopy := fake.AnotherMethodStub
 	fake.anotherMethodMutex.Unlock()
-	if fake.AnotherMethodStub != nil {
-		fake.AnotherMethodStub(arg1, arg2, arg3, arg4, arg5)
+	if anotherMethodStubCopy != nil {
+		anotherMethodStubCopy(arg1, arg2, arg3, arg4, arg5)
 	}
 }
 

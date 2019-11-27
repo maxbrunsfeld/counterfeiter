@@ -28,9 +28,10 @@ func (fake *FakeSecondInterface) EmbeddedMethod() string {
 	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct {
 	}{})
 	fake.recordInvocation("EmbeddedMethod", []interface{}{})
+	embeddedMethodStubCopy := fake.EmbeddedMethodStub
 	fake.embeddedMethodMutex.Unlock()
-	if fake.EmbeddedMethodStub != nil {
-		return fake.EmbeddedMethodStub()
+	if embeddedMethodStubCopy != nil {
+		return embeddedMethodStubCopy()
 	}
 	if specificReturn {
 		return ret.result1

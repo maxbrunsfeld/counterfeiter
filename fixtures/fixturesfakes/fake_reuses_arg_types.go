@@ -25,9 +25,10 @@ func (fake *FakeReusesArgTypes) DoThings(arg1 string, arg2 string) {
 		arg2 string
 	}{arg1, arg2})
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
+	doThingsStubCopy := fake.DoThingsStub
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
-		fake.DoThingsStub(arg1, arg2)
+	if doThingsStubCopy != nil {
+		doThingsStubCopy(arg1, arg2)
 	}
 }
 

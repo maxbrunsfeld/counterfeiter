@@ -32,9 +32,10 @@ func (fake *FakeSomethingFactory) Spy(arg1 string, arg2 map[string]interface{}) 
 		arg2 map[string]interface{}
 	}{arg1, arg2})
 	fake.recordInvocation("SomethingFactory", []interface{}{arg1, arg2})
+	stubCopy := fake.Stub
 	fake.mutex.Unlock()
-	if fake.Stub != nil {
-		return fake.Stub(arg1, arg2)
+	if stubCopy != nil {
+		return stubCopy(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1

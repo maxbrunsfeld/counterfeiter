@@ -46,9 +46,10 @@ func (fake *FakeMultiAB) Mine() foo.S {
 	ret, specificReturn := fake.mineReturnsOnCall[len(fake.mineArgsForCall)]
 	fake.mineArgsForCall = append(fake.mineArgsForCall, struct{}{})
 	fake.recordInvocation("Mine", []interface{}{})
+	mineStubCopy := fake.MineStub
 	fake.mineMutex.Unlock()
-	if fake.MineStub != nil {
-		return fake.MineStub()
+	if mineStubCopy != nil {
+		return mineStubCopy()
 	}
 	if specificReturn {
 		return ret.result1
@@ -96,9 +97,10 @@ func (fake *FakeMultiAB) FromA() fooa.S {
 	ret, specificReturn := fake.fromAReturnsOnCall[len(fake.fromAArgsForCall)]
 	fake.fromAArgsForCall = append(fake.fromAArgsForCall, struct{}{})
 	fake.recordInvocation("FromA", []interface{}{})
+	fromAStubCopy := fake.FromAStub
 	fake.fromAMutex.Unlock()
-	if fake.FromAStub != nil {
-		return fake.FromAStub()
+	if fromAStubCopy != nil {
+		return fromAStubCopy()
 	}
 	if specificReturn {
 		return ret.result1
@@ -146,9 +148,10 @@ func (fake *FakeMultiAB) FromB() foob.S {
 	ret, specificReturn := fake.fromBReturnsOnCall[len(fake.fromBArgsForCall)]
 	fake.fromBArgsForCall = append(fake.fromBArgsForCall, struct{}{})
 	fake.recordInvocation("FromB", []interface{}{})
+	fromBStubCopy := fake.FromBStub
 	fake.fromBMutex.Unlock()
-	if fake.FromBStub != nil {
-		return fake.FromBStub()
+	if fromBStubCopy != nil {
+		return fromBStubCopy()
 	}
 	if specificReturn {
 		return ret.result1

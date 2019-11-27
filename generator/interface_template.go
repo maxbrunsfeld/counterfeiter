@@ -67,10 +67,11 @@ func (fake *{{$.Name}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.A
 		{{- end}}
 	}{ {{- .Params.AsNamedArgs -}} })
 	fake.recordInvocation("{{.Name}}", []interface{}{ {{- if .Params.HasLength}}{{.Params.AsNamedArgs}}{{end -}} })
+	{{UnExport .Name}}StubCopy := fake.{{.Name}}Stub
 	fake.{{UnExport .Name}}Mutex.Unlock()
-	if fake.{{.Name}}Stub != nil {
+	if {{UnExport .Name}}StubCopy != nil {
 		{{- if .Returns.HasLength}}
-		return fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}})
+		return {{UnExport .Name}}StubCopy({{.Params.AsNamedArgsForInvocation}}){{else}}{{UnExport .Name}}StubCopy({{.Params.AsNamedArgsForInvocation}})
 		{{- end}}
 	}
 	{{- if .Returns.HasLength}}

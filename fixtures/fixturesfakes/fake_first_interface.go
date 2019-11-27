@@ -21,9 +21,10 @@ func (fake *FakeFirstInterface) DoThings() {
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 	}{})
 	fake.recordInvocation("DoThings", []interface{}{})
+	doThingsStubCopy := fake.DoThingsStub
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
-		fake.DoThingsStub()
+	if doThingsStubCopy != nil {
+		doThingsStubCopy()
 	}
 }
 

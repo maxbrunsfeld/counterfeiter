@@ -30,9 +30,10 @@ func (fake *FakeInAliasedPackage) Stuff(arg1 int) string {
 		arg1 int
 	}{arg1})
 	fake.recordInvocation("Stuff", []interface{}{arg1})
+	stuffStubCopy := fake.StuffStub
 	fake.stuffMutex.Unlock()
-	if fake.StuffStub != nil {
-		return fake.StuffStub(arg1)
+	if stuffStubCopy != nil {
+		return stuffStubCopy(arg1)
 	}
 	if specificReturn {
 		return ret.result1

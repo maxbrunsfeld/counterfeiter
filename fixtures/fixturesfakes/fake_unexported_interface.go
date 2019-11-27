@@ -30,9 +30,10 @@ func (fake *FakeUnexportedInterface) Method(arg1 string, arg2 map[string]interfa
 		arg2 map[string]interface{}
 	}{arg1, arg2})
 	fake.recordInvocation("Method", []interface{}{arg1, arg2})
+	methodStubCopy := fake.MethodStub
 	fake.methodMutex.Unlock()
-	if fake.MethodStub != nil {
-		return fake.MethodStub(arg1, arg2)
+	if methodStubCopy != nil {
+		return methodStubCopy(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1

@@ -35,9 +35,10 @@ func (fake *FakeDB) Exec(arg1 string, arg2 ...interface{}) (sqla.Result, error) 
 		arg2 []interface{}
 	}{arg1, arg2})
 	fake.recordInvocation("Exec", []interface{}{arg1, arg2})
+	execStubCopy := fake.ExecStub
 	fake.execMutex.Unlock()
-	if fake.ExecStub != nil {
-		return fake.ExecStub(arg1, arg2...)
+	if execStubCopy != nil {
+		return execStubCopy(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2

@@ -23,9 +23,10 @@ func (fake *FakeHasVarArgsWithLocalTypes) DoThings(arg1 ...fixtures.LocalType) {
 		arg1 []fixtures.LocalType
 	}{arg1})
 	fake.recordInvocation("DoThings", []interface{}{arg1})
+	doThingsStubCopy := fake.DoThingsStub
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
-		fake.DoThingsStub(arg1...)
+	if doThingsStubCopy != nil {
+		doThingsStubCopy(arg1...)
 	}
 }
 
