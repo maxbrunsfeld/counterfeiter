@@ -40,6 +40,11 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		false,
 		"Identify all //counterfeiter:generate directives in the current working directory and generate fakes for them",
 	)
+	headerFlag := fs.String(
+		"header",
+		"",
+		"A path to a file that should be used as a header for the generated fake",
+	)
 	helpFlag := fs.Bool(
 		"help",
 		false,
@@ -62,6 +67,7 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		PrintToStdOut: any(args, "-"),
 		GenerateInterfaceAndShimFromPackageDirectory: packageMode,
 		GenerateMode: *generateFlag,
+		HeaderFile:   *headerFlag,
 	}
 	if *generateFlag {
 		return result, nil
@@ -193,6 +199,8 @@ type ParsedArguments struct {
 
 	PrintToStdOut bool
 	GenerateMode  bool
+
+	HeaderFile string
 }
 
 func fixupUnexportedNames(interfaceName string) string {
