@@ -8,7 +8,7 @@ workflows:
 jobs:
   build: &build-template
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.14
     working_directory: ~/counterfeiter
     steps:
       - checkout
@@ -16,4 +16,4 @@ jobs:
   build-prior:
     <<: *build-template
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.13
