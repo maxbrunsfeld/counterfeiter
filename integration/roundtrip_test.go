@@ -117,29 +117,37 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("generating a fake for stdlib interfaces", func() {
-		it("succeeds", func() {
-			initModuleFunc()
-			cache := &generator.FakeCache{}
-			f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "custom", baseDir, cache)
-			Expect(err).NotTo(HaveOccurred())
-			b, err := f.Generate(true) // Flip to false to see output if goimports fails
-			Expect(err).NotTo(HaveOccurred())
-			if writeToTestData {
-				WriteOutput(b, filepath.Join("testdata", "output", "write_closer", "actual.go"))
-			}
-			WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_write_closer.go"))
-			RunBuild(baseDir)
-			b2, err := ioutil.ReadFile(filepath.Join("testdata", "expected_fake_writecloser.txt"))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(b2)).To(Equal(string(b)))
-		})
+		const (
+			noHeader   = "noheader"
+			withHeader = "header"
+		)
+		t := func(header, variant string) {
+			it("succeeds", func() {
+				initModuleFunc()
+				cache := &generator.FakeCache{}
+				f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "custom", header, baseDir, cache)
+				Expect(err).NotTo(HaveOccurred())
+				b, err := f.Generate(true) // Flip to false to see output if goimports fails
+				Expect(err).NotTo(HaveOccurred())
+				if writeToTestData {
+					WriteOutput(b, filepath.Join("testdata", "output", "write_closer", "actual."+variant+".go"))
+				}
+				WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_write_closer."+variant+".go"))
+				RunBuild(baseDir)
+				b2, err := ioutil.ReadFile(filepath.Join("testdata", "expected_fake_writecloser."+variant+".txt"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b2)).To(Equal(string(b)))
+			})
+		}
+		t("", noHeader)
+		t("// some header\n//\n\n", withHeader)
 	})
 
 	when("generating an interface for a package", func() {
 		it("succeeds", func() {
 			initModuleFunc()
 			cache := &generator.FakeCache{}
-			f, err := generator.NewFake(generator.Package, "", "os", "Os", "custom", baseDir, cache)
+			f, err := generator.NewFake(generator.Package, "", "os", "Os", "custom", "", baseDir, cache)
 			Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
 			Expect(err).NotTo(HaveOccurred())
@@ -175,7 +183,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 						WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
 					}
 					cache := &generator.FakeCache{}
-					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", baseDir, cache)
+					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", "", baseDir, cache)
 					Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
 					Expect(err).NotTo(HaveOccurred())
@@ -223,7 +231,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 							pkgPath = pkgPath + "/" + offset
 						}
 						cache := &generator.FakeCache{}
-						f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, baseDir, cache)
+						f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, "", baseDir, cache)
 						Expect(err).NotTo(HaveOccurred())
 						b, err := f.Generate(false) // Flip to false to see output if goimports fails
 						Expect(err).NotTo(HaveOccurred())

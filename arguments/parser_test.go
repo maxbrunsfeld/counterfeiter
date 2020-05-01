@@ -316,6 +316,18 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			Expect(parsedArgs.DestinationPackageName).To(Equal("fake_command_runnerfakes"))
 		})
 	})
+
+	when("when '-header' is used", func() {
+		it.Before(func() {
+			args = []string{"counterfeiter", "-header", "some/header/file", "some.interface"}
+			justBefore()
+		})
+
+		it("sets the HeaderFile attriburte on the parsedArgs struct", func() {
+			Expect(parsedArgs.HeaderFile).To(Equal("some/header/file"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 }
 
 func fakeFileInfo(filename string, isDir bool) os.FileInfo {
