@@ -20,11 +20,11 @@ type FakeImportsGoHyphenPackage struct {
 
 func (fake *FakeImportsGoHyphenPackage) UseHyphenType(arg1 hyphenpackage.HyphenType) {
 	fake.useHyphenTypeMutex.Lock()
+	defer fake.useHyphenTypeMutex.Unlock()
 	fake.useHyphenTypeArgsForCall = append(fake.useHyphenTypeArgsForCall, struct {
 		arg1 hyphenpackage.HyphenType
 	}{arg1})
 	fake.recordInvocation("UseHyphenType", []interface{}{arg1})
-	fake.useHyphenTypeMutex.Unlock()
 	if fake.UseHyphenTypeStub != nil {
 		fake.UseHyphenTypeStub(arg1)
 	}
