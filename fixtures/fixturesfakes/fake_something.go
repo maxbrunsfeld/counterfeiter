@@ -47,11 +47,11 @@ func (fake *FakeSomething) DoASlice(arg1 []byte) {
 		copy(arg1Copy, arg1)
 	}
 	fake.doASliceMutex.Lock()
+	defer fake.doASliceMutex.Unlock()
 	fake.doASliceArgsForCall = append(fake.doASliceArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
 	fake.recordInvocation("DoASlice", []interface{}{arg1Copy})
-	fake.doASliceMutex.Unlock()
 	if fake.DoASliceStub != nil {
 		fake.DoASliceStub(arg1)
 	}
@@ -78,11 +78,11 @@ func (fake *FakeSomething) DoASliceArgsForCall(i int) []byte {
 
 func (fake *FakeSomething) DoAnArray(arg1 [4]byte) {
 	fake.doAnArrayMutex.Lock()
+	defer fake.doAnArrayMutex.Unlock()
 	fake.doAnArrayArgsForCall = append(fake.doAnArrayArgsForCall, struct {
 		arg1 [4]byte
 	}{arg1})
 	fake.recordInvocation("DoAnArray", []interface{}{arg1})
-	fake.doAnArrayMutex.Unlock()
 	if fake.DoAnArrayStub != nil {
 		fake.DoAnArrayStub(arg1)
 	}
@@ -109,10 +109,10 @@ func (fake *FakeSomething) DoAnArrayArgsForCall(i int) [4]byte {
 
 func (fake *FakeSomething) DoNothing() {
 	fake.doNothingMutex.Lock()
+	defer fake.doNothingMutex.Unlock()
 	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct {
 	}{})
 	fake.recordInvocation("DoNothing", []interface{}{})
-	fake.doNothingMutex.Unlock()
 	if fake.DoNothingStub != nil {
 		fake.DoNothingStub()
 	}
@@ -132,13 +132,13 @@ func (fake *FakeSomething) DoNothingCalls(stub func()) {
 
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.doThingsMutex.Lock()
+	defer fake.doThingsMutex.Unlock()
 	ret, specificReturn := fake.doThingsReturnsOnCall[len(fake.doThingsArgsForCall)]
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 string
 		arg2 uint64
 	}{arg1, arg2})
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
-	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
 	}

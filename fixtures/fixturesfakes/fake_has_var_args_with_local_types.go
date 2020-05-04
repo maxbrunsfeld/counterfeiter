@@ -19,11 +19,11 @@ type FakeHasVarArgsWithLocalTypes struct {
 
 func (fake *FakeHasVarArgsWithLocalTypes) DoThings(arg1 ...fixtures.LocalType) {
 	fake.doThingsMutex.Lock()
+	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 []fixtures.LocalType
 	}{arg1})
 	fake.recordInvocation("DoThings", []interface{}{arg1})
-	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		fake.DoThingsStub(arg1...)
 	}

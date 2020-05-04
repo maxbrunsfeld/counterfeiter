@@ -26,11 +26,11 @@ type FakeSomethingElse struct {
 
 func (fake *FakeSomethingElse) ReturnStuff() (int, int) {
 	fake.returnStuffMutex.Lock()
+	defer fake.returnStuffMutex.Unlock()
 	ret, specificReturn := fake.returnStuffReturnsOnCall[len(fake.returnStuffArgsForCall)]
 	fake.returnStuffArgsForCall = append(fake.returnStuffArgsForCall, struct {
 	}{})
 	fake.recordInvocation("ReturnStuff", []interface{}{})
-	fake.returnStuffMutex.Unlock()
 	if fake.ReturnStuffStub != nil {
 		return fake.ReturnStuffStub()
 	}

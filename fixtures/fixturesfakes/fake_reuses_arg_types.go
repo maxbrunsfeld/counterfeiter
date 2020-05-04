@@ -20,12 +20,12 @@ type FakeReusesArgTypes struct {
 
 func (fake *FakeReusesArgTypes) DoThings(arg1 string, arg2 string) {
 	fake.doThingsMutex.Lock()
+	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
-	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		fake.DoThingsStub(arg1, arg2)
 	}
