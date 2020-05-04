@@ -58,6 +58,7 @@ func (fake *{{$.Name}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.A
 	}
 	{{- end}}
 	fake.{{UnExport .Name}}Mutex.Lock()
+	defer fake.{{UnExport .Name}}Mutex.Unlock()
 	{{- if .Returns.HasLength}}
 	ret, specificReturn := fake.{{UnExport .Name}}ReturnsOnCall[len(fake.{{UnExport .Name}}ArgsForCall)]
 	{{- end}}
@@ -67,7 +68,6 @@ func (fake *{{$.Name}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.A
 		{{- end}}
 	}{ {{- .Params.AsNamedArgs -}} })
 	fake.recordInvocation("{{.Name}}", []interface{}{ {{- if .Params.HasLength}}{{.Params.AsNamedArgs}}{{end -}} })
-	fake.{{UnExport .Name}}Mutex.Unlock()
 	if fake.{{.Name}}Stub != nil {
 		{{- if .Returns.HasLength}}
 		return fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}})
