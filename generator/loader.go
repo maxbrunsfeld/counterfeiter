@@ -23,7 +23,9 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	}
 	importPath := f.TargetPackage
 	if !filepath.IsAbs(importPath) {
-		bp, err := build.Import(f.TargetPackage, workingDir, build.FindOnly)
+		ctx := build.Default
+		ctx.Dir = workingDir
+		bp, err := ctx.Import(f.TargetPackage, workingDir, build.FindOnly)
 		if err != nil {
 			return err
 		}
