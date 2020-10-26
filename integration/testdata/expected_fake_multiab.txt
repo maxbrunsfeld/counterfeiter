@@ -43,10 +43,10 @@ type FakeMultiAB struct {
 
 func (fake *FakeMultiAB) Mine() foo.S {
 	fake.mineMutex.Lock()
+	defer fake.mineMutex.Unlock()
 	ret, specificReturn := fake.mineReturnsOnCall[len(fake.mineArgsForCall)]
 	fake.mineArgsForCall = append(fake.mineArgsForCall, struct{}{})
 	fake.recordInvocation("Mine", []interface{}{})
-	fake.mineMutex.Unlock()
 	if fake.MineStub != nil {
 		return fake.MineStub()
 	}
@@ -93,10 +93,10 @@ func (fake *FakeMultiAB) MineReturnsOnCall(i int, result1 foo.S) {
 
 func (fake *FakeMultiAB) FromA() fooa.S {
 	fake.fromAMutex.Lock()
+	defer fake.fromAMutex.Unlock()
 	ret, specificReturn := fake.fromAReturnsOnCall[len(fake.fromAArgsForCall)]
 	fake.fromAArgsForCall = append(fake.fromAArgsForCall, struct{}{})
 	fake.recordInvocation("FromA", []interface{}{})
-	fake.fromAMutex.Unlock()
 	if fake.FromAStub != nil {
 		return fake.FromAStub()
 	}
@@ -143,10 +143,10 @@ func (fake *FakeMultiAB) FromAReturnsOnCall(i int, result1 fooa.S) {
 
 func (fake *FakeMultiAB) FromB() foob.S {
 	fake.fromBMutex.Lock()
+	defer fake.fromBMutex.Unlock()
 	ret, specificReturn := fake.fromBReturnsOnCall[len(fake.fromBArgsForCall)]
 	fake.fromBArgsForCall = append(fake.fromBArgsForCall, struct{}{})
 	fake.recordInvocation("FromB", []interface{}{})
-	fake.fromBMutex.Unlock()
 	if fake.FromBStub != nil {
 		return fake.FromBStub()
 	}
