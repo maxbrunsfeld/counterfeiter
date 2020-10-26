@@ -16,13 +16,13 @@ import (
 
 	"github.com/maxbrunsfeld/counterfeiter/v6/arguments"
 
-	reporter "github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
 func TestParsingArguments(t *testing.T) {
-	spec.Run(t, "ParsingArguments", testParsingArguments, spec.Report(reporter.Rainbow{}))
+	spec.Run(t, "ParsingArguments", testParsingArguments, spec.Report(report.Terminal{}))
 }
 
 func testParsingArguments(t *testing.T, when spec.G, it spec.S) {

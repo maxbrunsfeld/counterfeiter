@@ -5,12 +5,12 @@ package integration_test
 import (
 	"testing"
 
-	"github.com/joefitzgerald/rainbow-reporter"
 	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
 func TestIntegration(t *testing.T) {
-	suite := spec.New("integration", spec.Report(reporter.Rainbow{}))
+	suite := spec.New("integration", spec.Report(report.Terminal{}))
 	suite("round trip as module", testRoundTripAsModule)
 	suite("round trip with gopath", testRoundTrip)
 	suite.Run(t)

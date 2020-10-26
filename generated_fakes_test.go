@@ -8,13 +8,13 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures"
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/fixturesfakes"
 
-	reporter "github.com/joefitzgerald/rainbow-reporter"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
 func TestFakes(t *testing.T) {
-	spec.Run(t, "Fakes", testFakes, spec.Report(reporter.Rainbow{}))
+	spec.Run(t, "Fakes", testFakes, spec.Report(report.Terminal{}))
 }
 
 func testFakes(t *testing.T, when spec.G, it spec.S) {
