@@ -66,18 +66,21 @@ func (fake *{{$.Name}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.A
 		{{.Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
 		{{- end}}
 	}{ {{- .Params.AsNamedArgs -}} })
+	stub := fake.{{.Name}}Stub
+	{{- if .Returns.HasLength}}
+	fakeReturns := fake.{{UnExport .Name}}Returns
+	{{- end}}
 	fake.recordInvocation("{{.Name}}", []interface{}{ {{- if .Params.HasLength}}{{.Params.AsNamedArgs}}{{end -}} })
 	fake.{{UnExport .Name}}Mutex.Unlock()
-	if fake.{{.Name}}Stub != nil {
+	if stub != nil {
 		{{- if .Returns.HasLength}}
-		return fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}})
+		return stub({{.Params.AsNamedArgsForInvocation}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}})
 		{{- end}}
 	}
 	{{- if .Returns.HasLength}}
 	if specificReturn {
 		return {{.Returns.WithPrefix "ret."}}
 	}
-	fakeReturns := fake.{{UnExport .Name}}Returns
 	return {{.Returns.WithPrefix "fakeReturns."}}
 	{{- end}}
 }

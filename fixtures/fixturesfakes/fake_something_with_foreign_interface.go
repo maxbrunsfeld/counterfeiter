@@ -29,15 +29,16 @@ func (fake *FakeSomethingWithForeignInterface) Stuff(arg1 int) string {
 	fake.stuffArgsForCall = append(fake.stuffArgsForCall, struct {
 		arg1 int
 	}{arg1})
+	stub := fake.StuffStub
+	fakeReturns := fake.stuffReturns
 	fake.recordInvocation("Stuff", []interface{}{arg1})
 	fake.stuffMutex.Unlock()
-	if fake.StuffStub != nil {
-		return fake.StuffStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.stuffReturns
 	return fakeReturns.result1
 }
 

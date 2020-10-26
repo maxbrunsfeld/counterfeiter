@@ -58,15 +58,16 @@ func (fake *FakeInlineStructParams) DoSomething(arg1 context.Context, arg2 struc
 			HTTPRequest       http.Request
 		}
 	}{arg1, arg2})
+	stub := fake.DoSomethingStub
+	fakeReturns := fake.doSomethingReturns
 	fake.recordInvocation("DoSomething", []interface{}{arg1, arg2})
 	fake.doSomethingMutex.Unlock()
-	if fake.DoSomethingStub != nil {
-		return fake.DoSomethingStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.doSomethingReturns
 	return fakeReturns.result1
 }
 

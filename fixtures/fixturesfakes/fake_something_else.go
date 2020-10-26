@@ -29,15 +29,16 @@ func (fake *FakeSomethingElse) ReturnStuff() (int, int) {
 	ret, specificReturn := fake.returnStuffReturnsOnCall[len(fake.returnStuffArgsForCall)]
 	fake.returnStuffArgsForCall = append(fake.returnStuffArgsForCall, struct {
 	}{})
+	stub := fake.ReturnStuffStub
+	fakeReturns := fake.returnStuffReturns
 	fake.recordInvocation("ReturnStuff", []interface{}{})
 	fake.returnStuffMutex.Unlock()
-	if fake.ReturnStuffStub != nil {
-		return fake.ReturnStuffStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.returnStuffReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

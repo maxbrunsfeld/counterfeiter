@@ -45,15 +45,16 @@ func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int
 		arg2 int
 		arg3 []string
 	}{arg1, arg2, arg3})
+	stub := fake.DoMoreThingsStub
+	fakeReturns := fake.doMoreThingsReturns
 	fake.recordInvocation("DoMoreThings", []interface{}{arg1, arg2, arg3})
 	fake.doMoreThingsMutex.Unlock()
-	if fake.DoMoreThingsStub != nil {
-		return fake.DoMoreThingsStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.doMoreThingsReturns
 	return fakeReturns.result1
 }
 
@@ -106,15 +107,16 @@ func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
 		arg1 int
 		arg2 []string
 	}{arg1, arg2})
+	stub := fake.DoThingsStub
+	fakeReturns := fake.doThingsReturns
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
-		return fake.DoThingsStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.doThingsReturns
 	return fakeReturns.result1
 }
 

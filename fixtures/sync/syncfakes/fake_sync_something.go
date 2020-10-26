@@ -50,9 +50,10 @@ func (fake *FakeSyncSomething) DoASlice(arg1 []byte) {
 	fake.doASliceArgsForCall = append(fake.doASliceArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
+	stub := fake.DoASliceStub
 	fake.recordInvocation("DoASlice", []interface{}{arg1Copy})
 	fake.doASliceMutex.Unlock()
-	if fake.DoASliceStub != nil {
+	if stub != nil {
 		fake.DoASliceStub(arg1)
 	}
 }
@@ -81,9 +82,10 @@ func (fake *FakeSyncSomething) DoAnArray(arg1 [4]byte) {
 	fake.doAnArrayArgsForCall = append(fake.doAnArrayArgsForCall, struct {
 		arg1 [4]byte
 	}{arg1})
+	stub := fake.DoAnArrayStub
 	fake.recordInvocation("DoAnArray", []interface{}{arg1})
 	fake.doAnArrayMutex.Unlock()
-	if fake.DoAnArrayStub != nil {
+	if stub != nil {
 		fake.DoAnArrayStub(arg1)
 	}
 }
@@ -111,9 +113,10 @@ func (fake *FakeSyncSomething) DoNothing() {
 	fake.doNothingMutex.Lock()
 	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct {
 	}{})
+	stub := fake.DoNothingStub
 	fake.recordInvocation("DoNothing", []interface{}{})
 	fake.doNothingMutex.Unlock()
-	if fake.DoNothingStub != nil {
+	if stub != nil {
 		fake.DoNothingStub()
 	}
 }
@@ -137,15 +140,16 @@ func (fake *FakeSyncSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 		arg1 string
 		arg2 uint64
 	}{arg1, arg2})
+	stub := fake.DoThingsStub
+	fakeReturns := fake.doThingsReturns
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
-		return fake.DoThingsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.doThingsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

@@ -34,15 +34,16 @@ func (fake *FakeHasImports) DoThings(arg1 io.Writer, arg2 *os.File) *http.Client
 		arg1 io.Writer
 		arg2 *os.File
 	}{arg1, arg2})
+	stub := fake.DoThingsStub
+	fakeReturns := fake.doThingsReturns
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
-		return fake.DoThingsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.doThingsReturns
 	return fakeReturns.result1
 }
 

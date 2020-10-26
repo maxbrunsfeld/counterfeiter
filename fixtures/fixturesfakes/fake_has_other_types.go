@@ -29,15 +29,16 @@ func (fake *FakeHasOtherTypes) GetThing(arg1 fixtures.SomeString) fixtures.SomeF
 	fake.getThingArgsForCall = append(fake.getThingArgsForCall, struct {
 		arg1 fixtures.SomeString
 	}{arg1})
+	stub := fake.GetThingStub
+	fakeReturns := fake.getThingReturns
 	fake.recordInvocation("GetThing", []interface{}{arg1})
 	fake.getThingMutex.Unlock()
-	if fake.GetThingStub != nil {
-		return fake.GetThingStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.getThingReturns
 	return fakeReturns.result1
 }
 

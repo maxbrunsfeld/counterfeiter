@@ -29,15 +29,17 @@ func (fake *FakeUnexportedFunc) Spy(arg1 string, arg2 map[string]interface{}) st
 		arg1 string
 		arg2 map[string]interface{}
 	}{arg1, arg2})
+	stub := fake.Stub
+	returns := fake.returns
 	fake.recordInvocation("unexportedFunc", []interface{}{arg1, arg2})
 	fake.mutex.Unlock()
-	if fake.Stub != nil {
-		return fake.Stub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.returns.result1
+	return returns.result1
 }
 
 func (fake *FakeUnexportedFunc) CallCount() int {

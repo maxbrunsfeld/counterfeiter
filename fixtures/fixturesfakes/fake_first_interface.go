@@ -20,9 +20,10 @@ func (fake *FakeFirstInterface) DoThings() {
 	fake.doThingsMutex.Lock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 	}{})
+	stub := fake.DoThingsStub
 	fake.recordInvocation("DoThings", []interface{}{})
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
+	if stub != nil {
 		fake.DoThingsStub()
 	}
 }

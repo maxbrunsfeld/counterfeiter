@@ -57,9 +57,10 @@ func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType,
 		arg4 another_package.SomeType
 		arg5 chan another_package.SomeType
 	}{arg1Copy, arg2, arg3, arg4, arg5})
+	stub := fake.AnotherMethodStub
 	fake.recordInvocation("AnotherMethod", []interface{}{arg1Copy, arg2, arg3, arg4, arg5})
 	fake.anotherMethodMutex.Unlock()
-	if fake.AnotherMethodStub != nil {
+	if stub != nil {
 		fake.AnotherMethodStub(arg1, arg2, arg3, arg4, arg5)
 	}
 }
@@ -87,9 +88,10 @@ func (fake *FakeEmbedsInterfaces) DoThings() {
 	fake.doThingsMutex.Lock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 	}{})
+	stub := fake.DoThingsStub
 	fake.recordInvocation("DoThings", []interface{}{})
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
+	if stub != nil {
 		fake.DoThingsStub()
 	}
 }
@@ -111,15 +113,16 @@ func (fake *FakeEmbedsInterfaces) EmbeddedMethod() string {
 	ret, specificReturn := fake.embeddedMethodReturnsOnCall[len(fake.embeddedMethodArgsForCall)]
 	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct {
 	}{})
+	stub := fake.EmbeddedMethodStub
+	fakeReturns := fake.embeddedMethodReturns
 	fake.recordInvocation("EmbeddedMethod", []interface{}{})
 	fake.embeddedMethodMutex.Unlock()
-	if fake.EmbeddedMethodStub != nil {
-		return fake.EmbeddedMethodStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.embeddedMethodReturns
 	return fakeReturns.result1
 }
 
@@ -164,9 +167,10 @@ func (fake *FakeEmbedsInterfaces) ServeHTTP(arg1 http.ResponseWriter, arg2 *http
 		arg1 http.ResponseWriter
 		arg2 *http.Request
 	}{arg1, arg2})
+	stub := fake.ServeHTTPStub
 	fake.recordInvocation("ServeHTTP", []interface{}{arg1, arg2})
 	fake.serveHTTPMutex.Unlock()
-	if fake.ServeHTTPStub != nil {
+	if stub != nil {
 		fake.ServeHTTPStub(arg1, arg2)
 	}
 }

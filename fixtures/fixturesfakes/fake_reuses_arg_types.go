@@ -24,9 +24,10 @@ func (fake *FakeReusesArgTypes) DoThings(arg1 string, arg2 string) {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.DoThingsStub
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
 	fake.doThingsMutex.Unlock()
-	if fake.DoThingsStub != nil {
+	if stub != nil {
 		fake.DoThingsStub(arg1, arg2)
 	}
 }

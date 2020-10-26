@@ -23,9 +23,10 @@ func (fake *FakeImportsGoHyphenPackage) UseHyphenType(arg1 hyphenpackage.HyphenT
 	fake.useHyphenTypeArgsForCall = append(fake.useHyphenTypeArgsForCall, struct {
 		arg1 hyphenpackage.HyphenType
 	}{arg1})
+	stub := fake.UseHyphenTypeStub
 	fake.recordInvocation("UseHyphenType", []interface{}{arg1})
 	fake.useHyphenTypeMutex.Unlock()
-	if fake.UseHyphenTypeStub != nil {
+	if stub != nil {
 		fake.UseHyphenTypeStub(arg1)
 	}
 }

@@ -43,17 +43,19 @@ type FakeMultiAB struct {
 
 func (fake *FakeMultiAB) Mine() foo.S {
 	fake.mineMutex.Lock()
-	defer fake.mineMutex.Unlock()
 	ret, specificReturn := fake.mineReturnsOnCall[len(fake.mineArgsForCall)]
 	fake.mineArgsForCall = append(fake.mineArgsForCall, struct{}{})
+	stub := fake.MineStub
+	fakeReturns := fake.mineReturns
+	fake.mineMutex.Unlock()
 	fake.recordInvocation("Mine", []interface{}{})
-	if fake.MineStub != nil {
-		return fake.MineStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.mineReturns.result1
+	return fakeReturns.result1
 }
 
 func (fake *FakeMultiAB) MineCallCount() int {
@@ -93,17 +95,19 @@ func (fake *FakeMultiAB) MineReturnsOnCall(i int, result1 foo.S) {
 
 func (fake *FakeMultiAB) FromA() fooa.S {
 	fake.fromAMutex.Lock()
-	defer fake.fromAMutex.Unlock()
 	ret, specificReturn := fake.fromAReturnsOnCall[len(fake.fromAArgsForCall)]
 	fake.fromAArgsForCall = append(fake.fromAArgsForCall, struct{}{})
+	stub := fake.FromAStub
+	fakeReturns := fake.fromAReturns
 	fake.recordInvocation("FromA", []interface{}{})
-	if fake.FromAStub != nil {
-		return fake.FromAStub()
+	fake.fromAMutex.Unlock()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.fromAReturns.result1
+	return fakeReturns.result1
 }
 
 func (fake *FakeMultiAB) FromACallCount() int {
@@ -143,17 +147,19 @@ func (fake *FakeMultiAB) FromAReturnsOnCall(i int, result1 fooa.S) {
 
 func (fake *FakeMultiAB) FromB() foob.S {
 	fake.fromBMutex.Lock()
-	defer fake.fromBMutex.Unlock()
 	ret, specificReturn := fake.fromBReturnsOnCall[len(fake.fromBArgsForCall)]
 	fake.fromBArgsForCall = append(fake.fromBArgsForCall, struct{}{})
+	stub := fake.FromBStub
+	fakeReturns := fake.fromBReturns
 	fake.recordInvocation("FromB", []interface{}{})
-	if fake.FromBStub != nil {
-		return fake.FromBStub()
+	fake.fromBMutex.Unlock()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.fromBReturns.result1
+	return fakeReturns.result1
 }
 
 func (fake *FakeMultiAB) FromBCallCount() int {

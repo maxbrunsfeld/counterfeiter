@@ -36,18 +36,19 @@ type FakeWriteCloser struct {
 
 func (fake *FakeWriteCloser) Close() error {
 	fake.closeMutex.Lock()
-	defer fake.closeMutex.Unlock()
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
 	}{})
+	stub := fake.CloseStub
+	fakeReturns := fake.closeReturns
 	fake.recordInvocation("Close", []interface{}{})
-	if fake.CloseStub != nil {
-		return fake.CloseStub()
+	fake.closeMutex.Unlock()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.closeReturns
 	return fakeReturns.result1
 }
 
@@ -93,19 +94,20 @@ func (fake *FakeWriteCloser) Write(arg1 []byte) (int, error) {
 		copy(arg1Copy, arg1)
 	}
 	fake.writeMutex.Lock()
-	defer fake.writeMutex.Unlock()
 	ret, specificReturn := fake.writeReturnsOnCall[len(fake.writeArgsForCall)]
 	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
+	stub := fake.WriteStub
+	fakeReturns := fake.writeReturns
 	fake.recordInvocation("Write", []interface{}{arg1Copy})
-	if fake.WriteStub != nil {
-		return fake.WriteStub(arg1)
+	fake.writeMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.writeReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
