@@ -24,11 +24,11 @@ type FakeSecondInterface struct {
 
 func (fake *FakeSecondInterface) EmbeddedMethod() string {
 	fake.embeddedMethodMutex.Lock()
-	defer fake.embeddedMethodMutex.Unlock()
 	ret, specificReturn := fake.embeddedMethodReturnsOnCall[len(fake.embeddedMethodArgsForCall)]
 	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct {
 	}{})
 	fake.recordInvocation("EmbeddedMethod", []interface{}{})
+	fake.embeddedMethodMutex.Unlock()
 	if fake.EmbeddedMethodStub != nil {
 		return fake.EmbeddedMethodStub()
 	}

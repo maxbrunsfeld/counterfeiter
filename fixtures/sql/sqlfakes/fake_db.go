@@ -29,13 +29,13 @@ type FakeDB struct {
 
 func (fake *FakeDB) Exec(arg1 string, arg2 ...interface{}) (sqla.Result, error) {
 	fake.execMutex.Lock()
-	defer fake.execMutex.Unlock()
 	ret, specificReturn := fake.execReturnsOnCall[len(fake.execArgsForCall)]
 	fake.execArgsForCall = append(fake.execArgsForCall, struct {
 		arg1 string
 		arg2 []interface{}
 	}{arg1, arg2})
 	fake.recordInvocation("Exec", []interface{}{arg1, arg2})
+	fake.execMutex.Unlock()
 	if fake.ExecStub != nil {
 		return fake.ExecStub(arg1, arg2...)
 	}

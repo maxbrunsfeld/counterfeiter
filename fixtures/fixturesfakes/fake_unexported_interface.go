@@ -24,13 +24,13 @@ type FakeUnexportedInterface struct {
 
 func (fake *FakeUnexportedInterface) Method(arg1 string, arg2 map[string]interface{}) string {
 	fake.methodMutex.Lock()
-	defer fake.methodMutex.Unlock()
 	ret, specificReturn := fake.methodReturnsOnCall[len(fake.methodArgsForCall)]
 	fake.methodArgsForCall = append(fake.methodArgsForCall, struct {
 		arg1 string
 		arg2 map[string]interface{}
 	}{arg1, arg2})
 	fake.recordInvocation("Method", []interface{}{arg1, arg2})
+	fake.methodMutex.Unlock()
 	if fake.MethodStub != nil {
 		return fake.MethodStub(arg1, arg2)
 	}

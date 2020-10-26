@@ -29,13 +29,13 @@ type FakeHasImports struct {
 
 func (fake *FakeHasImports) DoThings(arg1 io.Writer, arg2 *os.File) *http.Client {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	ret, specificReturn := fake.doThingsReturnsOnCall[len(fake.doThingsArgsForCall)]
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 io.Writer
 		arg2 *os.File
 	}{arg1, arg2})
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		return fake.DoThingsStub(arg1, arg2)
 	}

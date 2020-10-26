@@ -26,13 +26,13 @@ type FakeSomethingFactory struct {
 
 func (fake *FakeSomethingFactory) Spy(arg1 string, arg2 map[string]interface{}) string {
 	fake.mutex.Lock()
-	defer fake.mutex.Unlock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	fake.argsForCall = append(fake.argsForCall, struct {
 		arg1 string
 		arg2 map[string]interface{}
 	}{arg1, arg2})
 	fake.recordInvocation("SomethingFactory", []interface{}{arg1, arg2})
+	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		return fake.Stub(arg1, arg2)
 	}

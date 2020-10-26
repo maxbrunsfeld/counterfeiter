@@ -280,6 +280,21 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			Expect(val).To(Equal(11))
 		})
 	})
+
+	when("calling a function repeatedly and changing the returns value", func() {
+		var fake *fixturesfakes.FakeSomething
+
+		it.Before(func() {
+			fake = new(fixturesfakes.FakeSomething)
+		})
+
+		it("succeeds and does not cause a data race", func() {
+			go fake.DoThingsReturns(1, nil)
+			go fake.DoThings("1", 1)
+			go fake.DoThingsReturns(1, nil)
+			go fake.DoThings("1", 1)
+		})
+	})
 }
 
 type InvocationRecorder interface {

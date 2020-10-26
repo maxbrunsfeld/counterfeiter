@@ -54,7 +54,6 @@ func (fake *{{.Name}}) Spy({{.Function.Params.AsNamedArgsWithTypes}}) {{.Functio
 	}
 	{{- end}}
 	fake.mutex.Lock()
-	defer fake.mutex.Unlock()
 	{{if .Function.Returns.HasLength}}ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	{{end}}fake.argsForCall = append(fake.argsForCall, struct{
 		{{- range .Function.Params}}
@@ -62,6 +61,7 @@ func (fake *{{.Name}}) Spy({{.Function.Params.AsNamedArgsWithTypes}}) {{.Functio
 		{{- end}}
 	}{ {{- .Function.Params.AsNamedArgs -}} })
 	fake.recordInvocation("{{.TargetName}}", []interface{}{ {{- if .Function.Params.HasLength}}{{.Function.Params.AsNamedArgs}}{{end -}} })
+	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		{{if .Function.Returns.HasLength}}return fake.Stub({{.Function.Params.AsNamedArgsForInvocation}}){{else}}fake.Stub({{.Function.Params.AsNamedArgsForInvocation}}){{end}}
 	}

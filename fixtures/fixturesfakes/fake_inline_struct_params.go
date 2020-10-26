@@ -47,7 +47,6 @@ func (fake *FakeInlineStructParams) DoSomething(arg1 context.Context, arg2 struc
 	HTTPRequest       http.Request
 }) error {
 	fake.doSomethingMutex.Lock()
-	defer fake.doSomethingMutex.Unlock()
 	ret, specificReturn := fake.doSomethingReturnsOnCall[len(fake.doSomethingArgsForCall)]
 	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct {
 		arg1 context.Context
@@ -60,6 +59,7 @@ func (fake *FakeInlineStructParams) DoSomething(arg1 context.Context, arg2 struc
 		}
 	}{arg1, arg2})
 	fake.recordInvocation("DoSomething", []interface{}{arg1, arg2})
+	fake.doSomethingMutex.Unlock()
 	if fake.DoSomethingStub != nil {
 		return fake.DoSomethingStub(arg1, arg2)
 	}

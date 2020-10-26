@@ -50,7 +50,6 @@ func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType,
 		copy(arg1Copy, arg1)
 	}
 	fake.anotherMethodMutex.Lock()
-	defer fake.anotherMethodMutex.Unlock()
 	fake.anotherMethodArgsForCall = append(fake.anotherMethodArgsForCall, struct {
 		arg1 []another_package.SomeType
 		arg2 map[another_package.SomeType]another_package.SomeType
@@ -59,6 +58,7 @@ func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType,
 		arg5 chan another_package.SomeType
 	}{arg1Copy, arg2, arg3, arg4, arg5})
 	fake.recordInvocation("AnotherMethod", []interface{}{arg1Copy, arg2, arg3, arg4, arg5})
+	fake.anotherMethodMutex.Unlock()
 	if fake.AnotherMethodStub != nil {
 		fake.AnotherMethodStub(arg1, arg2, arg3, arg4, arg5)
 	}
@@ -85,10 +85,10 @@ func (fake *FakeEmbedsInterfaces) AnotherMethodArgsForCall(i int) ([]another_pac
 
 func (fake *FakeEmbedsInterfaces) DoThings() {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 	}{})
 	fake.recordInvocation("DoThings", []interface{}{})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		fake.DoThingsStub()
 	}
@@ -108,11 +108,11 @@ func (fake *FakeEmbedsInterfaces) DoThingsCalls(stub func()) {
 
 func (fake *FakeEmbedsInterfaces) EmbeddedMethod() string {
 	fake.embeddedMethodMutex.Lock()
-	defer fake.embeddedMethodMutex.Unlock()
 	ret, specificReturn := fake.embeddedMethodReturnsOnCall[len(fake.embeddedMethodArgsForCall)]
 	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct {
 	}{})
 	fake.recordInvocation("EmbeddedMethod", []interface{}{})
+	fake.embeddedMethodMutex.Unlock()
 	if fake.EmbeddedMethodStub != nil {
 		return fake.EmbeddedMethodStub()
 	}
@@ -160,12 +160,12 @@ func (fake *FakeEmbedsInterfaces) EmbeddedMethodReturnsOnCall(i int, result1 str
 
 func (fake *FakeEmbedsInterfaces) ServeHTTP(arg1 http.ResponseWriter, arg2 *http.Request) {
 	fake.serveHTTPMutex.Lock()
-	defer fake.serveHTTPMutex.Unlock()
 	fake.serveHTTPArgsForCall = append(fake.serveHTTPArgsForCall, struct {
 		arg1 http.ResponseWriter
 		arg2 *http.Request
 	}{arg1, arg2})
 	fake.recordInvocation("ServeHTTP", []interface{}{arg1, arg2})
+	fake.serveHTTPMutex.Unlock()
 	if fake.ServeHTTPStub != nil {
 		fake.ServeHTTPStub(arg1, arg2)
 	}

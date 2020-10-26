@@ -18,10 +18,10 @@ type FakeFirstInterface struct {
 
 func (fake *FakeFirstInterface) DoThings() {
 	fake.doThingsMutex.Lock()
-	defer fake.doThingsMutex.Unlock()
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 	}{})
 	fake.recordInvocation("DoThings", []interface{}{})
+	fake.doThingsMutex.Unlock()
 	if fake.DoThingsStub != nil {
 		fake.DoThingsStub()
 	}
