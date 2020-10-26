@@ -2,9 +2,9 @@ language: go
 
 matrix:
   include:
-    - go: "1.11.x"
+    - go: "1.x"
       script: scripts/ci.sh
-    - go: "1.12.x"
+    - go: "1.14.x"
       script: scripts/ci.sh
 
 env:
