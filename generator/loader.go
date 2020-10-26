@@ -31,7 +31,7 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 		importPath = bp.ImportPath
 	}
 	p, err := packages.Load(&packages.Config{
-		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps | packages.NeedTypes,
+		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps | packages.NeedTypes | packages.NeedTypesInfo,
 		Dir:   workingDir,
 		Tests: true,
 	}, importPath)
