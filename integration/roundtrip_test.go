@@ -16,7 +16,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/v6/generator"
 )
 
-func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
+func runTests(t *testing.T, when spec.G, it spec.S) {
 	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	var (
@@ -32,38 +32,19 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 		writeToTestData     bool
 	)
 
-	name := "working with a GOPATH"
-	if !useGopath {
-		name = "working with a module"
-	}
+	name := "working with a module"
 
 	it.Before(func() {
 		RegisterTestingT(t)
 		originalGo111module = os.Getenv("GO111MODULE")
-		if useGopath {
-			os.Setenv("GO111MODULE", "off")
-		} else {
-			os.Setenv("GO111MODULE", "on")
-		}
+		os.Setenv("GO111MODULE", "on")
 		originalGopath = os.Getenv("GOPATH")
 		originalBuildGopath = build.Default.GOPATH
 		var err error
 		testDir, err = ioutil.TempDir("", "counterfeiter-integration")
 		Expect(err).NotTo(HaveOccurred())
-		if useGopath {
-			os.Setenv("GOPATH", testDir)
-			// build.Default only reads the GOPATH env variable once on init
-			build.Default.GOPATH = testDir
-		} else {
-			os.Unsetenv("GOPATH")
-		}
-
-		if useGopath {
-			baseDir = filepath.Join(testDir, "src", "github.com", "maxbrunsfeld", "counterfeiter", "v6", "fixtures")
-		} else {
-			baseDir = testDir
-		}
-
+		os.Unsetenv("GOPATH")
+		baseDir = testDir
 		err = os.MkdirAll(baseDir, 0777)
 		Expect(err).ToNot(HaveOccurred())
 		relativeDir = filepath.Join("..", "fixtures")
@@ -179,9 +160,7 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 					if suffix != "" {
 						suffix = "/" + suffix
 					}
-					if !useGopath {
-						WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
-					}
+					WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
 					cache := &generator.FakeCache{}
 					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", "", baseDir, cache)
 					Expect(err).NotTo(HaveOccurred())
@@ -218,9 +197,6 @@ func runTests(useGopath bool, t *testing.T, when spec.G, it spec.S) {
 			t := func(interfaceName string, offset string, fakePackageName string) {
 				when("working with "+interfaceName, func() {
 					it.Before(func() {
-						if useGopath {
-							baseDir = filepath.Join(baseDir, "dup_packages")
-						}
 						relativeDir = filepath.Join(relativeDir, "dup_packages")
 						copyDirFunc()
 					})

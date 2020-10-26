@@ -66,7 +66,7 @@ OPTIONS
 	-p
 		Package mode:  When invoked in package mode, counterfeiter
 		will generate an interface and shim implementation from a
-		package in your GOPATH.  Counterfeiter finds the public methods
+		package in your module.  Counterfeiter finds the public methods
 		in the package <source-path> and adds those method signatures
 		to the generated interface <interface-name>.
 
