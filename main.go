@@ -113,8 +113,10 @@ func disableCache() bool {
 }
 
 func generate(workingDir string, args *arguments.ParsedArguments, cache generator.Cacher, headerReader generator.FileReader) error {
-	if err := reportStarting(workingDir, args.OutputPath, args.FakeImplName); err != nil {
-		return err
+	if !args.Quiet {
+		if err := reportStarting(workingDir, args.OutputPath, args.FakeImplName); err != nil {
+			return err
+		}
 	}
 
 	b, err := doGenerate(workingDir, args, cache, headerReader)
@@ -125,7 +127,11 @@ func generate(workingDir string, args *arguments.ParsedArguments, cache generato
 	if err := printCode(b, args.OutputPath, args.PrintToStdOut); err != nil {
 		return err
 	}
-	fmt.Fprint(os.Stderr, "Done\n")
+
+	if !args.Quiet {
+		fmt.Fprint(os.Stderr, "Done\n")
+	}
+
 	return nil
 }
 

@@ -45,6 +45,11 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		"",
 		"A path to a file that should be used as a header for the generated fake",
 	)
+	quietFlag := fs.Bool(
+		"q",
+		false,
+		"Suppress status statements",
+	)
 	helpFlag := fs.Bool(
 		"help",
 		false,
@@ -68,6 +73,7 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		GenerateInterfaceAndShimFromPackageDirectory: packageMode,
 		GenerateMode: *generateFlag,
 		HeaderFile:   *headerFlag,
+		Quiet:        *quietFlag,
 	}
 	if *generateFlag {
 		return result, nil
@@ -199,6 +205,7 @@ type ParsedArguments struct {
 
 	PrintToStdOut bool
 	GenerateMode  bool
+	Quiet         bool
 
 	HeaderFile string
 }
