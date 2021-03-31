@@ -28,13 +28,11 @@ func testRegexp(t *testing.T, when spec.G, it spec.S) {
 		cases = []Case{
 			{
 				input:   "//go:generate counterfeiter . Intf",
-				matches: true,
-				args:    []string{".", "Intf"},
+				matches: false,
 			},
 			{
 				input:   "//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Intf",
-				matches: true,
-				args:    []string{".", "Intf"},
+				matches: false,
 			},
 			{
 				input:   "//counterfeiter:generate . Intf",
@@ -44,7 +42,6 @@ func testRegexp(t *testing.T, when spec.G, it spec.S) {
 			{
 				input:   "//go:generate  stringer -type=Enum",
 				matches: false,
-				args:    []string{".", "Intf"},
 			},
 		}
 	})
@@ -56,12 +53,12 @@ func testRegexp(t *testing.T, when spec.G, it spec.S) {
 
 	it("matches lines appropriately", func() {
 		for _, c := range cases {
-			result := matchForString(c.input)
+			result, ok := matchForString(c.input)
 			if c.matches {
-				Expect(result).NotTo(BeNil(), c.input)
-				Expect(result.args).To(ConsistOf(c.args))
+				Expect(ok).To(BeTrue())
+				Expect(result).To(ConsistOf(c.args))
 			} else {
-				Expect(result).To(BeNil(), c.input)
+				Expect(ok).To(BeFalse())
 			}
 		}
 	})

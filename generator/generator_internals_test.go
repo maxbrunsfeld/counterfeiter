@@ -3,6 +3,7 @@ package generator
 import (
 	"io/ioutil"
 	"log"
+	"runtime"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -58,18 +59,36 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Name).To(Equal("FakeFileInfo"))
 				Expect(f.Mode).To(Equal(InterfaceOrFunction))
 				Expect(f.DestinationPackage).To(Equal("osfakes"))
-				Expect(f.Imports).To(BeEquivalentTo(Imports{
-					ByAlias: map[string]Import{
-						"os":   {Alias: "os", PkgPath: "os"},
-						"sync": {Alias: "sync", PkgPath: "sync"},
-						"time": {Alias: "time", PkgPath: "time"},
-					},
-					ByPkgPath: map[string]Import{
-						"os":   {Alias: "os", PkgPath: "os"},
-						"sync": {Alias: "sync", PkgPath: "sync"},
-						"time": {Alias: "time", PkgPath: "time"},
-					},
-				}))
+				switch runtime.Version()[0:5] {
+				case "go1.15", "go1.14":
+					Expect(f.Imports).To(BeEquivalentTo(Imports{
+						ByAlias: map[string]Import{
+							"os":   {Alias: "os", PkgPath: "os"},
+							"sync": {Alias: "sync", PkgPath: "sync"},
+							"time": {Alias: "time", PkgPath: "time"},
+						},
+						ByPkgPath: map[string]Import{
+							"os":   {Alias: "os", PkgPath: "os"},
+							"sync": {Alias: "sync", PkgPath: "sync"},
+							"time": {Alias: "time", PkgPath: "time"},
+						},
+					}))
+				default:
+					Expect(f.Imports).To(BeEquivalentTo(Imports{
+						ByAlias: map[string]Import{
+							"os":   {Alias: "os", PkgPath: "os"},
+							"sync": {Alias: "sync", PkgPath: "sync"},
+							"time": {Alias: "time", PkgPath: "time"},
+							"fs":   {Alias: "fs", PkgPath: "io/fs"},
+						},
+						ByPkgPath: map[string]Import{
+							"os":    {Alias: "os", PkgPath: "os"},
+							"sync":  {Alias: "sync", PkgPath: "sync"},
+							"time":  {Alias: "time", PkgPath: "time"},
+							"io/fs": {Alias: "fs", PkgPath: "io/fs"},
+						},
+					}))
+				}
 				Expect(f.Function).To(BeZero())
 				Expect(f.Packages).NotTo(BeNil())
 				Expect(f.Package).NotTo(BeNil())
@@ -281,7 +300,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Expect(err).NotTo(HaveOccurred())
 					methods := packageMethodSet(f.Package)
 					Expect(len(methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
-					Expect(len(methods)).To(BeNumerically("<=", 54)) // go 1.12 added another one, and go 1.13 yet another one
 				})
 
 				it("can load the methods", func() {
@@ -289,8 +307,12 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Expect(err).NotTo(HaveOccurred())
 					f.loadMethods()
 					Expect(len(f.Methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
-					Expect(len(f.Methods)).To(BeNumerically("<=", 54)) // go 1.12 added another one, and go 1.13 yet another one
-					Expect(len(f.Imports.ByAlias)).To(Equal(2))
+					switch runtime.Version()[0:5] {
+					case "go1.15", "go1.14":
+						Expect(len(f.Imports.ByAlias)).To(Equal(2))
+					default:
+						Expect(len(f.Imports.ByAlias)).To(Equal(3))
+					}
 				})
 			})
 		})
