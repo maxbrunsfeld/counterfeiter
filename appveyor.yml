@@ -7,6 +7,7 @@ stack: go 1.16
 
 environment:
   GOPATH: c:\gopath
+  COUNTERFEITER_NO_GENERATE_WARNING: true
 
 before_test:
   - go vet ./...
