@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"runtime"
@@ -60,10 +59,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Name).To(Equal("FakeFileInfo"))
 				Expect(f.Mode).To(Equal(InterfaceOrFunction))
 				Expect(f.DestinationPackage).To(Equal("osfakes"))
-				fmt.Println("!!!")
-				fmt.Println(runtime.Version())
-				fmt.Println(runtime.Version()[0:6])
-				fmt.Println("!!!")
 				switch runtime.Version()[0:6] {
 				case "go1.15", "go1.14":
 					Expect(f.Imports).To(BeEquivalentTo(Imports{
