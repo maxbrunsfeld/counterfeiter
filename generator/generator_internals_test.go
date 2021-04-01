@@ -59,7 +59,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Name).To(Equal("FakeFileInfo"))
 				Expect(f.Mode).To(Equal(InterfaceOrFunction))
 				Expect(f.DestinationPackage).To(Equal("osfakes"))
-				switch runtime.Version()[0:5] {
+				switch runtime.Version()[0:6] {
 				case "go1.15", "go1.14":
 					Expect(f.Imports).To(BeEquivalentTo(Imports{
 						ByAlias: map[string]Import{
@@ -307,7 +307,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Expect(err).NotTo(HaveOccurred())
 					f.loadMethods()
 					Expect(len(f.Methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
-					switch runtime.Version()[0:5] {
+					switch runtime.Version()[0:6] {
 					case "go1.15", "go1.14":
 						Expect(len(f.Imports.ByAlias)).To(Equal(2))
 					default:
