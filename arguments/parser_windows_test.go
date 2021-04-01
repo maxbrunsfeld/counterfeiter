@@ -56,7 +56,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("copies the provided output path into the result", func() {
-			Expect(parsedArgs.OutputPath).To(Equal("C:\\tmp\\foo"))
+			Expect(parsedArgs.OutputPath).To(Equal("C:\\tmp\\foo\\fake_writer.go"))
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

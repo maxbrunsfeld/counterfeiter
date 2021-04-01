@@ -136,7 +136,10 @@ func (f *Fake) Generate(runImports bool) ([]byte, error) {
 	}
 
 	b := &bytes.Buffer{}
-	tmpl.Execute(b, f)
+	err := tmpl.Execute(b, f)
+	if err != nil {
+		return nil, err
+	}
 	if runImports {
 		return imports.Process("counterfeiter_temp_process_file", b.Bytes(), nil)
 	}

@@ -2,7 +2,6 @@ package fixtures
 
 import alias "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/another_package"
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . AliasedInterface
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . AliasedInterface
 
