@@ -46,7 +46,7 @@ func testRegexp(t *testing.T, when spec.G, it spec.S) {
 		}
 	})
 
-	it.Focus("splits args correctly", func() {
+	it("splits args correctly", func() {
 		Expect(stringToArgs(". Intf")).To(ConsistOf([]string{"counterfeiter", ".", "Intf"}))
 		Expect(stringToArgs("    .    Intf     ")).To(ConsistOf([]string{"counterfeiter", ".", "Intf"}))
 	})
