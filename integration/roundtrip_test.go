@@ -224,4 +224,35 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			t("AliasV1", "", "dup_packagesfakes")
 		})
 	})
+
+	when("working with internal packages", func() {
+		t := func(interfaceName string, offset string, fakePackageName string) {
+			when("working with "+interfaceName, func() {
+				it.Before(func() {
+					relativeDir = filepath.Join(relativeDir, "internalpkg")
+					copyDirFunc()
+				})
+
+				it.Focus("succeeds", func() {
+					pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/internalpkg"
+					if offset != "" {
+						pkgPath = pkgPath + "/" + offset
+					}
+					cache := &generator.FakeCache{}
+					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, "", baseDir, cache)
+					Expect(err).NotTo(HaveOccurred())
+					b, err := f.Generate(false) // Flip to false to see output if goimports fails
+					Expect(err).NotTo(HaveOccurred())
+					if writeToTestData {
+						WriteOutput(b, filepath.Join("testdata", "output", "internalpkg_"+strings.ToLower(interfaceName), "actual.go"))
+					}
+					WriteOutput(b, filepath.Join(baseDir, offset, fakePackageName, "fake_"+strings.ToLower(interfaceName)+".go"))
+					RunBuild(filepath.Join(baseDir, offset, fakePackageName))
+					Expect(string(b)).NotTo(ContainSubstring("internal.Context"))
+				})
+			})
+		}
+
+		t("MyInterface", "", "internalpkgfakes")
+	})
 }
