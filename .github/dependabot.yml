@@ -5,8 +5,6 @@ updates:
   schedule:
     interval: daily
     time: "13:00"
-  open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: github.com/onsi/gomega
-    versions:
-    - 1.10.5
+  open-pull-requests-limit: 100
+  reviewers:
+      - "joefitzgerald"
