@@ -1,4 +1,4 @@
-# `counterfeiter` [![CircleCI](https://circleci.com/gh/maxbrunsfeld/counterfeiter.svg?style=svg)](https://circleci.com/gh/maxbrunsfeld/counterfeiter) [![Build status](https://ci.appveyor.com/api/projects/status/0j2v7pt06lp9yanm/branch/master?svg=true)](https://ci.appveyor.com/project/maxbrunsfeld/counterfeiter/branch/master)
+# `counterfeiter` [![Go](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml/badge.svg)](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml) [![CircleCI](https://circleci.com/gh/maxbrunsfeld/counterfeiter.svg?style=svg)](https://circleci.com/gh/maxbrunsfeld/counterfeiter) [![Build status](https://ci.appveyor.com/api/projects/status/0j2v7pt06lp9yanm/branch/master?svg=true)](https://ci.appveyor.com/project/maxbrunsfeld/counterfeiter/branch/master)
 
 When writing unit-tests for an object, it is often useful to have fake implementations
 of the object's collaborators. In go, such fake implementations cannot be generated
