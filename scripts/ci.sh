@@ -5,11 +5,13 @@ set -eu
 cd "$(dirname "$0")/.."
 pwd
 
+valid_packages=$(go list ./... | grep -v 'invalid')
+
 # run go vet to verify everything builds and to check common issues
 echo
 echo "Running go vet..."
 echo
-GO111MODULE=on go vet ./...
+GO111MODULE=on go vet $valid_packages
 
 # counterfeit all the things
 echo
@@ -21,7 +23,7 @@ GO111MODULE=on go install .
 echo
 echo "Generating fakes used by tests..."
 echo
-GO111MODULE=on go generate ./...
+GO111MODULE=on go generate ./... 
 
 # validate that the generated fakes match the committed fakes
 echo

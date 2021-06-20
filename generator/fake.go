@@ -73,7 +73,10 @@ func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName 
 	}
 
 	if f.IsInterface() || f.Mode == Package {
-		f.loadMethods()
+		err = f.loadMethods()
+		if err != nil {
+			return nil, err
+		}
 	}
 	if f.IsFunction() {
 		err = f.loadMethodForFunction()
