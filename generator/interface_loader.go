@@ -25,7 +25,7 @@ func methodForSignature(sig *types.Signature, methodName string, imports Imports
 		param := sig.Params().At(i)
 		isVariadic := i == sig.Params().Len()-1 && sig.Variadic()
 		typ := types.TypeString(param.Type(), imports.AliasForPackage)
-		if typ == "invalid type" {
+		if isInvalidType(typ) {
 			return Method{}, fmt.Errorf("Unable to resolve method parameter type: %s%s %s", methodName, sig.Params().String(), sig.Results().String())
 		}
 		if isVariadic {
@@ -43,12 +43,12 @@ func methodForSignature(sig *types.Signature, methodName string, imports Imports
 	for i := 0; i < sig.Results().Len(); i++ {
 		ret := sig.Results().At(i)
 		typ := types.TypeString(ret.Type(), imports.AliasForPackage)
+		if isInvalidType(typ) {
+			return Method{}, fmt.Errorf("Unable to resolve method return type: %s%s %s", methodName, sig.Params().String(), sig.Results().String())
+		}
 		r := Return{
 			Name: fmt.Sprintf("result%v", i+1),
 			Type: typ,
-		}
-		if typ == "invalid type" {
-			return Method{}, fmt.Errorf("Unable to resolve method return type: %s%s %s", methodName, sig.Params().String(), sig.Results().String())
 		}
 		returns = append(returns, r)
 	}
@@ -111,4 +111,8 @@ func (f *Fake) loadMethods() error {
 		f.Methods = append(f.Methods, method)
 	}
 	return nil
+}
+
+func isInvalidType(typestring string) bool {
+	return strings.Contains(typestring, "invalid type")
 }
