@@ -305,7 +305,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				it("can load the methods", func() {
 					err := f.findPackage()
 					Expect(err).NotTo(HaveOccurred())
-					f.loadMethods()
+					err = f.loadMethods()
+					Expect(err).NotTo(HaveOccurred())
 					Expect(len(f.Methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
 					switch runtime.Version()[0:6] {
 					case "go1.15", "go1.14":
