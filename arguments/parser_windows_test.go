@@ -33,7 +33,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	justBefore := func() {
-		parsedArgs, err = arguments.New(args, workingDir, evaler, stater)
+		parsedArgs, err = arguments.New(args, workingDir, nil, evaler, stater)
 	}
 
 	it.Before(func() {

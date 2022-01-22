@@ -61,34 +61,25 @@ func run() error {
 		cache = &generator.Cache{}
 		headerReader = &generator.CachedFileReader{}
 	}
-	var invocations []command.Invocation
-	var args *arguments.ParsedArguments
-	args, _ = arguments.New(os.Args, cwd, filepath.EvalSymlinks, os.Stat)
-	generateMode := false
-	if args != nil {
-		generateMode = args.GenerateMode
+
+	generateMode, generateArgs, err := arguments.ParseGenerateMode(os.Args)
+	if err != nil {
+		return err
 	}
+
 	if !generateMode && shouldPrintGenerateWarning() {
 		fmt.Printf("\nWARNING: Invoking counterfeiter multiple times from \"go generate\" is slow.\nConsider using counterfeiter:generate directives to speed things up.\nSee https://github.com/maxbrunsfeld/counterfeiter#step-2b---add-counterfeitergenerate-directives for more information.\nSet the \"COUNTERFEITER_NO_GENERATE_WARNING\" environment variable to suppress this message.\n\n")
 	}
-	invocations, err = command.Detect(cwd, os.Args, generateMode)
+	invocations, err := command.Detect(cwd, os.Args, generateMode)
 	if err != nil {
 		return err
 	}
 
 	for i := range invocations {
-		a, err := arguments.New(invocations[i].Args, cwd, filepath.EvalSymlinks, os.Stat)
+		a, err := arguments.New(invocations[i].Args, cwd, generateArgs, filepath.EvalSymlinks, os.Stat)
 		if err != nil {
 			return err
 		}
-
-		// If the '//counterfeiter:generate ...' line does not have a '-header'
-		// flag, we use the one from the "global"
-		// '//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate -header /some/header.txt'
-		// line (which defaults to none). By doing so, we can configure the header
-		// once per package, which is probably the most common case for adding
-		// licence headers (i.e. all the fakes will have the same licence headers).
-		a.HeaderFile = or(a.HeaderFile, args.HeaderFile)
 
 		err = generate(cwd, a, cache, headerReader)
 		if err != nil {
@@ -96,15 +87,6 @@ func run() error {
 		}
 	}
 	return nil
-}
-
-func or(opts ...string) string {
-	for _, s := range opts {
-		if s != "" {
-			return s
-		}
-	}
-	return ""
 }
 
 func isDebug() bool {
