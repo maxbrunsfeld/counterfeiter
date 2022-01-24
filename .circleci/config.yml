@@ -10,6 +10,7 @@ jobs:
     docker:
       - image: cimg/go:1.17
     working_directory: ~/counterfeiter
+    resource_class: large
     steps:
       - checkout
       - run: ~/counterfeiter/scripts/ci.sh
@@ -17,3 +18,4 @@ jobs:
     <<: *build-template
     docker:
       - image: cimg/go:1.16
+    resource_class: large

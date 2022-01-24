@@ -1,6 +1,7 @@
 package arguments
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -9,85 +10,219 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 	"unicode"
 )
 
-func New(args []string, workingDir string, evaler Evaler, stater Stater) (*ParsedArguments, error) {
-	if len(args) == 0 {
-		return nil, errors.New("argument parsing requires at least one argument")
-	}
+type flagsForGenerate struct {
+	FakeNameTemplate *string
+}
 
-	fs := flag.NewFlagSet("counterfeiter", flag.ContinueOnError)
-	fakeNameFlag := fs.String(
+func (f *flagsForGenerate) RegisterFlags(fs *flag.FlagSet) {
+	f.FakeNameTemplate = fs.String(
+		"fake-name-template",
+		"",
+		`A template for the names of the fake structs in a generate call. Example: "The{{.TargetName}}Imposter"`,
+	)
+}
+
+type flagsForNonGenerate struct {
+	FakeName *string
+	Package  *bool
+}
+
+func (f *flagsForNonGenerate) RegisterFlags(fs *flag.FlagSet) {
+	f.FakeName = fs.String(
 		"fake-name",
 		"",
 		"The name of the fake struct",
 	)
 
-	outputPathFlag := fs.String(
+	f.Package = fs.Bool(
+		"p",
+		false,
+		"Whether or not to generate a package shim",
+	)
+}
+
+type sharedFlags struct {
+	Generate   *bool
+	OutputPath *string
+	Header     *string
+	Quiet      *bool
+	Help       *bool
+}
+
+func (f *sharedFlags) RegisterFlags(fs *flag.FlagSet) {
+	f.OutputPath = fs.String(
 		"o",
 		"",
 		"The file or directory to which the generated fake will be written",
 	)
 
-	packageFlag := fs.Bool(
-		"p",
-		false,
-		"Whether or not to generate a package shim",
-	)
-	generateFlag := fs.Bool(
+	f.Generate = fs.Bool(
 		"generate",
 		false,
 		"Identify all //counterfeiter:generate directives in the current working directory and generate fakes for them",
 	)
-	headerFlag := fs.String(
+
+	f.Header = fs.String(
 		"header",
 		"",
 		"A path to a file that should be used as a header for the generated fake",
 	)
-	quietFlag := fs.Bool(
+
+	f.Quiet = fs.Bool(
 		"q",
 		false,
 		"Suppress status statements",
 	)
-	helpFlag := fs.Bool(
+
+	f.Help = fs.Bool(
 		"help",
 		false,
 		"Display this help",
 	)
+}
+
+type allFlags struct {
+	flagsForGenerate
+	flagsForNonGenerate
+	sharedFlags
+}
+
+func (f *allFlags) RegisterFlags(fs *flag.FlagSet) {
+	f.flagsForGenerate.RegisterFlags(fs)
+	f.flagsForNonGenerate.RegisterFlags(fs)
+	f.sharedFlags.RegisterFlags(fs)
+}
+
+type standardFlags struct {
+	flagsForNonGenerate
+	sharedFlags
+}
+
+func (f *standardFlags) RegisterFlags(fs *flag.FlagSet) {
+	f.flagsForNonGenerate.RegisterFlags(fs)
+	f.sharedFlags.RegisterFlags(fs)
+}
+
+type GenerateArgs struct {
+	OutputPath       string
+	FakeNameTemplate *template.Template
+	Header           string
+	Quiet            bool
+}
+
+func ParseGenerateMode(args []string) (bool, *GenerateArgs, error) {
+	if len(args) == 0 {
+		return false, nil, errors.New("argument parsing requires at least one argument")
+	}
+
+	fs := flag.NewFlagSet("counterfeiter", flag.ContinueOnError)
+	flags := new(allFlags)
+	flags.RegisterFlags(fs)
+
+	err := fs.Parse(args[1:])
+	if err != nil {
+		return false, nil, err
+	}
+
+	if *flags.Help {
+		return false, nil, errors.New(usage)
+	}
+	if !*flags.Generate {
+		return false, nil, nil
+	}
+
+	fakeNameTemplate, err := template.New("counterfeiter").Parse(*flags.FakeNameTemplate)
+	if err != nil {
+		return false, nil, fmt.Errorf("error parsing fake-name-template: %w", err)
+	}
+
+	return true, &GenerateArgs{
+		OutputPath:       *flags.OutputPath,
+		FakeNameTemplate: fakeNameTemplate,
+		Header:           *flags.Header,
+		Quiet:            *flags.Quiet,
+	}, nil
+}
+
+type FakeNameTemplateArg struct {
+	TargetName string
+}
+
+func New(args []string, workingDir string, generateArgs *GenerateArgs, evaler Evaler, stater Stater) (*ParsedArguments, error) {
+	if len(args) == 0 {
+		return nil, errors.New("argument parsing requires at least one argument")
+	}
+
+	fs := flag.NewFlagSet("counterfeiter", flag.ContinueOnError)
+	flags := new(standardFlags)
+	flags.RegisterFlags(fs)
 
 	err := fs.Parse(args[1:])
 	if err != nil {
 		return nil, err
 	}
-	if *helpFlag {
-		return nil, errors.New(usage)
-	}
-	if len(fs.Args()) == 0 && !*generateFlag {
+
+	if len(fs.Args()) == 0 && !*flags.Generate {
 		return nil, errors.New(usage)
 	}
 
-	packageMode := *packageFlag
+	header := *flags.Header
+	outputPath := *flags.OutputPath
+	quiet := *flags.Quiet
+	fakeName := *flags.FakeName
+
+	if generateArgs != nil {
+		header = or(header, generateArgs.Header)
+		quiet = quiet || generateArgs.Quiet
+
+	}
+
 	result := &ParsedArguments{
 		PrintToStdOut: any(args, "-"),
-		GenerateInterfaceAndShimFromPackageDirectory: packageMode,
-		GenerateMode: *generateFlag,
-		HeaderFile:   *headerFlag,
-		Quiet:        *quietFlag,
+		GenerateInterfaceAndShimFromPackageDirectory: *flags.Package,
+		HeaderFile: header,
+		Quiet:      quiet,
 	}
-	if *generateFlag {
-		return result, nil
-	}
-	err = result.parseSourcePackageDir(packageMode, workingDir, evaler, stater, fs.Args())
+
+	err = result.parseSourcePackageDir(*flags.Package, workingDir, evaler, stater, fs.Args())
 	if err != nil {
 		return nil, err
 	}
-	result.parseInterfaceName(packageMode, fs.Args())
-	result.parseFakeName(packageMode, *fakeNameFlag, fs.Args())
-	result.parseOutputPath(packageMode, workingDir, *outputPathFlag, fs.Args())
-	result.parseDestinationPackageName(packageMode, fs.Args())
-	result.parsePackagePath(packageMode, fs.Args())
+	result.parseInterfaceName(*flags.Package, fs.Args())
+
+	if generateArgs != nil {
+		outputPath = or(outputPath, generateArgs.OutputPath)
+
+		if fakeName == "" && generateArgs.FakeNameTemplate != nil {
+			fakeNameWriter := new(bytes.Buffer)
+			err = generateArgs.FakeNameTemplate.Execute(
+				fakeNameWriter,
+				FakeNameTemplateArg{TargetName: fixupUnexportedNames(result.InterfaceName)},
+			)
+			if err != nil {
+				return nil, fmt.Errorf("error evaluating fake-name-template: %w", err)
+			}
+			fakeName = fakeNameWriter.String()
+		}
+	}
+	result.parseFakeName(*flags.Package, fakeName, fs.Args())
+	result.parseOutputPath(*flags.Package, workingDir, outputPath, fs.Args())
+	result.parseDestinationPackageName(*flags.Package, fs.Args())
+	result.parsePackagePath(*flags.Package, fs.Args())
 	return result, nil
+}
+
+func or(opts ...string) string {
+	for _, s := range opts {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 func (a *ParsedArguments) PrettyPrint() {
@@ -207,7 +342,6 @@ type ParsedArguments struct {
 	FakeImplName  string // the name of the struct implementing the given interface
 
 	PrintToStdOut bool
-	GenerateMode  bool
 	Quiet         bool
 
 	HeaderFile string
