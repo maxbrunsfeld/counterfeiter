@@ -1,7 +1,7 @@
 module github.com/maxbrunsfeld/counterfeiter/v6
 
 require (
-	github.com/onsi/gomega v1.24.2
+	github.com/onsi/gomega v1.25.0
 	github.com/sclevine/spec v1.4.0
 	golang.org/x/tools v0.5.0
 )
