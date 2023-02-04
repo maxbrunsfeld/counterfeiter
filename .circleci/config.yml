@@ -8,7 +8,7 @@ workflows:
 jobs:
   build: &build-template
     docker:
-      - image: cimg/go:1.19
+      - image: cimg/go:1.20
     working_directory: ~/counterfeiter
     resource_class: large
     steps:
@@ -17,5 +17,5 @@ jobs:
   build-prior:
     <<: *build-template
     docker:
-      - image: cimg/go:1.18
+      - image: cimg/go:1.19
     resource_class: large
