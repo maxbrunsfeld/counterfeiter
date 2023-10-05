@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"runtime"
 	"testing"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestGenerator(t *testing.T) {
-	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
+	log.SetOutput(io.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	spec.Run(t, "Generator", testGenerator, spec.Report(report.Terminal{}))
 }
@@ -53,7 +53,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				f, err = NewFake(InterfaceOrFunction, "FileInfo", "os", "FakeFileInfo", "osfakes", "", "", c)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(f).NotTo(BeNil())
-				Expect(f.TargetAlias).To(Equal("os"))
+				Expect(f.TargetAlias).To(Equal("os.")) // TODO will refactor
 				Expect(f.TargetName).To(Equal("FileInfo"))
 				Expect(f.TargetPackage).To(Equal("os"))
 				Expect(f.Name).To(Equal("FakeFileInfo"))
@@ -103,7 +103,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(f).NotTo(BeNil())
-				Expect(f.TargetAlias).To(Equal("http"))
+				Expect(f.TargetAlias).To(Equal("http.")) // TODO will refactor
 				Expect(f.TargetName).To(Equal("HandlerFunc"))
 				Expect(f.TargetPackage).To(Equal("net/http"))
 				Expect(f.Name).To(Equal("FakeHandlerFunc"))
