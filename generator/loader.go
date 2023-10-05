@@ -91,7 +91,7 @@ func (f *Fake) findPackage() error {
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
 	if f.DestinationPackage != f.Package.Name {
 		t := f.Imports.Add(pkg.Name, f.TargetPackage)
-		f.TargetAlias = t.Alias + "." // TODO this is not really right template has to be refactored
+		f.TargetAlias = t.Alias
 		if f.Mode != Package {
 			f.TargetName = target.Name()
 		}

@@ -190,6 +190,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		t("ReusesArgTypes", "reuses_arg_types.go", "")
 		t("SomethingWithForeignInterface", "something_remote.go", "", filepath.Join("aliased_package", "in_aliased_package.go"))
 		t("Something", "something.go", "")
+		t("Other", "other.go", "")
 		t("SomethingFactory", "typed_function.go", "")
 		t("SyncSomething", "interface.go", "sync")
 

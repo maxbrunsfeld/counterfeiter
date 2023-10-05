@@ -53,7 +53,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				f, err = NewFake(InterfaceOrFunction, "FileInfo", "os", "FakeFileInfo", "osfakes", "", "", c)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(f).NotTo(BeNil())
-				Expect(f.TargetAlias).To(Equal("os.")) // TODO will refactor
+				Expect(f.TargetAlias).To(Equal("os"))
 				Expect(f.TargetName).To(Equal("FileInfo"))
 				Expect(f.TargetPackage).To(Equal("os"))
 				Expect(f.Name).To(Equal("FakeFileInfo"))
@@ -103,7 +103,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(f).NotTo(BeNil())
-				Expect(f.TargetAlias).To(Equal("http.")) // TODO will refactor
+				Expect(f.TargetAlias).To(Equal("http"))
 				Expect(f.TargetName).To(Equal("HandlerFunc"))
 				Expect(f.TargetPackage).To(Equal("net/http"))
 				Expect(f.Name).To(Equal("FakeHandlerFunc"))
