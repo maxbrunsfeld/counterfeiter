@@ -3,7 +3,7 @@ package arguments
 const usage = `
 USAGE
 	counterfeiter
-		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate>] [-o <output-path>] [-p] [-t] [--fake-name <fake-name>]
 		[-header <header-file>]
 		[<source-path>] <interface> [-]
 
@@ -109,4 +109,15 @@ OPTIONS
 	example:
 		# writes "CoolThing" to ./mypackagefakes/cool_thing.go
 		counterfeiter --fake-name CoolThing ./mypackage MyInterface
+
+    -t
+        Generates fake in the same package as the original interface in the test file ending with _test.go.
+        This helps to avoid cycle dependency issue when interface getting mocked is defined in the package where it 
+        is used.
+        
+        This options is mutually exclusive with '-p' (package mode) and '-o' (output directory) options.
+
+    example:
+        # writes "FakeMyInterface" to ./mypackage/cool_thing_test.go
+        counterfeiter -t ./mypackage MyInterface
 `

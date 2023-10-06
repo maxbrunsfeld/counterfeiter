@@ -73,6 +73,10 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		return nil, errors.New(usage)
 	}
 
+	if *testFlag && (*packageFlag || *outputPathFlag != "") {
+		return nil, errors.New(usage)
+	}
+
 	packageMode := *packageFlag
 	result := &ParsedArguments{
 		PrintToStdOut: any(args, "-"),
