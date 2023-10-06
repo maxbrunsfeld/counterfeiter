@@ -95,7 +95,7 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 	result.parseInterfaceName(packageMode, fs.Args())
 	result.parseFakeName(packageMode, *fakeNameFlag, fs.Args())
 	result.parseOutputPath(packageMode, workingDir, *outputPathFlag, *testFlag, fs.Args())
-	result.parseDestinationPackageName(packageMode, *testFlag, fs.Args())
+	result.parseDestinationPackageName(packageMode, fs.Args())
 	result.parsePackagePath(packageMode, fs.Args())
 	return result, nil
 }
@@ -168,7 +168,7 @@ func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, o
 	}
 
 	if packageMode {
-		a.parseDestinationPackageName(packageMode, testFlag, args)
+		a.parseDestinationPackageName(packageMode, args)
 		a.OutputPath = path.Join(workingDir, a.DestinationPackageName, snakeCaseName+".go")
 		return
 	}
@@ -185,7 +185,7 @@ func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, o
 	}
 }
 
-func (a *ParsedArguments) parseDestinationPackageName(packageMode bool, testFlag bool, args []string) {
+func (a *ParsedArguments) parseDestinationPackageName(packageMode bool, args []string) {
 	if packageMode {
 		a.parsePackagePath(packageMode, args)
 		a.DestinationPackageName = path.Base(a.PackagePath) + "shim"

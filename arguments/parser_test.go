@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package arguments_test
@@ -102,6 +103,44 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 					workingDir,
 					"workspacefakes",
 					"fake_an_interface.go",
+				),
+			))
+		})
+	})
+
+	when("when a single argument is provided with the test flag", func() {
+		it.Before(func() {
+			args = []string{"counterfeiter", "-t", "someonesinterfaces.AnInterface"}
+			justBefore()
+		})
+
+		it("sets PrintToStdOut to false", func() {
+			Expect(parsedArgs.PrintToStdOut).To(BeFalse())
+		})
+
+		it("provides a name for the fake implementing the interface", func() {
+			Expect(parsedArgs.FakeImplName).To(Equal("FakeAnInterface"))
+		})
+
+		it("provides a path for the interface source", func() {
+			Expect(parsedArgs.PackagePath).To(Equal("someonesinterfaces"))
+		})
+
+		it("treats the last segment as the interface to counterfeit", func() {
+			Expect(parsedArgs.InterfaceName).To(Equal("AnInterface"))
+		})
+
+		it("snake cases the filename for the output directory", func() {
+			fmt.Println(parsedArgs.OutputPath)
+			fmt.Println(filepath.Join(
+				workingDir,
+				"workspacefakes",
+				"fake_an_interface.go",
+			))
+			Expect(parsedArgs.OutputPath).To(Equal(
+				filepath.Join(
+					workingDir,
+					"fake_an_interface_test.go",
 				),
 			))
 		})
