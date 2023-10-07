@@ -116,7 +116,7 @@ $ go run github.com/maxbrunsfeld/counterfeiter/v6
 
 USAGE
 	counterfeiter
-		[-generate] [-o <output-path>] [-p] [-t]  [--fake-name <fake-name>]
+		[-generate] [-o <output-path>] [-p] [-t] [--fake-name <fake-name>]
 		[<source-path>] <interface> [-]
 ```
 
