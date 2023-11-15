@@ -6,9 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["stable", "oldstable"]
+        go: ['stable', 'oldstable']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v4
