@@ -50,6 +50,12 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		false,
 		"Suppress status statements",
 	)
+
+	testFlag := fs.Bool(
+		"t",
+		false,
+		"Generate fakes in the same package into a file with _test suffix",
+	)
 	helpFlag := fs.Bool(
 		"help",
 		false,
@@ -64,6 +70,10 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		return nil, errors.New(usage)
 	}
 	if len(fs.Args()) == 0 && !*generateFlag {
+		return nil, errors.New(usage)
+	}
+
+	if *testFlag && (*packageFlag || *outputPathFlag != "") {
 		return nil, errors.New(usage)
 	}
 
@@ -84,7 +94,7 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 	}
 	result.parseInterfaceName(packageMode, fs.Args())
 	result.parseFakeName(packageMode, *fakeNameFlag, fs.Args())
-	result.parseOutputPath(packageMode, workingDir, *outputPathFlag, fs.Args())
+	result.parseOutputPath(packageMode, workingDir, *outputPathFlag, *testFlag, fs.Args())
 	result.parseDestinationPackageName(packageMode, fs.Args())
 	result.parsePackagePath(packageMode, fs.Args())
 	return result, nil
@@ -136,13 +146,16 @@ func (a *ParsedArguments) parseFakeName(packageMode bool, fakeName string, args 
 	a.FakeImplName = fakeName
 }
 
-func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, outputPath string, args []string) {
+func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, outputPath string, testFlag bool, args []string) {
 	outputPathIsFilename := false
 	if strings.HasSuffix(outputPath, ".go") {
 		outputPathIsFilename = true
 	}
 	snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(a.FakeImplName, "${1}_${2}"))
 
+	if testFlag {
+		snakeCaseName += "_test"
+	}
 	if outputPath != "" {
 		if !filepath.IsAbs(outputPath) {
 			outputPath = filepath.Join(workingDir, outputPath)
@@ -164,7 +177,12 @@ func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, o
 	if len(args) > 1 {
 		d = a.SourcePackageDir
 	}
-	a.OutputPath = filepath.Join(d, packageNameForPath(d), snakeCaseName+".go")
+
+	if testFlag {
+		a.OutputPath = filepath.Join(d, snakeCaseName+".go")
+	} else {
+		a.OutputPath = filepath.Join(d, packageNameForPath(d), snakeCaseName+".go")
+	}
 }
 
 func (a *ParsedArguments) parseDestinationPackageName(packageMode bool, args []string) {

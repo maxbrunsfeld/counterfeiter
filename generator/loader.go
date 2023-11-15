@@ -89,10 +89,12 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
-	t := f.Imports.Add(pkg.Name, f.TargetPackage)
-	f.TargetAlias = t.Alias
-	if f.Mode != Package {
-		f.TargetName = target.Name()
+	if f.DestinationPackage != f.Package.Name {
+		t := f.Imports.Add(pkg.Name, f.TargetPackage)
+		f.TargetAlias = t.Alias
+		if f.Mode != Package {
+			f.TargetName = target.Name()
+		}
 	}
 
 	if f.Mode == InterfaceOrFunction {

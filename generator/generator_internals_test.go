@@ -96,6 +96,53 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("in test mode and the target is an interface that exists", func() {
+			it("succeeds", func() {
+				c := &Cache{}
+				f, err = NewFake(InterfaceOrFunction, "FileInfo", "os", "FakeFileInfo", "os", "", "", c)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f).NotTo(BeNil())
+				Expect(f.TargetAlias).To(Equal(""))
+				Expect(f.TargetName).To(Equal("FileInfo"))
+				Expect(f.TargetPackage).To(Equal("os"))
+				Expect(f.Name).To(Equal("FakeFileInfo"))
+				Expect(f.Mode).To(Equal(InterfaceOrFunction))
+				Expect(f.DestinationPackage).To(Equal("os"))
+				switch runtime.Version()[0:6] {
+				case "go1.15", "go1.14":
+					Expect(f.Imports).To(BeEquivalentTo(Imports{
+						ByAlias: map[string]Import{
+							"os":   {Alias: "os", PkgPath: "os"},
+							"sync": {Alias: "sync", PkgPath: "sync"},
+							"time": {Alias: "time", PkgPath: "time"},
+						},
+						ByPkgPath: map[string]Import{
+							"os":   {Alias: "os", PkgPath: "os"},
+							"sync": {Alias: "sync", PkgPath: "sync"},
+							"time": {Alias: "time", PkgPath: "time"},
+						},
+					}))
+				default:
+					Expect(f.Imports).To(BeEquivalentTo(Imports{
+						ByAlias: map[string]Import{
+							"sync": {Alias: "sync", PkgPath: "sync"},
+							"time": {Alias: "time", PkgPath: "time"},
+							"fs":   {Alias: "fs", PkgPath: "io/fs"},
+						},
+						ByPkgPath: map[string]Import{
+							"sync":  {Alias: "sync", PkgPath: "sync"},
+							"time":  {Alias: "time", PkgPath: "time"},
+							"io/fs": {Alias: "fs", PkgPath: "io/fs"},
+						},
+					}))
+				}
+				Expect(f.Function).To(BeZero())
+				Expect(f.Packages).NotTo(BeNil())
+				Expect(f.Package).NotTo(BeNil())
+				Expect(f.Methods).To(HaveLen(6))
+			})
+		})
+
 		when("the target is a function that exists", func() {
 			it("succeeds", func() {
 				c := &Cache{}
