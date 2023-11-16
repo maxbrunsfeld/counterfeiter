@@ -236,15 +236,22 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 					case <-a:
 						close(b)
 					default:
-						close(a)
 						<-b
 					}
 				}
 
-				go fake.DoNothing()
-				go fake.DoNothing()
+				count := 100
+				for i := 0; i < count; i++ {
+					go fake.DoNothing()
+				}
 
-				<-b
+				sent := 0
+				for i := 0; i < count; i++ {
+					b <- struct{}{}
+					sent++
+				}
+				close(a)
+				close(b)
 				return true
 			}).Should(Equal(true))
 		})
