@@ -1,4 +1,4 @@
-# `counterfeiter` [![GitHub Actions](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml/badge.svg)](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml) [![AppVeyor](https://ci.appveyor.com/api/projects/status/0j2v7pt06lp9yanm/branch/master?svg=true)](https://ci.appveyor.com/project/maxbrunsfeld/counterfeiter/branch/master)
+# `counterfeiter` [![GitHub Actions](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml/badge.svg)](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/maxbrunsfeld/counterfeiter/v6)](https://goreportcard.com/report/github.com/maxbrunsfeld/counterfeiter/v6) [![GoDoc](https://godoc.org/github.com/maxbrunsfeld/counterfeiter/v6?status.svg)](https://godoc.org/github.com/maxbrunsfeld/counterfeiter/v6)
 
 When writing unit-tests for an object, it is often useful to have fake implementations
 of the object's collaborators. In go, such fake implementations cannot be generated
@@ -29,7 +29,7 @@ $ cat tools/tools.go
 ```
 
 ```go
-// +build tools
+//go:build tools
 
 package tools
 
