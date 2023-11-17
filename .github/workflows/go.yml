@@ -2,11 +2,12 @@ name: Build and Test
 on: [push, pull_request]
 jobs:
   build:
-    name: Build
-    runs-on: ubuntu-latest
+    name: Build and Test
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ['stable', 'oldstable']
+        go: [stable, oldstable]
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -17,3 +18,7 @@ jobs:
 
       - name: Build and Test
         run: ./scripts/ci.sh
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Build and Test
+        run: .\scripts\ci.ps1
+        if: ${{ matrix.os == 'windows-latest' }}
