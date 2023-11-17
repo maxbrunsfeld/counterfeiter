@@ -76,7 +76,7 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 	it("records the arguments it was called with", func() {
 		Expect(fake.DoThingsCallCount()).To(Equal(0))
 
-		fake.DoThings("stuff", 5)
+		_, _ = fake.DoThings("stuff", 5)
 
 		Expect(fake.DoThingsCallCount()).To(Equal(1))
 		arg1, arg2 := fake.DoThingsArgsForCall(0)
@@ -147,7 +147,7 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			Expect(len(fake.Invocations()["DoASlice"])).To(Equal(0))
 			Expect(len(fake.Invocations()["DoAnArray"])).To(Equal(0))
 
-			fake.DoThings("hello", 0)
+			_, _ = fake.DoThings("hello", 0)
 			Expect(len(fake.Invocations()["DoThings"])).To(Equal(1))
 			Expect(fake.Invocations()["DoThings"][0][0]).To(Equal("hello"))
 			Expect(fake.Invocations()["DoThings"][0][1]).To(Equal(uint64(0)))
@@ -190,7 +190,7 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 
 			go fake.DoNothing()
 			<-start1
-			go fake.DoThings("abc", 1)
+			go func() { _, _ = fake.DoThings("abc", 1) }()
 			<-start2
 		})
 
@@ -211,7 +211,7 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 	when("when methods are called concurrently", func() {
 		it.Before(func() {
 			go fake.DoNothing()
-			go fake.DoThings("", 0)
+			go func() { _, _ = fake.DoThings("", 0) }()
 		})
 
 		it("records the call count without race conditions", func() {
@@ -297,9 +297,9 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 
 		it("succeeds and does not cause a data race", func() {
 			go fake.DoThingsReturns(1, nil)
-			go fake.DoThings("1", 1)
+			go func() { _, _ = fake.DoThings("1", 1) }()
 			go fake.DoThingsReturns(1, nil)
-			go fake.DoThings("1", 1)
+			go func() { _, _ = fake.DoThings("1", 1) }()
 		})
 	})
 }

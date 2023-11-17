@@ -2,7 +2,7 @@ package integration_test
 
 import (
 	"io"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,9 +69,17 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 		return err
 	}
 
-	contents, err := ioutil.ReadDir(srcdir)
+	entries, err := os.ReadDir(srcdir)
 	if err != nil {
 		return err
+	}
+	contents := make([]fs.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		contents = append(contents, info)
 	}
 
 	for _, content := range contents {
