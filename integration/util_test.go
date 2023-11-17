@@ -3,17 +3,18 @@ package integration_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"io/fs"
 
 	. "github.com/onsi/gomega"
 )
 
 func WriteOutput(b []byte, file string) {
-	os.MkdirAll(filepath.Dir(file), 0700)
-	ioutil.WriteFile(file, b, 0600)
+	_ = os.MkdirAll(filepath.Dir(file), 0700)
+	_ = os.WriteFile(file, b, fs.FileMode(0600))
 }
 
 func RunBuild(baseDir string) {

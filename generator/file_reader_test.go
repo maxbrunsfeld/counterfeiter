@@ -3,7 +3,6 @@ package generator_test
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"reflect"
 	"strings"
 	"testing"
@@ -153,13 +152,13 @@ func openReturningErr(err string) generator.Opener {
 }
 func openReturningReader(content string) generator.Opener {
 	return func(_ string) (io.ReadCloser, error) {
-		return ioutil.NopCloser(strings.NewReader(content)), nil
+		return io.NopCloser(strings.NewReader(content)), nil
 	}
 }
 func openReturningFailingReader(err string) generator.Opener {
 	return func(_ string) (io.ReadCloser, error) {
 		r := &erroringReader{
-			reader: ioutil.NopCloser(strings.NewReader("some random file content")),
+			reader: io.NopCloser(strings.NewReader("some random file content")),
 			err:    fmt.Errorf(err),
 		}
 		return r, nil

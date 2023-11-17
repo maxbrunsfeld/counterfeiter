@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"path/filepath"
 	"testing"
@@ -16,7 +16,7 @@ func BenchmarkDoGenerate(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 
 	args := &arguments.ParsedArguments{
 		GenerateInterfaceAndShimFromPackageDirectory: false,

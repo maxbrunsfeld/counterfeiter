@@ -3,7 +3,7 @@ package integration_test
 import (
 	"fmt"
 	"go/build"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,7 +17,7 @@ import (
 )
 
 func runTests(t *testing.T, when spec.G, it spec.S) {
-	log.SetOutput(ioutil.Discard) // Comment this out to see verbose log output
+	log.SetOutput(io.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	var (
 		baseDir             string
@@ -41,7 +41,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		originalGopath = os.Getenv("GOPATH")
 		originalBuildGopath = build.Default.GOPATH
 		var err error
-		testDir, err = ioutil.TempDir("", "counterfeiter-integration")
+		testDir, err = os.MkdirTemp("", "counterfeiter-integration")
 		Expect(err).NotTo(HaveOccurred())
 		os.Unsetenv("GOPATH")
 		baseDir = testDir
@@ -63,14 +63,14 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 
 			err = os.MkdirAll(dir, 0777)
 			Expect(err).ToNot(HaveOccurred())
-			b, err := ioutil.ReadFile(filepath.Join(relativeDir, name))
+			b, err := os.ReadFile(filepath.Join(relativeDir, name))
 			Expect(err).ToNot(HaveOccurred())
-			err = ioutil.WriteFile(filepath.Join(baseDir, name), b, 0755)
+			err = os.WriteFile(filepath.Join(baseDir, name), b, 0755)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		initModuleFunc = func() {
 			copyFileFunc("blank.go")
-			err := ioutil.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures"), 0755)
+			err := os.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures"), 0755)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		// Set this to true to write the output of tests to the testdata/output
@@ -115,7 +115,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 				}
 				WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_write_closer."+variant+".go"))
 				RunBuild(baseDir)
-				b2, err := ioutil.ReadFile(filepath.Join("testdata", "expected_fake_writecloser."+variant+".txt"))
+				b2, err := os.ReadFile(filepath.Join("testdata", "expected_fake_writecloser."+variant+".txt"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(b2)).To(Equal(string(b)))
 			})

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,7 +44,7 @@ func run() error {
 
 	log.SetFlags(log.Lshortfile)
 	if !isDebug() {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 
 	cwd, err := os.Getwd()

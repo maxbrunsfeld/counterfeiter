@@ -1,11 +1,11 @@
-// +build !windows
+//go:build !windows
 
 package arguments_test
 
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -41,7 +41,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		RegisterTestingT(t)
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		workingDir = "/home/test-user/workspace"
 
 		evaler = func(input string) (string, error) {
