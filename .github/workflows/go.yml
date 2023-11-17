@@ -18,6 +18,10 @@ jobs:
         go: [stable, oldstable]
         os: [ubuntu-latest, windows-latest]
     steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
       - uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v4
