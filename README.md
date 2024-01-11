@@ -116,7 +116,8 @@ $ go run github.com/maxbrunsfeld/counterfeiter/v6
 
 USAGE
 	counterfeiter
-		[-generate] [-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-header <header-file>]
 		[<source-path>] <interface> [-]
 ```
 
@@ -125,12 +126,13 @@ USAGE
 This is unnecessary if you're using the approach described above, but does allow you to invoke `counterfeiter` in your shell _outside_ of a module:
 
 ```shell
-$ GO111MODULE=off go get -u github.com/maxbrunsfeld/counterfeiter
-$ counterfeiter
+$ go install github.com/maxbrunsfeld/counterfeiter/v6
+$ ~/go/bin/counterfeiter
 
 USAGE
 	counterfeiter
-		[-generate] [-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-header <header-file>]
 		[<source-path>] <interface> [-]
 ```
 
