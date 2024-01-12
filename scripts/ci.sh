@@ -5,23 +5,26 @@ set -eu
 cd "$(dirname "$0")/.."
 pwd
 
-# run go vet to verify everything builds and to check common issues
+GOCOMMAND="go"
+# GOCOMMAND="go1.22rc1"
+
+# run ${GOCOMMAND} vet to verify everything builds and to check common issues
 echo
-echo "Running go vet..."
+echo "Running ${GOCOMMAND} vet..."
 echo
-GO111MODULE=on go vet ./...
+${GOCOMMAND} vet ./...
 
 # counterfeit all the things
 echo
 echo "Installing counterfeiter..."
 echo
-GO111MODULE=on go install .
+${GOCOMMAND} install .
 
 # counterfeit all the things
 echo
 echo "Generating fakes used by tests..."
 echo
-GO111MODULE=on go generate ./...
+${GOCOMMAND} generate ./...
 
 # validate that the generated fakes match the committed fakes
 echo
@@ -29,7 +32,7 @@ echo "Validating that generated fakes have not changed..."
 echo
 git diff --exit-code
 if output=$(git status --porcelain) && [ ! -z "$output" ]; then
-  echo "the working copy is not clean; make sure that go generate ./... has been run, and"
+  echo "the working copy is not clean; make sure that ${GOCOMMAND} generate ./... has been run, and"
   echo "that you have committed or ignored all files before running ./scripts/ci.sh"
   exit 1
 fi
@@ -38,13 +41,13 @@ fi
 echo
 echo "Ensuring generated fakes compile..."
 echo
-GO111MODULE=on go build -v ./...
+${GOCOMMAND} build -v ./...
 
 # run the tests using the fakes
 echo
 echo "Running tests..."
 echo
-GO111MODULE=on go test -race ./...
+${GOCOMMAND} test -race ./...
 
 echo "
  _______  _     _  _______  _______  _______

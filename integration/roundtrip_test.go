@@ -2,7 +2,6 @@ package integration_test
 
 import (
 	"fmt"
-	"go/build"
 	"io"
 	"log"
 	"os"
@@ -20,26 +19,19 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 	log.SetOutput(io.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	var (
-		baseDir             string
-		relativeDir         string
-		originalGopath      string
-		originalBuildGopath string
-		originalGo111module string
-		testDir             string
-		copyDirFunc         func()
-		copyFileFunc        func(name string)
-		initModuleFunc      func()
-		writeToTestData     bool
+		baseDir         string
+		relativeDir     string
+		testDir         string
+		copyDirFunc     func()
+		copyFileFunc    func(name string)
+		initModuleFunc  func()
+		writeToTestData bool
 	)
 
 	name := "working with a module"
 
 	it.Before(func() {
 		RegisterTestingT(t)
-		originalGo111module = os.Getenv("GO111MODULE")
-		os.Setenv("GO111MODULE", "on")
-		originalGopath = os.Getenv("GOPATH")
-		originalBuildGopath = build.Default.GOPATH
 		var err error
 		testDir, err = os.MkdirTemp("", "counterfeiter-integration")
 		Expect(err).NotTo(HaveOccurred())
@@ -79,17 +71,6 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		if originalGo111module != "" {
-			os.Setenv("GO111MODULE", originalGo111module)
-		} else {
-			os.Unsetenv("GO111MODULE")
-		}
-		if originalGopath != "" {
-			os.Setenv("GOPATH", originalGopath)
-		} else {
-			os.Unsetenv("GOPATH")
-		}
-		build.Default.GOPATH = originalBuildGopath
 		if baseDir == "" {
 			return
 		}
