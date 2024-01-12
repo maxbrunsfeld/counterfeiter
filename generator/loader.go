@@ -132,6 +132,10 @@ func (f *Fake) addImportsFor(typ types.Type) {
 		f.addImportsFor(t.Elem())
 	case *types.Named:
 		if t.Obj() != nil && t.Obj().Pkg() != nil {
+			typeArgs := t.TypeArgs()
+			for i := 0; i < typeArgs.Len(); i++ {
+				f.addImportsFor(typeArgs.At(i))
+			}
 			f.Imports.Add(t.Obj().Pkg().Name(), t.Obj().Pkg().Path())
 		}
 	case *types.Slice:
