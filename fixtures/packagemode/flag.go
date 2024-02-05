@@ -2,9 +2,9 @@ package packagemode
 
 import "flag"
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
-//counterfeiter:generate -p github.com/maxbrunsfeld/counterfeiter/v6/fixtures/packagemode
-//counterfeiter:generate -o flagcustomfakesdir -p github.com/maxbrunsfeld/counterfeiter/v6/fixtures/packagemode
+//go:generate go run github.com/ikolomiyets/counterfeiter/v6 -generate
+//counterfeiter:generate -p github.com/ikolomiyets/counterfeiter/v6/fixtures/packagemode
+//counterfeiter:generate -o flagcustomfakesdir -p github.com/ikolomiyets/counterfeiter/v6/fixtures/packagemode
 
 func Arg(arg1 int) string {
 	return flag.Arg(arg1)

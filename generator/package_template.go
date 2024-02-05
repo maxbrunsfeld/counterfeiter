@@ -21,7 +21,7 @@ import (
 	{{- end}}
 )
 
-//{{Generate "go"}} go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//{{Generate "go"}} go run github.com/ikolomiyets/counterfeiter/v6 -generate
 //{{Generate "counterfeiter"}} . {{.Name}}
 
 // {{.Name}} is a generated interface representing the exported functions

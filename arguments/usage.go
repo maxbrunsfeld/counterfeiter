@@ -37,7 +37,7 @@ OPTIONS
 		go generate by adding the following to a .go file:
 
 		# runs counterfeiter in generate mode
-		//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+		//go:generate go run github.com/ikolomiyets/counterfeiter/v6 -generate
 
 	example:
 		Add the following to a .go file:
@@ -90,7 +90,7 @@ OPTIONS
 
 	example:
 		# having the following code in a package ...
-		//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -header ./generic.go.txt -generate
+		//go:generate go run github.com/ikolomiyets/counterfeiter/v6 -header ./generic.go.txt -generate
 		//counterfeiter:generate -header ./specific.go.txt . MyInterface
 		//counterfeiter:generate . MyOtherInterface
 		//counterfeiter:generate . MyThirdInterface

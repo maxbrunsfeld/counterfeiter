@@ -4,7 +4,7 @@ package another_packagefakes
 import (
 	"sync"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/another_package"
+	"github.com/ikolomiyets/counterfeiter/v6/fixtures/another_package"
 )
 
 type FakeAnotherInterface struct {

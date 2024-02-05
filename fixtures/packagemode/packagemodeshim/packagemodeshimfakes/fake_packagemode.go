@@ -4,7 +4,7 @@ package packagemodeshimfakes
 import (
 	"sync"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/packagemode/packagemodeshim"
+	"github.com/ikolomiyets/counterfeiter/v6/fixtures/packagemode/packagemodeshim"
 )
 
 type FakePackagemode struct {

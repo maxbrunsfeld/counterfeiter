@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/command"
+	"github.com/ikolomiyets/counterfeiter/v6/command"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"

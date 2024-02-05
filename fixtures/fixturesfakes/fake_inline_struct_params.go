@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures"
+	"github.com/ikolomiyets/counterfeiter/v6/fixtures"
 )
 
 type FakeInlineStructParams struct {

@@ -2,14 +2,14 @@
 package packagemodeshim
 
 import (
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/packagemode"
+	"github.com/ikolomiyets/counterfeiter/v6/fixtures/packagemode"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//go:generate go run github.com/ikolomiyets/counterfeiter/v6 -generate
 //counterfeiter:generate . Packagemode
 
 // Packagemode is a generated interface representing the exported functions
-// in the github.com/maxbrunsfeld/counterfeiter/v6/fixtures/packagemode package.
+// in the github.com/ikolomiyets/counterfeiter/v6/fixtures/packagemode package.
 type Packagemode interface {
 	Arg(arg1 int) string
 	Args() []string

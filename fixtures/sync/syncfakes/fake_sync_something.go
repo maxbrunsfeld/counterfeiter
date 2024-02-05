@@ -4,7 +4,7 @@ package syncfakes
 import (
 	"sync"
 
-	synca "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/sync"
+	synca "github.com/ikolomiyets/counterfeiter/v6/fixtures/sync"
 )
 
 type FakeSyncSomething struct {

@@ -7,7 +7,7 @@ package nodefaultheaderfakes
 import (
 	"sync"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/headers/nodefaultheader"
+	"github.com/ikolomiyets/counterfeiter/v6/fixtures/headers/nodefaultheader"
 )
 
 type FakeHeaderSpecific struct {

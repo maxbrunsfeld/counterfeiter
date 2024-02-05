@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maxbrunsfeld/counterfeiter/v6/generator"
+	"github.com/ikolomiyets/counterfeiter/v6/generator"
 )
 
 func TestFileReader(t *testing.T) {
