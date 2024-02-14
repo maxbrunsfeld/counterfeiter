@@ -20,28 +20,7 @@ If you are having problems with `counterfeiter` and are not using a supported ve
 
 Typically, `counterfeiter` is used in `go generate` directives. It can be frustrating when you change your interface declaration and suddenly all of your generated code is suddenly out-of-date. The best practice here is to use the [`go generate` command](https://blog.golang.org/generate) to make it easier to keep your test doubles up to date.
 
-#### Step 1 - Create `tools.go`
-
-You can take a dependency on tools by creating a `tools.go` file, as described in [How can I track tool dependencies for a module?](https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module). This ensures that everyone working with your module is using the same version of each tool you use.
-
-```shell
-$ cat tools/tools.go
-```
-
-```go
-//go:build tools
-
-package tools
-
-import (
-	_ "github.com/maxbrunsfeld/counterfeiter/v6"
-)
-
-// This file imports packages that are used when running go generate, or used
-// during the development process but not otherwise depended on by built code.
-```
-
-#### Step 2a - Add `go:generate` Directives
+#### Step 1a - Add `go:generate` Directives
 
 You can add directives right next to your interface definitions (or not), in any `.go` file in your module.
 
@@ -52,7 +31,7 @@ $ cat myinterface.go
 ```go
 package foo
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . MySpecialInterface
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6@latest . MySpecialInterface
 
 type MySpecialInterface interface {
 	DoThings(string, uint64) (int, error)
@@ -64,7 +43,7 @@ $ go generate ./...
 Writing `FakeMySpecialInterface` to `foofakes/fake_my_special_interface.go`... Done
 ```
 
-#### Step 2b - Add `counterfeiter:generate` Directives
+#### Step 1b - Add `counterfeiter:generate` Directives
 
 If you plan to have many directives in a single package, consider using this
 option. You can add directives right next to your interface definitions
@@ -78,7 +57,7 @@ $ cat myinterface.go
 package foo
 
 // You only need **one** of these per package!
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6@latest -generate
 
 // You will add lots of directives like these in the same package...
 //counterfeiter:generate . MySpecialInterface
@@ -92,6 +71,8 @@ type MyOtherInterface interface {
 	DoOtherThings(string, uint64) (int, error)
 }
 ```
+> _Note_:
+> - it's possible to pin a specific minor or even patch version instead of using `@latest`, e.g. `@v6.8` 
 
 ```shell
 $ go generate ./...
