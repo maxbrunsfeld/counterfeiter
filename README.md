@@ -159,7 +159,7 @@ Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interfac
 
 ### Using Test Doubles In Your Tests
 
-Instantiate fakes`:
+Instantiate fakes:
 
 ```go
 import "my-repo/path/to/foo/foofakes"
