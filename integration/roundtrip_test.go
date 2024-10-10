@@ -121,6 +121,25 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("generating interfaces using type aliases", func() {
+		it.Before(func() {
+			relativeDir = filepath.Join(relativeDir, "type_aliases")
+			copyDirFunc()
+		})
+		it("imports the aliased type, not the underlying type", func() {
+			cache := &generator.FakeCache{}
+			pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/type_aliases"
+			interfaceName := "WithAliasedType"
+			fakePackageName := "type_aliasesfakes"
+			f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, "", baseDir, cache)
+			Expect(err).NotTo(HaveOccurred())
+			b, err := f.Generate(false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(b)).NotTo(ContainSubstring("primitive"))
+			Expect(string(b)).To(ContainSubstring(`"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/type_aliases/extra"`))
+		})
+	})
+
 	when(name, func() {
 		t := func(interfaceName string, filename string, subDir string, files ...string) {
 			when("working with "+filename, func() {
