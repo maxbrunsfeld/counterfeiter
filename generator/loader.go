@@ -57,9 +57,32 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	return nil
 }
 
+func (f *Fake) getGenericTypeData(typeName *types.TypeName) (paramName string, constraintName string, found bool) {
+	if named, ok := typeName.Type().(*types.Named); ok {
+		if _, ok := named.Underlying().(*types.Interface); ok {
+			typeParams := named.TypeParams()
+			if typeParams.Len() > 0 {
+				for i := 0; i < typeParams.Len(); i++ {
+					param := typeParams.At(i)
+					paramName = param.Obj().Name()
+					constraint := param.Constraint()
+					constraintSections := strings.Split(constraint.String(), "/")
+					constraintName = constraintSections[len(constraintSections)-1]
+					found = true
+					return
+				}
+			}
+		}
+	}
+	return
+}
+
 func (f *Fake) findPackage() error {
 	var target *types.TypeName
 	var pkg *packages.Package
+	genericTypeParametersAndConstraints := []string{}
+	genericTypeConstraints := []string{}
+	genericTypeParameters := []string{}
 	for i := range f.Packages {
 		if f.Packages[i].Types == nil || f.Packages[i].Types.Scope() == nil {
 			continue
@@ -72,6 +95,15 @@ func (f *Fake) findPackage() error {
 		raw := pkg.Types.Scope().Lookup(f.TargetName)
 		if raw != nil {
 			if typeName, ok := raw.(*types.TypeName); ok {
+				if paramName, constraintName, found := f.getGenericTypeData(typeName); found {
+					genericTypeParameters = append(genericTypeParameters, paramName)
+					genericTypeConstraints = append(genericTypeConstraints, constraintName)
+					genericTypeParametersAndConstraints = append(
+						genericTypeParametersAndConstraints,
+						fmt.Sprintf("%s %s", paramName, constraintName),
+					)
+				}
+
 				target = typeName
 				break
 			}
@@ -89,6 +121,11 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
+	if len(genericTypeParameters) > 0 {
+		f.GenericTypeParametersAndConstraints = fmt.Sprintf("[%s]", strings.Join(genericTypeParametersAndConstraints, ", "))
+		f.GenericTypeParameters = fmt.Sprintf("[%s]", strings.Join(genericTypeParameters, ", "))
+		f.GenericTypeConstraints = fmt.Sprintf("[%s]", strings.Join(genericTypeConstraints, ", "))
+	}
 	t := f.Imports.Add(pkg.Name, f.TargetPackage)
 	f.TargetAlias = t.Alias
 	if f.Mode != Package {
@@ -97,7 +134,7 @@ func (f *Fake) findPackage() error {
 
 	if f.Mode == InterfaceOrFunction {
 		if !f.IsInterface() && !f.IsFunction() {
-			return fmt.Errorf("cannot generate an fake for %s because it is not an interface or function", f.TargetName)
+			return fmt.Errorf("cannot generate a fake for %s because it is not an interface or function", f.TargetName)
 		}
 	}
 

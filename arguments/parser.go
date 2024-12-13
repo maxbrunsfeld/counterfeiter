@@ -91,7 +91,7 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 }
 
 func (a *ParsedArguments) PrettyPrint() {
-	b, _ := json.Marshal(a)
+	b, _ := json.MarshalIndent(a, "", " ")
 	fmt.Println(string(b))
 }
 
@@ -105,6 +105,7 @@ func (a *ParsedArguments) parseInterfaceName(packageMode bool, args []string) {
 		a.InterfaceName = fullyQualifiedInterface[len(fullyQualifiedInterface)-1]
 	} else {
 		a.InterfaceName = args[1]
+		a.InterfaceName = strings.Split(a.InterfaceName, "[")[0]
 	}
 }
 
@@ -141,7 +142,8 @@ func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, o
 	if strings.HasSuffix(outputPath, ".go") {
 		outputPathIsFilename = true
 	}
-	snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(a.FakeImplName, "${1}_${2}"))
+	fakeImplName := strings.Split(a.FakeImplName, "[")[0]
+	snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(fakeImplName, "${1}_${2}"))
 
 	if outputPath != "" {
 		if !filepath.IsAbs(outputPath) {
@@ -187,6 +189,7 @@ func (a *ParsedArguments) parsePackagePath(packageMode bool, args []string) {
 		a.PackagePath = strings.Join(fullyQualifiedInterface[:len(fullyQualifiedInterface)-1], ".")
 	} else {
 		a.InterfaceName = args[1]
+		a.InterfaceName = strings.Split(a.InterfaceName, "[")[0]
 	}
 
 	if a.PackagePath == "" {
