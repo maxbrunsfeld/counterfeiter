@@ -5,16 +5,17 @@ package genericinterface
 type CustomTypeT any
 type CustomTypeU any
 
-//counterfeiter:generate . GenericInterface[T CustomType]
-type GenericInterface[T CustomTypeT] interface {
-	ReturnT() T
-	TakeT(T)
-	TakeAndReturnT(T) T
-	DoSomething()
-}
+// incorrect setup. this would fail
+// //counterfeiter:generate . GenericInterfaceBad[T CustomType]
+// type GenericInterfaceBad[T CustomTypeT] interface {
+// 	ReturnT() T
+// 	TakeT(T)
+// 	TakeAndReturnT(T) T
+// 	DoSomething()
+// }
 
-//counterfeiter:generate . GenericInterface2
-type GenericInterface2[T CustomTypeT] interface {
+//counterfeiter:generate . GenericInterface
+type GenericInterface[T CustomTypeT] interface {
 	ReturnT() T
 	TakeT(T)
 	TakeAndReturnT(T) T
