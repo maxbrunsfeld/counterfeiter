@@ -7,7 +7,7 @@ import (
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/genericinterface"
 )
 
-type FakeGenericInterface2[T genericinterface.CustomType] struct {
+type FakeGenericInterface2[T genericinterface.CustomTypeT] struct {
 	DoSomethingStub        func()
 	doSomethingMutex       sync.RWMutex
 	doSomethingArgsForCall []struct {
@@ -242,4 +242,4 @@ func (fake *FakeGenericInterface2[T]) recordInvocation(key string, args []interf
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ genericinterface.GenericInterface2[genericinterface.CustomType] = new(FakeGenericInterface2[genericinterface.CustomType])
+var _ genericinterface.GenericInterface2[genericinterface.CustomTypeT] = new(FakeGenericInterface2[genericinterface.CustomTypeT])
