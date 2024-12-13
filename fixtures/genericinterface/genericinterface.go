@@ -22,6 +22,14 @@ type GenericInterface[T CustomTypeT] interface {
 	DoSomething()
 }
 
+//counterfeiter:generate . GenericInterfaceAny
+type GenericInterfaceAny[T any] interface {
+	ReturnT() T
+	TakeT(T)
+	TakeAndReturnT(T) T
+	DoSomething()
+}
+
 //counterfeiter:generate . GenericInterfaceMultipleTypes
 type GenericInterfaceMultipleTypes[T CustomTypeT, U CustomTypeU] interface {
 	ReturnT() T
