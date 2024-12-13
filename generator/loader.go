@@ -61,7 +61,6 @@ func (f *Fake) getGenericTypeData(typeName *types.TypeName) (paramNames []string
 	if named, ok := typeName.Type().(*types.Named); ok {
 		if _, ok := named.Underlying().(*types.Interface); ok {
 			typeParams := named.TypeParams()
-			fmt.Printf("len: %d\n", typeParams.Len())
 			if typeParams.Len() > 0 {
 				for i := 0; i < typeParams.Len(); i++ {
 					param := typeParams.At(i)
@@ -124,7 +123,6 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
-	fmt.Printf("genericTypeParameters: %v\n", genericTypeParameters)
 	if len(genericTypeParameters) > 0 {
 		f.GenericTypeParametersAndConstraints = fmt.Sprintf("[%s]", strings.Join(genericTypeParametersAndConstraints, ", "))
 		f.GenericTypeParameters = fmt.Sprintf("[%s]", strings.Join(genericTypeParameters, ", "))
