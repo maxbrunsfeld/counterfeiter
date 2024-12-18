@@ -93,6 +93,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Packages).NotTo(BeNil())
 				Expect(f.Package).NotTo(BeNil())
 				Expect(f.Methods).To(HaveLen(6))
+				Expect(f.GenericTypeParametersAndConstraints).To(BeEmpty())
+				Expect(f.GenericTypeParameters).To(BeEmpty())
+				Expect(f.GenericTypeConstraints).To(BeEmpty())
 			})
 		})
 
@@ -126,6 +129,28 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Function.Name).To(Equal("HandlerFunc"))
 				Expect(f.Function.Params).To(HaveLen(2))
 				Expect(f.Function.Returns).To(BeEmpty())
+			})
+		})
+
+		when("the target is an interface with generic methods", func() {
+			it("succeeds", func() {
+				c := &Cache{}
+				f, err = NewFake(InterfaceOrFunction, "GenericInterface", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/genericinterface", "FakeGenericInterface", "genericinterfacefakes", "", "", c)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f).NotTo(BeNil())
+				Expect(f.TargetAlias).To(Equal("genericinterface"))
+				Expect(f.TargetName).To(Equal("GenericInterface"))
+				Expect(f.TargetPackage).To(Equal("github.com/maxbrunsfeld/counterfeiter/v6/fixtures/genericinterface"))
+				Expect(f.Name).To(Equal("FakeGenericInterface"))
+				Expect(f.Mode).To(Equal(InterfaceOrFunction))
+				Expect(f.DestinationPackage).To(Equal("genericinterfacefakes"))
+				Expect(f.Function).To(BeZero())
+				Expect(f.Packages).NotTo(BeNil())
+				Expect(f.Package).NotTo(BeNil())
+				Expect(f.Methods).To(HaveLen(4))
+				Expect(f.GenericTypeParametersAndConstraints).To(Equal("[T genericinterface.CustomTypeT]"))
+				Expect(f.GenericTypeParameters).To(Equal("[T]"))
+				Expect(f.GenericTypeConstraints).To(Equal("[genericinterface.CustomTypeT]"))
 			})
 		})
 	})
