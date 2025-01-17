@@ -13,6 +13,11 @@ import (
 	"golang.org/x/tools/imports"
 )
 
+type namedType interface {
+	Obj() *types.TypeName
+	TypeArgs() *types.TypeList
+}
+
 func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	log.Println("loading packages...")
 	p, ok := c.Load(f.TargetPackage)
@@ -169,7 +174,7 @@ func (f *Fake) addImportsFor(typ types.Type) {
 		f.addImportsFor(t.Elem())
 	case *types.Chan:
 		f.addImportsFor(t.Elem())
-	case *types.Alias:
+	case *typesAlias: // note: using stub or alias from types_alias_go1.22.go or types_alias_go1.23.go as appropriate
 		f.addImportsForNamedType(t)
 	case *types.Named:
 		f.addImportsForNamedType(t)
@@ -190,10 +195,7 @@ func (f *Fake) addImportsFor(typ types.Type) {
 	}
 }
 
-func (f *Fake) addImportsForNamedType(t interface {
-	Obj() *types.TypeName
-	TypeArgs() *types.TypeList
-}) {
+func (f *Fake) addImportsForNamedType(t namedType) {
 	if t.Obj() != nil && t.Obj().Pkg() != nil {
 		typeArgs := t.TypeArgs()
 		for i := 0; i < typeArgs.Len(); i++ {

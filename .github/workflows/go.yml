@@ -6,9 +6,15 @@ on:
     inputs:
       debug_enabled:
         type: boolean
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        description: "Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
         required: false
         default: false
+env:
+  # GOOTOOLCHAIN=local tells Go to only use the installed Go version (from the
+  # build matrix) rather than immediately upgrading to whatever is specified by
+  # the `toolchain` directive in `go.mod`. This ensures that the build matrix
+  # versions (stable and oldstable) are actually being validated.
+  GOTOOLCHAIN: local
 jobs:
   build:
     name: Build and Test
