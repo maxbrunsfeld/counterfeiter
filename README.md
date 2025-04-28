@@ -22,7 +22,7 @@ Typically, `counterfeiter` is used in `go generate` directives. It can be frustr
 
 ⚠️ If you are working with go 1.23 or earlier, please refer to an [older version of this README](https://github.com/maxbrunsfeld/counterfeiter/blob/e39cbe6aaa94a0b6718cf3d413cd5319c3a1f6fa/README.md#using-counterfeiter), as the instructions below assume go 1.24 (which added `go tool` support) and later.
 
-#### Step 1 - Create `tools.go`
+#### Step 1 - Add `counterfeiter` as a tool dependency
 
 Establish a tool dependency on counterfeiter by running the following command:
 
