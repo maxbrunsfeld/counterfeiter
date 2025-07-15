@@ -197,14 +197,6 @@ func (fake *FakeEmbedsInterfaces) ServeHTTPArgsForCall(i int) (http.ResponseWrit
 func (fake *FakeEmbedsInterfaces) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.anotherMethodMutex.RLock()
-	defer fake.anotherMethodMutex.RUnlock()
-	fake.doThingsMutex.RLock()
-	defer fake.doThingsMutex.RUnlock()
-	fake.embeddedMethodMutex.RLock()
-	defer fake.embeddedMethodMutex.RUnlock()
-	fake.serveHTTPMutex.RLock()
-	defer fake.serveHTTPMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

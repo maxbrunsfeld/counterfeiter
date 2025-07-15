@@ -645,28 +645,6 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeUArgsForCall(i int) U {
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.doSomethingMutex.RLock()
-	defer fake.doSomethingMutex.RUnlock()
-	fake.returnTMutex.RLock()
-	defer fake.returnTMutex.RUnlock()
-	fake.returnTAndUMutex.RLock()
-	defer fake.returnTAndUMutex.RUnlock()
-	fake.returnUMutex.RLock()
-	defer fake.returnUMutex.RUnlock()
-	fake.takeAndReturnTMutex.RLock()
-	defer fake.takeAndReturnTMutex.RUnlock()
-	fake.takeAndReturnTAndUMutex.RLock()
-	defer fake.takeAndReturnTAndUMutex.RUnlock()
-	fake.takeAndReturnUMutex.RLock()
-	defer fake.takeAndReturnUMutex.RUnlock()
-	fake.takeTMutex.RLock()
-	defer fake.takeTMutex.RUnlock()
-	fake.takeTAndReturnUMutex.RLock()
-	defer fake.takeTAndReturnUMutex.RUnlock()
-	fake.takeTAndUMutex.RLock()
-	defer fake.takeTAndUMutex.RUnlock()
-	fake.takeUMutex.RLock()
-	defer fake.takeUMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

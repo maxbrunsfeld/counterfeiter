@@ -87,8 +87,6 @@ func (fake *FakeUnexportedInterface) MethodReturnsOnCall(i int, result1 string) 
 func (fake *FakeUnexportedInterface) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.methodMutex.RLock()
-	defer fake.methodMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

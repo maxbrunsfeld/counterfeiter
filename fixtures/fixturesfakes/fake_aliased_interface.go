@@ -66,8 +66,6 @@ func (fake *FakeAliasedInterface) AnotherMethodArgsForCall(i int) ([]another_pac
 func (fake *FakeAliasedInterface) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.anotherMethodMutex.RLock()
-	defer fake.anotherMethodMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

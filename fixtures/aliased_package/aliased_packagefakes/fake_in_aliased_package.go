@@ -87,8 +87,6 @@ func (fake *FakeInAliasedPackage) StuffReturnsOnCall(i int, result1 string) {
 func (fake *FakeInAliasedPackage) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.stuffMutex.RLock()
-	defer fake.stuffMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

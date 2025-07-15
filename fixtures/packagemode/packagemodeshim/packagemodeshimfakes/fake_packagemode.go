@@ -269,14 +269,6 @@ func (fake *FakePackagemode) BoolVarArgsForCall(i int) (*bool, string, bool, str
 func (fake *FakePackagemode) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.argMutex.RLock()
-	defer fake.argMutex.RUnlock()
-	fake.argsMutex.RLock()
-	defer fake.argsMutex.RUnlock()
-	fake.boolMutex.RLock()
-	defer fake.boolMutex.RUnlock()
-	fake.boolVarMutex.RLock()
-	defer fake.boolVarMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

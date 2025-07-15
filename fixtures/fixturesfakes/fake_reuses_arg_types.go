@@ -54,8 +54,6 @@ func (fake *FakeReusesArgTypes) DoThingsArgsForCall(i int) (string, string) {
 func (fake *FakeReusesArgTypes) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.doThingsMutex.RLock()
-	defer fake.doThingsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

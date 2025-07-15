@@ -165,10 +165,6 @@ func (fake *FakeHasVarArgs) DoThingsReturnsOnCall(i int, result1 int) {
 func (fake *FakeHasVarArgs) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.doMoreThingsMutex.RLock()
-	defer fake.doMoreThingsMutex.RUnlock()
-	fake.doThingsMutex.RLock()
-	defer fake.doThingsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -78,8 +78,6 @@ func (fake *FakeSecondInterface) EmbeddedMethodReturnsOnCall(i int, result1 stri
 func (fake *FakeSecondInterface) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.embeddedMethodMutex.RLock()
-	defer fake.embeddedMethodMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

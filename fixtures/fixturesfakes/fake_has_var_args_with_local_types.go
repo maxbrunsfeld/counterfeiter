@@ -52,8 +52,6 @@ func (fake *FakeHasVarArgsWithLocalTypes) DoThingsArgsForCall(i int) []fixtures.
 func (fake *FakeHasVarArgsWithLocalTypes) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.doThingsMutex.RLock()
-	defer fake.doThingsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

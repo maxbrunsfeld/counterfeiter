@@ -83,8 +83,6 @@ func (fake *FakeSomethingElse) ReturnStuffReturnsOnCall(i int, result1 int, resu
 func (fake *FakeSomethingElse) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.returnStuffMutex.RLock()
-	defer fake.returnStuffMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

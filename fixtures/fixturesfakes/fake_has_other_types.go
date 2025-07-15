@@ -87,8 +87,6 @@ func (fake *FakeHasOtherTypes) GetThingReturnsOnCall(i int, result1 fixtures.Som
 func (fake *FakeHasOtherTypes) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getThingMutex.RLock()
-	defer fake.getThingMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -53,8 +53,6 @@ func (fake *FakeImportsGoHyphenPackage) UseHyphenTypeArgsForCall(i int) hyphenpa
 func (fake *FakeImportsGoHyphenPackage) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.useHyphenTypeMutex.RLock()
-	defer fake.useHyphenTypeMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
