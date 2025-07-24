@@ -4,6 +4,9 @@ package genericinterface
 
 type CustomTypeT any
 type CustomTypeU any
+type CustomTypeConstraint interface {
+	~string
+}
 
 // incorrect setup. this would fail
 // //counterfeiter:generate . GenericInterfaceBad[T CustomType]
@@ -16,6 +19,14 @@ type CustomTypeU any
 
 //counterfeiter:generate . GenericInterface
 type GenericInterface[T CustomTypeT] interface {
+	ReturnT() T
+	TakeT(T)
+	TakeAndReturnT(T) T
+	DoSomething()
+}
+
+//counterfeiter:generate . GenericInterfaceCustomTypeConstraint
+type GenericInterfaceCustomTypeConstraint[T CustomTypeConstraint] interface {
 	ReturnT() T
 	TakeT(T)
 	TakeAndReturnT(T) T
