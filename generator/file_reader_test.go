@@ -1,7 +1,7 @@
 package generator_test
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"reflect"
 	"strings"
@@ -147,7 +147,7 @@ func cachedReaderCreator(o generator.Opener) generator.FileReader {
 
 func openReturningErr(err string) generator.Opener {
 	return func(_ string) (io.ReadCloser, error) {
-		return nil, fmt.Errorf(err)
+		return nil, errors.New(err)
 	}
 }
 func openReturningReader(content string) generator.Opener {
@@ -159,7 +159,7 @@ func openReturningFailingReader(err string) generator.Opener {
 	return func(_ string) (io.ReadCloser, error) {
 		r := &erroringReader{
 			reader: io.NopCloser(strings.NewReader("some random file content")),
-			err:    fmt.Errorf(err),
+			err:    errors.New(err),
 		}
 		return r, nil
 	}
