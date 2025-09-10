@@ -42,7 +42,7 @@ func TestFileReader(t *testing.T) {
 			expectedContent: "some content 0",
 			expectedCalls:   []string{relFile, relFile},
 		},
-		"[simple] when the working directory is set but the filepath is absolut, the absolute path is used": {
+		"[simple] when the working directory is set but the filepath is absolute, the absolute path is used": {
 			readerCreator:   simpleReaderCreator,
 			open:            openReturningReader("some content 1"),
 			workingDir:      workingDir,
@@ -84,7 +84,7 @@ func TestFileReader(t *testing.T) {
 			expectedContent: "some content 3",
 			expectedCalls:   []string{relFile},
 		},
-		"[cached] when the working directory is set but the filepath is absolut, the absolute path is used": {
+		"[cached] when the working directory is set but the filepath is absolute, the absolute path is used": {
 			readerCreator:   cachedReaderCreator,
 			open:            openReturningReader("some content 4"),
 			workingDir:      workingDir,
