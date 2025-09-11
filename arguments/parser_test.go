@@ -350,7 +350,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			justBefore()
 		})
 
-		it("sets the HeaderFile attriburte on the parsedArgs struct", func() {
+		it("sets the HeaderFile attribute on the parsedArgs struct", func() {
 			Expect(parsedArgs.HeaderFile).To(Equal("some/header/file"))
 			Expect(err).NotTo(HaveOccurred())
 		})
