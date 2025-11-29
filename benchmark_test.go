@@ -49,10 +49,8 @@ func BenchmarkDoGenerate(b *testing.B) {
 	}
 
 	for name, caches := range caches {
-		caches := caches
 		b.Run(name, func(b *testing.B) {
 			for name, headerFile := range headers {
-				headerFile := headerFile
 				b.Run(name, func(b *testing.B) {
 					args.HeaderFile = headerFile
 					b.StartTimer()
