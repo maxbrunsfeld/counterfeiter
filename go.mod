@@ -3,7 +3,7 @@ module github.com/maxbrunsfeld/counterfeiter/v6
 require (
 	github.com/onsi/gomega v1.39.1
 	github.com/sclevine/spec v1.4.0
-	golang.org/x/text v0.33.0
+	golang.org/x/text v0.34.0
 	golang.org/x/tools v0.41.0
 )
 
