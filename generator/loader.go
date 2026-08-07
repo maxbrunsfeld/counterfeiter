@@ -39,12 +39,12 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 		return err
 	}
 	for i := range p {
-		if len(p[i].Errors) > 0 {
-			if i == 0 {
-				err = p[i].Errors[0]
-			}
-			for j := range p[i].Errors {
-				log.Printf("error loading packages: %v", strings.TrimPrefix(fmt.Sprintf("%v", p[i].Errors[j]), "-: "))
+		isTargetPackage := (i == 0)
+		for j := range p[i].Errors {
+			log.Printf("error loading packages: %v", strings.TrimPrefix(fmt.Sprintf("%v", p[i].Errors[j]), "-: "))
+			if isTargetPackage && p[i].Errors[j].Kind != packages.TypeError {
+				err = p[i].Errors[j]
+				break
 			}
 		}
 	}
