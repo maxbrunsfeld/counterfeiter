@@ -234,4 +234,6 @@ func (fake *FakeGenericInterfaceAny[T]) recordInvocation(key string, args []inte
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ genericinterface.GenericInterfaceAny[any] = new(FakeGenericInterfaceAny[any])
+func _[T any]() {
+	var _ genericinterface.GenericInterfaceAny[T] = new(FakeGenericInterfaceAny[T])
+}

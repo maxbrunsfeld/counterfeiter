@@ -233,3 +233,7 @@ func (fake *FakeGenericInterfaceCustomTypeConstraintT[T]) recordInvocation(key s
 	}
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
+
+func _[T genericinterface.CustomTypeConstraintT]() {
+	var _ genericinterface.GenericInterfaceCustomTypeConstraintT[T] = new(FakeGenericInterfaceCustomTypeConstraintT[T])
+}

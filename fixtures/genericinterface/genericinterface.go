@@ -67,3 +67,11 @@ type GenericInterfaceMultipleTypes[T CustomTypeT, U CustomTypeU] interface {
 	TakeTAndReturnU(T) U
 	DoSomething()
 }
+
+//counterfeiter:generate . GenericInterfaceComparable
+type GenericInterfaceComparable[T comparable] interface {
+	ReturnT() T
+	TakeT(T)
+	TakeAndReturnT(T) T
+	DoSomething()
+}

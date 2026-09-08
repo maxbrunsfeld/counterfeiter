@@ -664,4 +664,6 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) recordInvocation(key string
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ genericinterface.GenericInterfaceMultipleTypes[genericinterface.CustomTypeT, genericinterface.CustomTypeU] = new(FakeGenericInterfaceMultipleTypes[genericinterface.CustomTypeT, genericinterface.CustomTypeU])
+func _[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU]() {
+	var _ genericinterface.GenericInterfaceMultipleTypes[T, U] = new(FakeGenericInterfaceMultipleTypes[T, U])
+}

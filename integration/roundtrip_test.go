@@ -62,7 +62,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		}
 		initModuleFunc = func() {
 			copyFileFunc("blank.go")
-			err := os.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures"), 0755)
+			err := os.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures\n\ngo 1.18\n"), 0755)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		// Set this to true to write the output of tests to the testdata/output
@@ -160,7 +160,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 					if suffix != "" {
 						suffix = "/" + suffix
 					}
-					WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n", suffix)), filepath.Join(baseDir, "go.mod"))
+					WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n\ngo 1.18\n", suffix)), filepath.Join(baseDir, "go.mod"))
 					cache := &generator.FakeCache{}
 					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", "", baseDir, cache)
 					Expect(err).NotTo(HaveOccurred())
@@ -192,6 +192,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		t("Something", "something.go", "")
 		t("SomethingFactory", "typed_function.go", "")
 		t("SyncSomething", "interface.go", "sync")
+		t("GenericInterfaceComparable", "genericinterface.go", "genericinterface")
 
 		when("working with duplicate packages", func() {
 			t := func(interfaceName string, offset string, fakePackageName string) {

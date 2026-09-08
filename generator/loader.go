@@ -57,7 +57,7 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	return nil
 }
 
-func (f *Fake) getGenericTypeData(typeName *types.TypeName) (paramNames []string, constraintNames []string, paramAndConstraintNames []string, found bool) {
+func (f *Fake) getGenericTypeData(typeName *types.TypeName) (paramNames []string, paramAndConstraintNames []string, found bool) {
 	if named, ok := typeName.Type().(*types.Named); ok {
 		if _, ok := named.Underlying().(*types.Interface); ok {
 			typeParams := named.TypeParams()
@@ -69,7 +69,6 @@ func (f *Fake) getGenericTypeData(typeName *types.TypeName) (paramNames []string
 					constraintSections := strings.Split(constraint.String(), "/")
 					constraintName := constraintSections[len(constraintSections)-1]
 					paramNames = append(paramNames, paramName)
-					constraintNames = append(constraintNames, constraintName)
 					paramAndConstraintNames = append(paramAndConstraintNames, fmt.Sprintf("%s %s", paramName, constraintName))
 					found = true
 				}
@@ -83,7 +82,6 @@ func (f *Fake) findPackage() error {
 	var target *types.TypeName
 	var pkg *packages.Package
 	genericTypeParametersAndConstraints := []string{}
-	genericTypeConstraints := []string{}
 	genericTypeParameters := []string{}
 	for i := range f.Packages {
 		if f.Packages[i].Types == nil || f.Packages[i].Types.Scope() == nil {
@@ -97,9 +95,8 @@ func (f *Fake) findPackage() error {
 		raw := pkg.Types.Scope().Lookup(f.TargetName)
 		if raw != nil {
 			if typeName, ok := raw.(*types.TypeName); ok {
-				if paramNames, constraintNames, paramAndConstraintNames, found := f.getGenericTypeData(typeName); found {
+				if paramNames, paramAndConstraintNames, found := f.getGenericTypeData(typeName); found {
 					genericTypeParameters = append(genericTypeParameters, paramNames...)
-					genericTypeConstraints = append(genericTypeConstraints, constraintNames...)
 					genericTypeParametersAndConstraints = append(
 						genericTypeParametersAndConstraints,
 						paramAndConstraintNames...,
@@ -126,7 +123,6 @@ func (f *Fake) findPackage() error {
 	if len(genericTypeParameters) > 0 {
 		f.GenericTypeParametersAndConstraints = fmt.Sprintf("[%s]", strings.Join(genericTypeParametersAndConstraints, ", "))
 		f.GenericTypeParameters = fmt.Sprintf("[%s]", strings.Join(genericTypeParameters, ", "))
-		f.GenericTypeConstraints = fmt.Sprintf("[%s]", strings.Join(genericTypeConstraints, ", "))
 	}
 	t := f.Imports.Add(pkg.Name, f.TargetPackage)
 	f.TargetAlias = t.Alias
