@@ -164,6 +164,29 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			}
 			RunBuild(baseDir)
 		})
+
+		it("regenerates after the interface changed, even though the stale fake no longer compiles", func() {
+			cache := &generator.FakeCache{}
+			pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage"
+			generate := func() {
+				f, err := generator.NewFake(generator.InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "samepackage", "", baseDir, cache, generator.WithDestinationDir(baseDir))
+				Expect(err).NotTo(HaveOccurred())
+				b, err := f.Generate(true)
+				Expect(err).NotTo(HaveOccurred())
+				WriteOutput(b, filepath.Join(baseDir, "fake_widget.go"))
+			}
+			generate()
+			RunBuild(baseDir)
+
+			src, err := os.ReadFile(filepath.Join(baseDir, "samepackage.go"))
+			Expect(err).NotTo(HaveOccurred())
+			changed := strings.Replace(string(src), "Do(Thing) (Thing, error)\n", "Do(Thing) (Thing, error)\n\tUndo() error\n", 1)
+			Expect(changed).NotTo(Equal(string(src)))
+			WriteOutput([]byte(changed), filepath.Join(baseDir, "samepackage.go"))
+
+			generate()
+			RunBuild(baseDir)
+		})
 	})
 
 	when(name, func() {

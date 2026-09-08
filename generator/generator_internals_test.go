@@ -451,6 +451,19 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("errorFilename()", func() {
+			it("strips line and column suffixes", func() {
+				Expect(errorFilename("/a/b/fake_x.go:12:5")).To(Equal("/a/b/fake_x.go"))
+				Expect(errorFilename("/a/b/fake_x.go:12")).To(Equal("/a/b/fake_x.go"))
+				Expect(errorFilename(`C:\a\fake_x.go:12:5`)).To(Equal(`C:\a\fake_x.go`))
+			})
+
+			it("returns nothing for positionless errors", func() {
+				Expect(errorFilename("-")).To(BeEmpty())
+				Expect(errorFilename("")).To(BeEmpty())
+			})
+		})
+
 		when("isExported()", func() {
 			it("returns false for an empty string", func() {
 				Expect(isExported("")).To(BeFalse())
