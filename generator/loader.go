@@ -89,8 +89,11 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
-	t := f.Imports.Add(pkg.Name, f.TargetPackage)
-	f.TargetAlias = t.Alias
+	f.inTargetPackage = sameDir(f.DestinationDir, packageDir(pkg))
+	if !f.inTargetPackage {
+		t := f.Imports.Add(pkg.Name, f.TargetPackage)
+		f.TargetAlias = t.Alias
+	}
 	if f.Mode != Package {
 		f.TargetName = target.Name()
 	}
@@ -116,6 +119,36 @@ func (f *Fake) findPackage() error {
 		log.Printf("Found package with name: [%s]\n", f.TargetPackage)
 	}
 	return nil
+}
+
+// packageDir returns the directory holding the package's source files.
+func packageDir(pkg *packages.Package) string {
+	if pkg.Dir != "" {
+		return pkg.Dir
+	}
+	if len(pkg.GoFiles) > 0 {
+		return filepath.Dir(pkg.GoFiles[0])
+	}
+	return ""
+}
+
+// sameDir reports whether a and b name the same directory. Either being
+// empty means "unknown", which never matches.
+func sameDir(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	return canonicalDir(a) == canonicalDir(b)
+}
+
+func canonicalDir(dir string) string {
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = resolved
+	}
+	if abs, err := filepath.Abs(dir); err == nil {
+		dir = abs
+	}
+	return filepath.Clean(dir)
 }
 
 // loadGenericTypeParams records the type parameter list of a generic
@@ -209,6 +242,9 @@ func (f *Fake) addImportsForNamedType(t interface {
 		typeArgs := t.TypeArgs()
 		for i := 0; i < typeArgs.Len(); i++ {
 			f.addImportsFor(typeArgs.At(i))
+		}
+		if f.inTargetPackage && imports.VendorlessPath(t.Obj().Pkg().Path()) == f.TargetPackage {
+			return
 		}
 		f.Imports.Add(t.Obj().Pkg().Name(), t.Obj().Pkg().Path())
 	}

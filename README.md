@@ -146,6 +146,16 @@ $ go tool counterfeiter path/to/foo MySpecialInterface
 Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
 ```
 
+#### Generating a test double into the interface's own package
+
+By default the fake lives in a sibling `<package>fakes` package, which cannot be imported by tests inside `<package>` itself (it would be an import cycle). If you want to use a fake from a white-box test in the same package, point `-o` at the interface's own directory:
+
+```go
+//counterfeiter:generate -o . . MySpecialInterface
+```
+
+When the output directory is the directory of the package that declares the interface, `counterfeiter` generates the fake as a member of that package: it does not import the package, refers to its types unqualified, and can fake unexported interfaces too. `-o` may also name a file in that directory, for example `-o fake_my_special_interface_test.go` to keep the fake out of the non-test build.
+
 ### Using Test Doubles In Your Tests
 
 Instantiate fakes:

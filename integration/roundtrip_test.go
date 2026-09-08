@@ -140,6 +140,32 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("generating a fake into the same package as the interface", func() {
+		it.Before(func() {
+			baseDir = filepath.Join(baseDir, "samepackage")
+			relativeDir = filepath.Join(relativeDir, "samepackage")
+			copyFileFunc("samepackage.go")
+			WriteOutput([]byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage\n\ngo 1.18\n"), filepath.Join(baseDir, "go.mod"))
+		})
+
+		it("builds without an import cycle, for exported and unexported interfaces", func() {
+			cache := &generator.FakeCache{}
+			pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage"
+			for _, target := range []struct{ name, fake, file string }{
+				{"Widget", "FakeWidget", "fake_widget.go"},
+				{"gadget", "FakeGadget", "fake_gadget.go"},
+			} {
+				f, err := generator.NewFake(generator.InterfaceOrFunction, target.name, pkgPath, target.fake, "samepackage", "", baseDir, cache, generator.WithDestinationDir(baseDir))
+				Expect(err).NotTo(HaveOccurred())
+				b, err := f.Generate(true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring("var _ " + target.name + " = new(" + target.fake + ")"))
+				WriteOutput(b, filepath.Join(baseDir, target.file))
+			}
+			RunBuild(baseDir)
+		})
+	})
+
 	when(name, func() {
 		t := func(interfaceName string, filename string, subDir string, files ...string) {
 			when("working with "+filename, func() {

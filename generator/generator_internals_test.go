@@ -3,6 +3,7 @@ package generator
 import (
 	"io"
 	"log"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -104,6 +105,62 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Imports.ByPkgPath).To(HaveKey("github.com/maxbrunsfeld/counterfeiter/v6/fixtures/go-hyphenpackage"))
 				Expect(f.GenericTypeParametersAndConstraints).To(Equal("[T hyphenpackage.Hyphenated]"))
 				Expect(f.GenericTypeParameters).To(Equal("[T]"))
+			})
+		})
+
+		when("the destination is the same package as the target", func() {
+			var (
+				pkgPath string
+				dir     string
+			)
+
+			it.Before(func() {
+				pkgPath = "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage"
+				var err error
+				dir, err = filepath.Abs(filepath.Join("..", "fixtures", "samepackage"))
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			it("does not import the target package and leaves its types unqualified", func() {
+				f, err = NewFake(InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "samepackage", "", "", &Cache{}, WithDestinationDir(dir))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.TargetAlias).To(BeEmpty())
+				Expect(f.Imports.ByPkgPath).NotTo(HaveKey(pkgPath))
+				b, err := f.Generate(true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring("Do(arg1 Thing) (Thing, error)"))
+				Expect(string(b)).To(ContainSubstring("var _ Widget = new(FakeWidget)"))
+				Expect(string(b)).NotTo(ContainSubstring("samepackage."))
+			})
+
+			it("asserts that a fake of an unexported interface implements it", func() {
+				f, err = NewFake(InterfaceOrFunction, "gadget", pkgPath, "FakeGadget", "samepackage", "", "", &Cache{}, WithDestinationDir(dir))
+				Expect(err).NotTo(HaveOccurred())
+				b, err := f.Generate(false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring("var _ gadget = new(FakeGadget)"))
+			})
+
+			when("the destination only shares the target's package name", func() {
+				it("still imports the target package", func() {
+					other := t.TempDir()
+					f, err = NewFake(InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "samepackage", "", "", &Cache{}, WithDestinationDir(other))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(f.TargetAlias).To(Equal("samepackage"))
+					Expect(f.Imports.ByPkgPath).To(HaveKey(pkgPath))
+					b, err := f.Generate(false)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(b)).To(ContainSubstring("var _ samepackage.Widget = new(FakeWidget)"))
+				})
+
+				it("does not assert an unexported interface", func() {
+					other := t.TempDir()
+					f, err = NewFake(InterfaceOrFunction, "gadget", pkgPath, "FakeGadget", "samepackage", "", "", &Cache{}, WithDestinationDir(other))
+					Expect(err).NotTo(HaveOccurred())
+					b, err := f.Generate(false)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(b)).NotTo(ContainSubstring("var _ "))
+				})
 			})
 		})
 

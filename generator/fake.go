@@ -30,6 +30,7 @@ type Fake struct {
 	Target                              *types.TypeName
 	Mode                                FakeMode
 	DestinationPackage                  string
+	DestinationDir                      string
 	Name                                string
 	GenericTypeParametersAndConstraints string
 	GenericTypeParameters               string
@@ -40,6 +41,11 @@ type Fake struct {
 	Methods                             []Method
 	Function                            Method
 	Header                              string
+
+	// inTargetPackage is true when the fake is written into the directory of
+	// the package that declares the target, so that package must not be
+	// imported and its names are used unqualified.
+	inTargetPackage bool
 }
 
 // Method is a method of the interface.
@@ -49,9 +55,22 @@ type Method struct {
 	Returns Returns
 }
 
+// Option configures a Fake before its packages are loaded.
+type Option func(*Fake)
+
+// WithDestinationDir records the directory the fake will be written to. When
+// that is the directory of the target's own package, the fake is generated as
+// a member of that package: it omits the self-import and leaves the package's
+// types unqualified.
+func WithDestinationDir(dir string) Option {
+	return func(f *Fake) {
+		f.DestinationDir = dir
+	}
+}
+
 // NewFake returns a Fake that loads the package and finds the interface or the
 // function.
-func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName string, destinationPackage string, headerContent string, workingDir string, cache Cacher) (*Fake, error) {
+func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName string, destinationPackage string, headerContent string, workingDir string, cache Cacher, opts ...Option) (*Fake, error) {
 	f := &Fake{
 		TargetName:         targetName,
 		TargetPackage:      packagePath,
@@ -60,6 +79,9 @@ func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName 
 		DestinationPackage: destinationPackage,
 		Imports:            newImports(),
 		Header:             headerContent,
+	}
+	for _, opt := range opts {
+		opt(f)
 	}
 
 	f.Imports.Add("sync", "sync")

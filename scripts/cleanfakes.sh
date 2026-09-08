@@ -4,4 +4,4 @@ set -eu
 
 cd "$(dirname "$0")/.."
 pwd
-find ./ -path '*fakes/fake*.go' -print0 | xargs -0 rm -rf
+find ./ \( -path '*fakes/fake*.go' -o -path './fixtures/samepackage/fake_*.go' \) -print0 | xargs -0 rm -rf
