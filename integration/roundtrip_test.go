@@ -183,6 +183,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		t("HasVarArgs", "has_var_args.go", "")
 		t("HasVarArgsWithLocalTypes", "has_var_args.go", "")
 		t("ImportsGoHyphenPackage", "imports_go_hyphen_package.go", "", filepath.Join("go-hyphenpackage", "fixture.go"))
+		t("GenericImportedConstraint", "generic_imported_constraint.go", "", filepath.Join("go-hyphenpackage", "fixture.go"))
 		t("FirstInterface", "multiple_interfaces.go", "")
 		t("SecondInterface", "multiple_interfaces.go", "")
 		t("InlineStructParams", "inline_struct_params.go", "")

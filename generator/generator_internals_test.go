@@ -96,6 +96,17 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("the target is a generic interface whose constraint comes from another package", func() {
+			it("imports the constraint's package and qualifies it with that package's name", func() {
+				c := &Cache{}
+				f, err = NewFake(InterfaceOrFunction, "GenericImportedConstraint", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures", "FakeGenericImportedConstraint", "fixturesfakes", "", "", c)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.Imports.ByPkgPath).To(HaveKey("github.com/maxbrunsfeld/counterfeiter/v6/fixtures/go-hyphenpackage"))
+				Expect(f.GenericTypeParametersAndConstraints).To(Equal("[T hyphenpackage.Hyphenated]"))
+				Expect(f.GenericTypeParameters).To(Equal("[T]"))
+			})
+		})
+
 		when("the target is a function that exists", func() {
 			it("succeeds", func() {
 				c := &Cache{}

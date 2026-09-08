@@ -57,32 +57,9 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	return nil
 }
 
-func (f *Fake) getGenericTypeData(typeName *types.TypeName) (paramNames []string, paramAndConstraintNames []string, found bool) {
-	if named, ok := typeName.Type().(*types.Named); ok {
-		if _, ok := named.Underlying().(*types.Interface); ok {
-			typeParams := named.TypeParams()
-			if typeParams.Len() > 0 {
-				for i := 0; i < typeParams.Len(); i++ {
-					param := typeParams.At(i)
-					paramName := param.Obj().Name()
-					constraint := param.Constraint()
-					constraintSections := strings.Split(constraint.String(), "/")
-					constraintName := constraintSections[len(constraintSections)-1]
-					paramNames = append(paramNames, paramName)
-					paramAndConstraintNames = append(paramAndConstraintNames, fmt.Sprintf("%s %s", paramName, constraintName))
-					found = true
-				}
-			}
-		}
-	}
-	return
-}
-
 func (f *Fake) findPackage() error {
 	var target *types.TypeName
 	var pkg *packages.Package
-	genericTypeParametersAndConstraints := []string{}
-	genericTypeParameters := []string{}
 	for i := range f.Packages {
 		if f.Packages[i].Types == nil || f.Packages[i].Types.Scope() == nil {
 			continue
@@ -95,14 +72,6 @@ func (f *Fake) findPackage() error {
 		raw := pkg.Types.Scope().Lookup(f.TargetName)
 		if raw != nil {
 			if typeName, ok := raw.(*types.TypeName); ok {
-				if paramNames, paramAndConstraintNames, found := f.getGenericTypeData(typeName); found {
-					genericTypeParameters = append(genericTypeParameters, paramNames...)
-					genericTypeParametersAndConstraints = append(
-						genericTypeParametersAndConstraints,
-						paramAndConstraintNames...,
-					)
-				}
-
 				target = typeName
 				break
 			}
@@ -120,15 +89,12 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
-	if len(genericTypeParameters) > 0 {
-		f.GenericTypeParametersAndConstraints = fmt.Sprintf("[%s]", strings.Join(genericTypeParametersAndConstraints, ", "))
-		f.GenericTypeParameters = fmt.Sprintf("[%s]", strings.Join(genericTypeParameters, ", "))
-	}
 	t := f.Imports.Add(pkg.Name, f.TargetPackage)
 	f.TargetAlias = t.Alias
 	if f.Mode != Package {
 		f.TargetName = target.Name()
 	}
+	f.loadGenericTypeParams()
 
 	if f.Mode == InterfaceOrFunction {
 		if !f.IsInterface() && !f.IsFunction() {
@@ -150,6 +116,40 @@ func (f *Fake) findPackage() error {
 		log.Printf("Found package with name: [%s]\n", f.TargetPackage)
 	}
 	return nil
+}
+
+// loadGenericTypeParams records the type parameter list of a generic
+// interface target, in both the declaration form ("[T pkg.Constraint]") and
+// the instantiation form ("[T]"). Constraints are rendered with the same
+// qualifier as method signatures, so any package they refer to is imported
+// and aliased consistently. It must run after the target package has been
+// added to f.Imports.
+func (f *Fake) loadGenericTypeParams() {
+	if f.Target == nil {
+		return
+	}
+	named, ok := f.Target.Type().(*types.Named)
+	if !ok {
+		return
+	}
+	if _, ok := named.Underlying().(*types.Interface); !ok {
+		return
+	}
+	typeParams := named.TypeParams()
+	if typeParams.Len() == 0 {
+		return
+	}
+	names := make([]string, 0, typeParams.Len())
+	namesAndConstraints := make([]string, 0, typeParams.Len())
+	for i := 0; i < typeParams.Len(); i++ {
+		param := typeParams.At(i)
+		f.addImportsFor(param.Constraint())
+		constraint := types.TypeString(param.Constraint(), f.Imports.AliasForPackage)
+		names = append(names, param.Obj().Name())
+		namesAndConstraints = append(namesAndConstraints, param.Obj().Name()+" "+constraint)
+	}
+	f.GenericTypeParameters = "[" + strings.Join(names, ", ") + "]"
+	f.GenericTypeParametersAndConstraints = "[" + strings.Join(namesAndConstraints, ", ") + "]"
 }
 
 // addImportsFor inspects the given type and adds imports to the fake if importable
@@ -177,8 +177,19 @@ func (f *Fake) addImportsFor(typ types.Type) {
 		f.addImportsFor(t.Elem())
 	case *types.Array:
 		f.addImportsFor(t.Elem())
-	case *types.Interface:
+	case *types.TypeParam:
 		return
+	case *types.Union:
+		for i := 0; i < t.Len(); i++ {
+			f.addImportsFor(t.Term(i).Type())
+		}
+	case *types.Interface:
+		for i := 0; i < t.NumEmbeddeds(); i++ {
+			f.addImportsFor(t.EmbeddedType(i))
+		}
+		for i := 0; i < t.NumExplicitMethods(); i++ {
+			f.addImportsFor(t.ExplicitMethod(i).Type())
+		}
 	case *types.Signature:
 		f.addTypesForMethod(t)
 	case *types.Struct:
