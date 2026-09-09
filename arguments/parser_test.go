@@ -355,6 +355,152 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
+
+	when("when '-fake-name-template' is used", func() {
+		it.Before(func() {
+			args = []string{"counterfeiter", "-fake-name-template", "The{{.TargetName}}Imposter", "my/mypackage", "mySpecialInterface"}
+			justBefore()
+		})
+
+		it("names the fake by evaluating the template against the target name", func() {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedArgs.FakeImplName).To(Equal("TheMySpecialInterfaceImposter"))
+		})
+
+		it("snake cases the templated name for the output file", func() {
+			Expect(parsedArgs.OutputPath).To(Equal(
+				filepath.Join(
+					parsedArgs.SourcePackageDir,
+					"mypackagefakes",
+					"the_my_special_interface_imposter.go",
+				),
+			))
+		})
+
+		when("'-fake-name' is also given", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-fake-name", "Explicit", "-fake-name-template", "The{{.TargetName}}Imposter", "my/mypackage", "MySpecialInterface"}
+				justBefore()
+			})
+
+			it("prefers the explicit fake name", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.FakeImplName).To(Equal("Explicit"))
+			})
+		})
+
+		when("the template references an unknown variable", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-fake-name-template", "{{.Nope}}", "my/mypackage", "MySpecialInterface"}
+				justBefore()
+			})
+
+			it("returns an error naming the flag", func() {
+				Expect(err).To(MatchError(ContainSubstring("-fake-name-template")))
+			})
+		})
+
+		when("the template does not parse", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-fake-name-template", "{{.TargetName", "my/mypackage", "MySpecialInterface"}
+				justBefore()
+			})
+
+			it("returns an error naming the flag", func() {
+				Expect(err).To(MatchError(ContainSubstring("-fake-name-template")))
+			})
+		})
+	})
+
+	when("when '-generate' is used", func() {
+		it.Before(func() {
+			args = []string{"counterfeiter", "-generate", "-o", "fake", "-fake-name-template", "{{.TargetName}}", "-header", "generic.txt", "-q"}
+			justBefore()
+		})
+
+		it("keeps the flags as defaults for the directives", func() {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedArgs.GenerateMode).To(BeTrue())
+			Expect(parsedArgs.OutputPath).To(Equal("fake"))
+			Expect(parsedArgs.FakeNameTemplate).To(Equal("{{.TargetName}}"))
+			Expect(parsedArgs.HeaderFile).To(Equal("generic.txt"))
+			Expect(parsedArgs.Quiet).To(BeTrue())
+		})
+
+		when("the fake name template does not parse", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-generate", "-fake-name-template", "{{.TargetName"}
+				justBefore()
+			})
+
+			it("returns an error naming the flag", func() {
+				Expect(err).To(MatchError(ContainSubstring("-fake-name-template")))
+			})
+		})
+	})
+
+	when("when defaults from a '-generate' invocation are supplied", func() {
+		var defaults *arguments.ParsedArguments
+
+		it.Before(func() {
+			defaults, err = arguments.New(
+				[]string{"counterfeiter", "-generate", "-o", "fake", "-fake-name-template", "{{.TargetName}}", "-header", "generic.txt", "-q"},
+				workingDir, evaler, stater,
+			)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		justBeforeWithDefaults := func() {
+			parsedArgs, err = arguments.New(args, workingDir, evaler, stater, arguments.WithDefaults(defaults))
+		}
+
+		when("the directive has no flags of its own", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", ".", "mySpecialInterface"}
+				justBeforeWithDefaults()
+			})
+
+			it("uses the defaults", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.FakeImplName).To(Equal("MySpecialInterface"))
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "fake", "my_special_interface.go")))
+				Expect(parsedArgs.DestinationPackageName).To(Equal("fake"))
+				Expect(parsedArgs.HeaderFile).To(Equal("generic.txt"))
+				Expect(parsedArgs.Quiet).To(BeTrue())
+			})
+		})
+
+		when("the directive has flags of its own", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-o", "other", "-fake-name", "Other", "-header", "specific.txt", ".", "mySpecialInterface"}
+				justBeforeWithDefaults()
+			})
+
+			it("prefers the directive's flags", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.FakeImplName).To(Equal("Other"))
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "other", "other.go")))
+				Expect(parsedArgs.DestinationPackageName).To(Equal("other"))
+				Expect(parsedArgs.HeaderFile).To(Equal("specific.txt"))
+			})
+		})
+
+		when("the defaults are nil", func() {
+			it.Before(func() {
+				defaults = nil
+				args = []string{"counterfeiter", ".", "mySpecialInterface"}
+				justBeforeWithDefaults()
+			})
+
+			it("behaves as if no defaults were supplied", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.FakeImplName).To(Equal("FakeMySpecialInterface"))
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "workspacefakes", "fake_my_special_interface.go")))
+				Expect(parsedArgs.HeaderFile).To(BeEmpty())
+				Expect(parsedArgs.Quiet).To(BeFalse())
+			})
+		})
+	})
 }
 
 func fakeFileInfo(filename string, isDir bool) os.FileInfo {

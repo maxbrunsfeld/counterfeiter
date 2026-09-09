@@ -106,7 +106,7 @@ $ go tool counterfeiter
 USAGE
 	counterfeiter
 		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-header <header-file>]
+		[-fake-name-template <template>] [-header <header-file>] [-q]
 		[<source-path>] <interface> [-]
 ```
 
@@ -121,7 +121,7 @@ $ ~/go/bin/counterfeiter
 USAGE
 	counterfeiter
 		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-header <header-file>]
+		[-fake-name-template <template>] [-header <header-file>] [-q]
 		[<source-path>] <interface> [-]
 ```
 
@@ -155,6 +155,23 @@ By default the fake lives in a sibling `<package>fakes` package, which cannot be
 ```
 
 When the output directory is the directory of the package that declares the interface, `counterfeiter` generates the fake as a member of that package: it does not import the package, refers to its types unqualified, and can fake unexported interfaces too. `-o` may also name a file in that directory, for example `-o fake_my_special_interface_test.go` to keep the fake out of the non-test build.
+
+#### Setting defaults for every directive
+
+Flags given alongside `-generate` on the `//go:generate` line are the defaults for every `//counterfeiter:generate` directive in the package: `-o`, `-header`, `-q` and `-fake-name-template`. A directive's own flags take precedence. `-fake-name-template` is a Go `text/template` in which `{{.TargetName}}` is the name of the interface being faked (first letter upper-cased); `-fake-name` on a directive still wins over it. So if you would rather keep all of a package's fakes in a `fake` package, named after their interfaces, you can write that once:
+
+```go
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate -o fake -fake-name-template '{{.TargetName}}'
+
+//counterfeiter:generate . MyRepository
+//counterfeiter:generate . MyPresenter
+```
+
+```shell
+$ go generate ./...
+Writing `MyRepository` to `fake/my_repository.go`... Done
+Writing `MyPresenter` to `fake/my_presenter.go`... Done
+```
 
 ### Using Test Doubles In Your Tests
 
