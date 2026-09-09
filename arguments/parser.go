@@ -9,12 +9,38 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 	"unicode"
 )
 
-func New(args []string, workingDir string, evaler Evaler, stater Stater) (*ParsedArguments, error) {
+// Option configures New.
+type Option func(*options)
+
+type options struct {
+	defaults *ParsedArguments
+}
+
+// WithDefaults supplies the arguments parsed from a "-generate" invocation.
+// Flags that a directive does not set itself fall back to the values given
+// there, so that -o, -fake-name-template, -header and -q can be configured
+// once per package on the "//go:generate ... -generate" line.
+func WithDefaults(defaults *ParsedArguments) Option {
+	return func(o *options) {
+		o.defaults = defaults
+	}
+}
+
+func New(args []string, workingDir string, evaler Evaler, stater Stater, opts ...Option) (*ParsedArguments, error) {
 	if len(args) == 0 {
 		return nil, errors.New("argument parsing requires at least one argument")
+	}
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	defaults := o.defaults
+	if defaults == nil {
+		defaults = &ParsedArguments{}
 	}
 
 	fs := flag.NewFlagSet("counterfeiter", flag.ContinueOnError)
@@ -22,6 +48,11 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		"fake-name",
 		"",
 		"The name of the fake struct",
+	)
+	fakeNameTemplateFlag := fs.String(
+		"fake-name-template",
+		"",
+		"A text/template for the name of the fake struct, evaluated against {{.TargetName}}",
 	)
 
 	outputPathFlag := fs.String(
@@ -67,15 +98,25 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		return nil, errors.New(usage)
 	}
 
+	fakeNameTemplateText := or(*fakeNameTemplateFlag, defaults.FakeNameTemplate)
+	fakeNameTemplate, err := parseFakeNameTemplate(fakeNameTemplateText)
+	if err != nil {
+		return nil, err
+	}
+	outputPath := or(*outputPathFlag, defaults.OutputPath)
+
 	packageMode := *packageFlag
 	result := &ParsedArguments{
 		PrintToStdOut: any(args, "-"),
 		GenerateInterfaceAndShimFromPackageDirectory: packageMode,
 		GenerateMode: *generateFlag,
-		HeaderFile:   *headerFlag,
-		Quiet:        *quietFlag,
+		HeaderFile:   or(*headerFlag, defaults.HeaderFile),
+		Quiet:        *quietFlag || defaults.Quiet,
 	}
 	if *generateFlag {
+		// Keep the raw flag values: they become the defaults for every directive.
+		result.OutputPath = outputPath
+		result.FakeNameTemplate = fakeNameTemplateText
 		return result, nil
 	}
 	err = result.parseSourcePackageDir(packageMode, workingDir, evaler, stater, fs.Args())
@@ -83,11 +124,50 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater) (*Parse
 		return nil, err
 	}
 	result.parseInterfaceName(packageMode, fs.Args())
-	result.parseFakeName(packageMode, *fakeNameFlag, fs.Args())
-	result.parseOutputPath(packageMode, workingDir, *outputPathFlag, fs.Args())
+	err = result.parseFakeName(packageMode, *fakeNameFlag, fakeNameTemplate, fs.Args())
+	if err != nil {
+		return nil, err
+	}
+	result.parseOutputPath(packageMode, workingDir, outputPath, fs.Args())
 	result.parseDestinationPackageName(packageMode, fs.Args())
 	result.parsePackagePath(packageMode, fs.Args())
 	return result, nil
+}
+
+func or(opts ...string) string {
+	for _, s := range opts {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+// fakeNameTemplate is a parsed -fake-name-template; an empty flag parses as
+// the default name, "Fake" followed by the target name.
+type fakeNameTemplate struct {
+	text string
+	tmpl *template.Template
+}
+
+func parseFakeNameTemplate(text string) (fakeNameTemplate, error) {
+	if text == "" {
+		text = "Fake{{.TargetName}}"
+	}
+	tmpl, err := template.New("fake-name-template").Parse(text)
+	if err != nil {
+		return fakeNameTemplate{}, fmt.Errorf("invalid -fake-name-template %q: %w", text, err)
+	}
+	return fakeNameTemplate{text: text, tmpl: tmpl}, nil
+}
+
+func (t fakeNameTemplate) render(targetName string) (string, error) {
+	var b strings.Builder
+	err := t.tmpl.Execute(&b, struct{ TargetName string }{targetName})
+	if err != nil {
+		return "", fmt.Errorf("invalid -fake-name-template %q: %w", t.text, err)
+	}
+	return b.String(), nil
 }
 
 func (a *ParsedArguments) PrettyPrint() {
@@ -124,16 +204,21 @@ func (a *ParsedArguments) parseSourcePackageDir(packageMode bool, workingDir str
 	return nil
 }
 
-func (a *ParsedArguments) parseFakeName(packageMode bool, fakeName string, args []string) {
+func (a *ParsedArguments) parseFakeName(packageMode bool, fakeName string, tmpl fakeNameTemplate, args []string) error {
 	if packageMode {
 		a.parsePackagePath(packageMode, args)
 		a.FakeImplName = strings.ToUpper(path.Base(a.PackagePath))[:1] + path.Base(a.PackagePath)[1:]
-		return
+		return nil
 	}
 	if fakeName == "" {
-		fakeName = "Fake" + fixupUnexportedNames(a.InterfaceName)
+		var err error
+		fakeName, err = tmpl.render(fixupUnexportedNames(a.InterfaceName))
+		if err != nil {
+			return err
+		}
 	}
 	a.FakeImplName = fakeName
+	return nil
 }
 
 func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, outputPath string, args []string) {
@@ -210,7 +295,8 @@ type ParsedArguments struct {
 	GenerateMode  bool
 	Quiet         bool
 
-	HeaderFile string
+	HeaderFile       string
+	FakeNameTemplate string // text/template for FakeImplName, evaluated against {{.TargetName}}
 }
 
 func fixupUnexportedNames(interfaceName string) string {

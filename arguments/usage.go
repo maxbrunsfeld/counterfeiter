@@ -4,7 +4,7 @@ const usage = `
 USAGE
 	counterfeiter
 		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-header <header-file>]
+		[-fake-name-template <template>] [-header <header-file>] [-q]
 		[<source-path>] <interface> [-]
 
 ARGUMENTS
@@ -52,6 +52,19 @@ OPTIONS
 		# writes "FakeMyOtherInterface" to ./mypackagefakes/fake_my_other_interface.go
 		# writes "FakeMyThirdInterface" to ./mypackagefakes/fake_my_third_interface.go
 
+		The -o, -fake-name-template, -header and -q flags given alongside
+		-generate are the defaults for every directive. A directive's own
+		flags take precedence.
+
+	example:
+		# every fake goes into ./fake and is named after its interface
+		//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate -o fake -fake-name-template {{.TargetName}}
+		//counterfeiter:generate . MyInterface
+		//counterfeiter:generate -o otherfake . MyOtherInterface
+
+		# writes "MyInterface" to ./fake/my_interface.go
+		# writes "MyOtherInterface" to ./otherfake/my_other_interface.go
+
 	-o
 		Path to the file or directory for the generated fakes.
 		This also determines the package name that will be used.
@@ -84,9 +97,9 @@ OPTIONS
 		By default, no special header is used.
 		This is useful to e.g. add a licence header to every fake.
 
-		If the generate mode is used and both the "go:generate" and the
-		"counterfeiter:generate" specify a header file, the header file from the
-		"counterfeiter:generate" line takes precedence.
+		In generate mode the header can be set once for the whole package on
+		the "go:generate" line; a "counterfeiter:generate" line that specifies
+		its own header file takes precedence.
 
 	example:
 		# having the following code in a package ...
@@ -109,4 +122,14 @@ OPTIONS
 	example:
 		# writes "CoolThing" to ./mypackagefakes/cool_thing.go
 		counterfeiter --fake-name CoolThing ./mypackage MyInterface
+
+	-fake-name-template
+		A text/template for the name of the fake struct, used when --fake-name
+		is not given. {{.TargetName}} is the name of the interface being faked,
+		with its first letter upper-cased. In generate mode it can be set once
+		for the whole package on the "go:generate" line. (ignored in -p mode)
+
+	example:
+		# writes "MyInterfaceDouble" to ./mypackagefakes/my_interface_double.go
+		counterfeiter --fake-name-template '{{.TargetName}}Double' ./mypackage MyInterface
 `
