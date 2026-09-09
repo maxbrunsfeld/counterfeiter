@@ -189,6 +189,26 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("a test file imports the fake package that does not exist yet", func() {
+		it.Before(func() {
+			baseDir = filepath.Join(baseDir, "widgets")
+			WriteOutput([]byte("module example.com/widgets\n\ngo 1.18\n"), filepath.Join(baseDir, "go.mod"))
+			WriteOutput([]byte("package widgets\n\ntype Widget interface {\n\tDo(string) error\n}\n"), filepath.Join(baseDir, "widgets.go"))
+			WriteOutput([]byte("package widgets_test\n\nimport (\n\t\"testing\"\n\n\t\"example.com/widgets/widgetsfakes\"\n)\n\nfunc TestWidget(t *testing.T) {\n\tvar _ = &widgetsfakes.FakeWidget{}\n}\n"), filepath.Join(baseDir, "widgets_test.go"))
+		})
+
+		it("generates the fake the test file is waiting for", func() {
+			cache := &generator.FakeCache{}
+			f, err := generator.NewFake(generator.InterfaceOrFunction, "Widget", "example.com/widgets", "FakeWidget", "widgetsfakes", "", baseDir, cache)
+			Expect(err).NotTo(HaveOccurred())
+			b, err := f.Generate(true)
+			Expect(err).NotTo(HaveOccurred())
+			WriteOutput(b, filepath.Join(baseDir, "widgetsfakes", "fake_widget.go"))
+			RunBuild(baseDir)
+			RunVet(baseDir)
+		})
+	})
+
 	when(name, func() {
 		t := func(interfaceName string, filename string, subDir string, files ...string) {
 			when("working with "+filename, func() {

@@ -80,6 +80,31 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("the target is an interface in a third-party module", func() {
+			it("succeeds", func() {
+				c := &Cache{}
+				f, err = NewFake(InterfaceOrFunction, "GomegaMatcher", "github.com/onsi/gomega/types", "FakeGomegaMatcher", "typesfakes", "", "", c)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.TargetPackage).To(Equal("github.com/onsi/gomega/types"))
+				b, err := f.Generate(true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring(`"github.com/onsi/gomega/types"`))
+				Expect(string(b)).To(ContainSubstring("func (fake *FakeGomegaMatcher) Match(arg1 any) (bool, error)"))
+				Expect(string(b)).To(ContainSubstring("var _ types.GomegaMatcher = new(FakeGomegaMatcher)"))
+			})
+		})
+
+		when("the target is an unexported type that nothing else in its package refers to", func() {
+			it("still finds it", func() {
+				c := &Cache{}
+				for _, target := range []string{"unexportedInterface", "unexportedFunc"} {
+					f, err = NewFake(InterfaceOrFunction, target, "github.com/maxbrunsfeld/counterfeiter/v6/fixtures", "Fake"+target, "fixturesfakes", "", "", c)
+					Expect(err).NotTo(HaveOccurred(), target)
+					Expect(f.TargetName).To(Equal(target))
+				}
+			})
+		})
+
 		when("the target is a generic interface whose constraint comes from another package", func() {
 			it("imports the constraint's package and qualifies it with that package's name", func() {
 				c := &Cache{}
@@ -426,6 +451,18 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			it("leaves unexported things unchanged", func() {
 				Expect(unexport("theUnexportedThing")).To(Equal("theUnexportedThing"))
+			})
+		})
+
+		when("isBuildTranscript()", func() {
+			it("recognises the compiler output go list -export attaches to a package that failed to build", func() {
+				Expect(isBuildTranscript(packages.Error{Kind: packages.ListError, Msg: "# example.com/widgets\n./fake_widget.go:112:16: missing method Undo"})).To(BeTrue())
+			})
+
+			it("leaves positioned and non-build errors alone", func() {
+				Expect(isBuildTranscript(packages.Error{Kind: packages.TypeError, Pos: "/a/fake_widget.go:112:16", Msg: "missing method Undo"})).To(BeFalse())
+				Expect(isBuildTranscript(packages.Error{Kind: packages.ListError, Pos: "/a/widgets.go:5:2", Msg: "no required module provides package x.invalid/nope"})).To(BeFalse())
+				Expect(isBuildTranscript(packages.Error{Kind: packages.ParseError, Msg: "# example.com/widgets"})).To(BeFalse())
 			})
 		})
 
