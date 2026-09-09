@@ -54,7 +54,7 @@ Key supporting pieces:
 - **Generics**: `findPackage` / `getGenericTypeData` (`loader.go`) extract type params/constraints into `GenericTypeParameters*` strings used by the template. The compile-time assertion for a generic fake is emitted inside a blank generic func (`func _[T C]() { var _ pkg.I[T] = new(FakeI[T]) }`) so any constraint kind works. A target that is itself a constraint interface (unions or `~T`) is rejected up front because it cannot be implemented.
 - **Same-package fakes**: `main.go` passes the output directory via `generator.WithDestinationDir`. When it equals the target package's directory (`packages.Package.Dir`, symlinks resolved), `findPackage` sets `inTargetPackage`: the target package is not imported, its names print unqualified (the `types.Qualifier` returns `""` for packages absent from `Imports`), and the assertion is emitted even for unexported targets. `loadPackages` ignores type errors positioned in files carrying the generated-code header so a stale same-package fake never blocks regeneration. Extend `NewFake` only through `...Option`; its existing parameters are public API.
 - **`Cacher`** (`cache.go`): `Cache` memoizes `packages.Load` results per package path across invocations in a `-generate` run; `FakeCache` is the no-op used by tests and `COUNTERFEITER_DISABLECACHE`.
-- **`ctx.go` / `ctx_old.go`** are build-tag variants of `getBuildContext` (go1.14+ sets `build.Context.Dir`).
+- **`ctx.go`** holds `getBuildContext`, which returns `build.Default` with `build.Context.Dir` set to the working directory.
 
 ## Testing conventions
 

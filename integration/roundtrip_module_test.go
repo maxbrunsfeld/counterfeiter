@@ -1,5 +1,3 @@
-//go:build go1.11
-
 package integration_test
 
 import (
