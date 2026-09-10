@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"go/types"
 	"io"
 	"log"
 	"path/filepath"
@@ -77,6 +78,31 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(f.Packages).NotTo(BeNil())
 				Expect(f.Package).NotTo(BeNil())
 				Expect(f.Methods).To(HaveLen(6))
+			})
+		})
+
+		when("the target is an interface in a third-party module", func() {
+			it("succeeds", func() {
+				c := &Cache{}
+				f, err = NewFake(InterfaceOrFunction, "GomegaMatcher", "github.com/onsi/gomega/types", "FakeGomegaMatcher", "typesfakes", "", "", c)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.TargetPackage).To(Equal("github.com/onsi/gomega/types"))
+				b, err := f.Generate(true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring(`"github.com/onsi/gomega/types"`))
+				Expect(string(b)).To(ContainSubstring("func (fake *FakeGomegaMatcher) Match(arg1 any) (bool, error)"))
+				Expect(string(b)).To(ContainSubstring("var _ types.GomegaMatcher = new(FakeGomegaMatcher)"))
+			})
+		})
+
+		when("the target is an unexported type that nothing else in its package refers to", func() {
+			it("still finds it", func() {
+				c := &Cache{}
+				for _, target := range []string{"unexportedInterface", "unexportedFunc"} {
+					f, err = NewFake(InterfaceOrFunction, target, "github.com/maxbrunsfeld/counterfeiter/v6/fixtures", "Fake"+target, "fixturesfakes", "", "", c)
+					Expect(err).NotTo(HaveOccurred(), target)
+					Expect(f.TargetName).To(Equal(target))
+				}
 			})
 		})
 
@@ -356,7 +382,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				it("can load the methods", func() {
 					err := f.findPackage()
 					Expect(err).NotTo(HaveOccurred())
-					f.loadMethods()
+					err = f.loadMethods()
+					Expect(err).NotTo(HaveOccurred())
 					Expect(len(f.Methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
 					Expect(len(f.Imports.ByAlias)).To(Equal(3))
 				})
@@ -429,16 +456,50 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("errorFilename()", func() {
-			it("strips line and column suffixes", func() {
-				Expect(errorFilename("/a/b/fake_x.go:12:5")).To(Equal("/a/b/fake_x.go"))
-				Expect(errorFilename("/a/b/fake_x.go:12")).To(Equal("/a/b/fake_x.go"))
-				Expect(errorFilename(`C:\a\fake_x.go:12:5`)).To(Equal(`C:\a\fake_x.go`))
+		when("isBuildTranscript()", func() {
+			it("recognises the compiler output go list -export attaches to a package that failed to build", func() {
+				Expect(isBuildTranscript(packages.Error{Kind: packages.ListError, Msg: "# example.com/widgets\n./fake_widget.go:112:16: missing method Undo"})).To(BeTrue())
 			})
 
-			it("returns nothing for positionless errors", func() {
-				Expect(errorFilename("-")).To(BeEmpty())
-				Expect(errorFilename("")).To(BeEmpty())
+			it("leaves positioned and non-build errors alone", func() {
+				Expect(isBuildTranscript(packages.Error{Kind: packages.TypeError, Pos: "/a/fake_widget.go:112:16", Msg: "missing method Undo"})).To(BeFalse())
+				Expect(isBuildTranscript(packages.Error{Kind: packages.ListError, Pos: "/a/widgets.go:5:2", Msg: "no required module provides package x.invalid/nope"})).To(BeFalse())
+				Expect(isBuildTranscript(packages.Error{Kind: packages.ParseError, Msg: "# example.com/widgets"})).To(BeFalse())
+			})
+		})
+
+		when("hasInvalidType()", func() {
+			invalid := types.Typ[types.Invalid]
+			str := types.Typ[types.String]
+			named := func(underlying types.Type) *types.Named {
+				return types.NewNamed(types.NewTypeName(0, nil, "Named", nil), underlying, nil)
+			}
+
+			it("is true for a type the loader could not resolve", func() {
+				Expect(hasInvalidType(invalid)).To(BeTrue())
+			})
+
+			it("is false for valid types", func() {
+				Expect(hasInvalidType(nil)).To(BeFalse())
+				Expect(hasInvalidType(str)).To(BeFalse())
+				Expect(hasInvalidType(types.NewPointer(named(str)))).To(BeFalse())
+			})
+
+			it("looks through composite types", func() {
+				Expect(hasInvalidType(types.NewPointer(invalid))).To(BeTrue())
+				Expect(hasInvalidType(types.NewSlice(invalid))).To(BeTrue())
+				Expect(hasInvalidType(types.NewArray(invalid, 2))).To(BeTrue())
+				Expect(hasInvalidType(types.NewChan(types.SendRecv, invalid))).To(BeTrue())
+				Expect(hasInvalidType(types.NewMap(str, invalid))).To(BeTrue())
+				Expect(hasInvalidType(types.NewMap(invalid, str))).To(BeTrue())
+				Expect(hasInvalidType(types.NewStruct([]*types.Var{types.NewField(0, nil, "f", invalid, false)}, nil))).To(BeTrue())
+				Expect(hasInvalidType(types.NewSignatureType(nil, nil, nil, types.NewTuple(types.NewParam(0, nil, "p", invalid)), nil, false))).To(BeTrue())
+				Expect(hasInvalidType(types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewParam(0, nil, "r", invalid)), false))).To(BeTrue())
+			})
+
+			it("does not look through a named type, which prints by name", func() {
+				Expect(hasInvalidType(named(invalid))).To(BeFalse())
+				Expect(hasInvalidType(types.NewPointer(named(invalid)))).To(BeFalse())
 			})
 		})
 

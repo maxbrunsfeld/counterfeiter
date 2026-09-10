@@ -189,6 +189,91 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("a test file imports the fake package that does not exist yet", func() {
+		it.Before(func() {
+			baseDir = filepath.Join(baseDir, "widgets")
+			WriteOutput([]byte("module example.com/widgets\n\ngo 1.18\n"), filepath.Join(baseDir, "go.mod"))
+			WriteOutput([]byte("package widgets\n\ntype Widget interface {\n\tDo(string) error\n}\n"), filepath.Join(baseDir, "widgets.go"))
+			WriteOutput([]byte("package widgets_test\n\nimport (\n\t\"testing\"\n\n\t\"example.com/widgets/widgetsfakes\"\n)\n\nfunc TestWidget(t *testing.T) {\n\tvar _ = &widgetsfakes.FakeWidget{}\n}\n"), filepath.Join(baseDir, "widgets_test.go"))
+		})
+
+		it("generates the fake the test file is waiting for", func() {
+			cache := &generator.FakeCache{}
+			f, err := generator.NewFake(generator.InterfaceOrFunction, "Widget", "example.com/widgets", "FakeWidget", "widgetsfakes", "", baseDir, cache)
+			Expect(err).NotTo(HaveOccurred())
+			b, err := f.Generate(true)
+			Expect(err).NotTo(HaveOccurred())
+			WriteOutput(b, filepath.Join(baseDir, "widgetsfakes", "fake_widget.go"))
+			RunBuild(baseDir)
+			RunVet(baseDir)
+		})
+	})
+
+	when("the target package has errors that do not involve the target", func() {
+		const (
+			pkgPath       = "example.com/fooer"
+			missingImport = "fake.com/this/package/doesnt/exist"
+		)
+		var (
+			write    func(name, content string)
+			generate func(target string) (string, error)
+		)
+
+		it.Before(func() {
+			baseDir = filepath.Join(baseDir, "fooer")
+			write = func(name, content string) {
+				WriteOutput([]byte(content), filepath.Join(baseDir, name))
+			}
+			generate = func(target string) (string, error) {
+				cache := &generator.FakeCache{}
+				f, err := generator.NewFake(generator.InterfaceOrFunction, target, pkgPath, "Fake"+target, "fooerfakes", "", baseDir, cache)
+				if err != nil {
+					return "", err
+				}
+				b, err := f.Generate(true)
+				return string(b), err
+			}
+			write("go.mod", "module "+pkgPath+"\n\ngo 1.18\n")
+			write("fooer.go", "package fooer\n\ntype Fooer interface {\n\tSayHello(audience string) string\n}\n")
+		})
+
+		it("ignores an import that cannot be resolved when the target does not use it", func() {
+			write("report.go", "package fooer\n\nimport nonexistent \""+missingImport+"\"\n\nfunc ProcessFooer(f Fooer) nonexistent.Report {\n\treturn nonexistent.NewReport().WithFooer(f)\n}\n")
+			out, err := generate("Fooer")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(ContainSubstring("SayHello(arg1 string) string"))
+			Expect(out).NotTo(ContainSubstring("invalid type"))
+		})
+
+		it("ignores a type error in another file", func() {
+			write("broken.go", "package fooer\n\nvar broken int = \"not an int\"\n")
+			out, err := generate("Fooer")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(ContainSubstring("SayHello(arg1 string) string"))
+			Expect(out).NotTo(ContainSubstring("invalid type"))
+		})
+
+		it("fails when a method uses a type that could not be loaded", func() {
+			write("report.go", "package fooer\n\nimport nonexistent \""+missingImport+"\"\n\ntype Reporter interface {\n\tReport() nonexistent.Report\n}\n")
+			_, err := generate("Reporter")
+			Expect(err).To(MatchError(ContainSubstring("method Report")))
+			Expect(err).To(MatchError(ContainSubstring(missingImport)))
+		})
+
+		it("fails when the interface embeds an interface that could not be loaded", func() {
+			write("report.go", "package fooer\n\nimport nonexistent \""+missingImport+"\"\n\ntype Reporter interface {\n\tnonexistent.Reporter\n\tFooer\n}\n")
+			_, err := generate("Reporter")
+			Expect(err).To(MatchError(ContainSubstring("embedded interface")))
+			Expect(err).To(MatchError(ContainSubstring(missingImport)))
+		})
+
+		it("still fails on a syntax error in another file", func() {
+			write("broken.go", "package fooer\n\nfunc (\n")
+			_, err := generate("Fooer")
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
 	when(name, func() {
 		t := func(interfaceName string, filename string, subDir string, files ...string) {
 			when("working with "+filename, func() {

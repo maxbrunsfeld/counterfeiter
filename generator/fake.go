@@ -42,6 +42,11 @@ type Fake struct {
 	Function                            Method
 	Header                              string
 
+	// loadErrors holds the errors go/packages reported for the target
+	// package that did not stop loading, kept so a failure caused by one
+	// of them can say what went wrong.
+	loadErrors []packages.Error
+
 	// inTargetPackage is true when the fake is written into the directory of
 	// the package that declares the target, so that package must not be
 	// imported and its names are used unqualified.
@@ -97,7 +102,10 @@ func NewFake(fakeMode FakeMode, targetName string, packagePath string, fakeName 
 	}
 
 	if f.IsInterface() || f.Mode == Package {
-		f.loadMethods()
+		err = f.loadMethods()
+		if err != nil {
+			return nil, err
+		}
 	}
 	if f.IsFunction() {
 		err = f.loadMethodForFunction()

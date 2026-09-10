@@ -17,6 +17,17 @@ func WriteOutput(b []byte, file string) {
 	_ = os.WriteFile(file, b, fs.FileMode(0600))
 }
 
+// RunVet type-checks the module including its test files.
+func RunVet(baseDir string) {
+	cmd := exec.Command("go", "vet", "./...")
+	cmd.Dir = baseDir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(string(out))
+	}
+	Expect(err).NotTo(HaveOccurred())
+}
+
 func RunBuild(baseDir string) {
 	cmd := exec.Command("go", "build", "./...")
 	cmd.Dir = baseDir
