@@ -3,24 +3,27 @@ package arguments
 const usage = `
 USAGE
 	counterfeiter
-		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
+		[-generate] [-o <output-path>] [-p] [-fake-name <fake-name>]
 		[-fake-name-template <template>] [-header <header-file>] [-q] [-test]
 		[<source-path>] <interface> [-]
 
 ARGUMENTS
 	source-path
 		Path to the file or directory containing the interface to fake.
-		In package mode (-p), source-path should instead specify the path
-		of the input package; alternatively you can use the package name
-		(e.g. "os") and the path will be inferred from your GOROOT.
+		In package mode (-p), source-path is the import path of the package
+		to generate an interface and shim for; a standard library package
+		can be given by name (e.g. "os").
 
 	interface
-		If source-path is specified: Name of the interface to fake.
-		If no source-path is specified: Fully qualified interface path of the interface to fake.
-    If -p is specified, this will be the name of the interface to generate.
+		If source-path is specified: name of the interface to fake.
+		If no source-path is specified: fully qualified path of the
+		interface to fake, <package-path>.<interface>.
+		Not used in package mode (-p), where the interface is named after
+		the package.
 
 	example:
-		# writes "FakeStdInterface" to ./packagefakes/fake_std_interface.go
+		# in directory "mypackage", writes "FakeStdInterface" to
+		# ./mypackagefakes/fake_std_interface.go
 		counterfeiter package/subpackage.StdInterface
 
 	'-' argument
@@ -28,7 +31,7 @@ ARGUMENTS
 
 OPTIONS
 	-generate
-		Identify all //counterfeiter:generate directives in .go file in the
+		Identify all //counterfeiter:generate directives in .go files in the
 		current working directory and generate fakes for them. You can pass
 		arguments as usual.
 
@@ -37,7 +40,7 @@ OPTIONS
 		go generate by adding the following to a .go file:
 
 		# runs counterfeiter in generate mode
-		//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+		//go:generate go tool counterfeiter -generate
 
 	example:
 		Add the following to a .go file:
@@ -53,12 +56,12 @@ OPTIONS
 		# writes "FakeMyThirdInterface" to ./mypackagefakes/fake_my_third_interface.go
 
 		The -o, -fake-name-template, -header, -q and -test flags given
-		alongside -generate are the defaults for every directive. A directive's own
-		flags take precedence.
+		alongside -generate are the defaults for every directive. A directive's
+		own flags take precedence.
 
 	example:
 		# every fake goes into ./fake and is named after its interface
-		//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate -o fake -fake-name-template {{.TargetName}}
+		//go:generate go tool counterfeiter -generate -o fake -fake-name-template {{.TargetName}}
 		//counterfeiter:generate . MyInterface
 		//counterfeiter:generate -o otherfake . MyOtherInterface
 
@@ -101,17 +104,18 @@ OPTIONS
 		counterfeiter -test io.WriteCloser
 
 	-p
-		Package mode:  When invoked in package mode, counterfeiter
-		will generate an interface and shim implementation from a
-		package in your module.  Counterfeiter finds the public methods
-		in the package <source-path> and adds those method signatures
-		to the generated interface <interface-name>.
+		Package mode: counterfeiter generates an interface and a shim
+		implementation for a package in your module or the standard
+		library. The interface has the package's exported functions as
+		methods, and the shim forwards each method to the package. The
+		generated file carries a //counterfeiter:generate directive, so
+		running go generate there produces a fake of the interface.
 
 	example:
-		# generates os.go (interface) and osshim.go (shim) in ${PWD}/osshim
+		# writes the "Os" interface and "OsShim" to ${PWD}/osshim/os.go
 		counterfeiter -p os
-		# now generate fake in ${PWD}/osshim/os_fake (fake_os.go)
-		go generate osshim/...
+		# now generate "FakeOs" in ${PWD}/osshim/osshimfakes/fake_os.go
+		go generate ./osshim/...
 
 	-header
 		Path to the file which should be used as a header for all generated fakes.
@@ -124,7 +128,7 @@ OPTIONS
 
 	example:
 		# having the following code in a package ...
-		//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -header ./generic.go.txt -generate
+		//go:generate go tool counterfeiter -header ./generic.go.txt -generate
 		//counterfeiter:generate -header ./specific.go.txt . MyInterface
 		//counterfeiter:generate . MyOtherInterface
 		//counterfeiter:generate . MyThirdInterface
@@ -135,22 +139,25 @@ OPTIONS
 		# writes "FakeMyInterface" with ./specific.go.txt as a header
 		# writes "FakeMyOtherInterface" & "FakeMyThirdInterface" with ./generic.go.txt as a header
 
-	--fake-name
+	-fake-name
 		Name of the fake struct to generate. By default, 'Fake' will
 		be prepended to the name of the original interface. (ignored in
 		-p mode)
 
 	example:
 		# writes "CoolThing" to ./mypackagefakes/cool_thing.go
-		counterfeiter --fake-name CoolThing ./mypackage MyInterface
+		counterfeiter -fake-name CoolThing ./mypackage MyInterface
 
 	-fake-name-template
-		A text/template for the name of the fake struct, used when --fake-name
+		A text/template for the name of the fake struct, used when -fake-name
 		is not given. {{.TargetName}} is the name of the interface being faked,
 		with its first letter upper-cased. In generate mode it can be set once
 		for the whole package on the "go:generate" line. (ignored in -p mode)
 
 	example:
 		# writes "MyInterfaceDouble" to ./mypackagefakes/my_interface_double.go
-		counterfeiter --fake-name-template '{{.TargetName}}Double' ./mypackage MyInterface
+		counterfeiter -fake-name-template '{{.TargetName}}Double' ./mypackage MyInterface
+
+	-q
+		Suppress the "Writing ..." status lines. Errors are still reported.
 `
