@@ -47,9 +47,9 @@ type {{.Name}} struct {
 
 func (fake *{{.Name}}) Spy({{.Function.Params.AsNamedArgsWithTypes}}) {{.Function.Returns.AsReturnSignature}} {
 	{{- range .Function.Params.Slices}}
-	var {{UnExport .Name}}Copy {{.Type}}
+	var {{UnExport .Name}}Copy {{Replace .Type "..." "[]" -1}}
 	if {{UnExport .Name}} != nil {
-		{{UnExport .Name}}Copy = make({{.Type}}, len({{UnExport .Name}}))
+		{{UnExport .Name}}Copy = make({{Replace .Type "..." "[]" -1}}, len({{UnExport .Name}}))
 		copy({{UnExport .Name}}Copy, {{UnExport .Name}})
 	}
 	{{- end}}

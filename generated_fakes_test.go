@@ -277,6 +277,16 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			Expect(strings).To(Equal([]string{"one", "two", "three"}))
 		})
 
+		it("records the var-args as a copy", func() {
+			strings := []string{"one", "two"}
+
+			fake.DoThings(5, strings...)
+
+			strings[0] = "changed"
+			_, recorded := fake.DoThingsArgsForCall(0)
+			Expect(recorded).To(Equal([]string{"one", "two"}))
+		})
+
 		it("passes the var-args to stub functions", func() {
 			fake.DoThingsStub = func(x int, strings ...string) int {
 				Expect(strings).To(Equal([]string{"one", "two", "three"}))
