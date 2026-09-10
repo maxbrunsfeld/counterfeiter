@@ -34,7 +34,11 @@ if ($LASTEXITCODE -ne 0) {
 echo "running tests..."
 echo "----------------"
 echo ""
-go test -v -race ./...
+go test -v -race . ./fixtures/...
+if ($LASTEXITCODE -ne 0) {
+  ExitWithCode -exitcode $LASTEXITCODE
+}
+go test -v ./arguments/ ./command/ ./generator/ ./integration/
 if ($LASTEXITCODE -ne 0) {
   ExitWithCode -exitcode $LASTEXITCODE
 }

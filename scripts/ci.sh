@@ -35,7 +35,10 @@ fi
 echo
 echo "Running tests..."
 echo
-${GOCOMMAND} test -race ./...
+# the root package runs the generated fakes and the generator concurrently, so it
+# and the fixture packages get the race detector; the rest is single-threaded
+${GOCOMMAND} test -race . ./fixtures/...
+${GOCOMMAND} test ./arguments/ ./command/ ./generator/ ./integration/
 
 echo "
  _______  _     _  _______  _______  _______

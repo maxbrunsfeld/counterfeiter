@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Full CI pipeline (vet → regenerate fakes → verify clean git tree → race tests):
+Full CI pipeline (vet → regenerate fakes → verify clean git tree → tests):
 
 ```shell
 ./scripts/ci.sh          # Linux/macOS
@@ -22,8 +22,8 @@ go vet ./...
 go generate ./...                  # regenerate all fakes under fixtures/ (directives use `go run`, so no install needed)
 ./scripts/checkclean.sh            # fail if regenerated fakes differ from committed ones
 ./scripts/cleanfakes.sh            # delete every */*fakes/fake*.go (then `go generate ./...` to rebuild)
-go build ./...
-go test -race ./...
+go test -race . ./fixtures/...   # packages that exercise fakes or the generator concurrently
+go test ./arguments/ ./command/ ./generator/ ./integration/
 ```
 
 Run a single package's tests or a single spec. Tests use `sclevine/spec` + `gomega`; spec names are nested, so match with a regex on the top-level test function and the spec path:
@@ -34,6 +34,7 @@ go test ./integration/ -run 'TestIntegration/round_trip_as_module/working_with_a
 go test ./arguments/ -run TestParsingArguments -v
 go test ./command/ -run TestRunner
 go test -run TestFakes .                           # generated_fakes_test.go at repo root
+go test -race -run TestConcurrency .              # concurrency_test.go at repo root; only meaningful with -race
 go test -bench . -benchmem .                       # benchmark_test.go at repo root
 ```
 
@@ -61,6 +62,7 @@ Key supporting pieces:
 
 - `fixtures/` is a large corpus of interfaces exercising edge cases (aliases, dot imports, variadics, embedded interfaces, generics, hyphenated packages, package mode, vendored-style external packages, etc.). Each has `//go:generate` or `//counterfeiter:generate` directives; the generated fakes live in sibling `*fakes/` dirs and **are committed**. CI fails if `go generate ./...` produces a diff, so after changing templates or the generator, run `go generate ./...` and commit the regenerated fakes.
 - `generated_fakes_test.go` (repo root) uses the committed fixture fakes as a behavioral test of the fake API (`Stub`, `CallCount`, `ArgsForCall`, `Returns`, `ReturnsOnCall`, `Invocations`).
+- `concurrency_test.go` (repo root) drives `generator.NewFake` / `Generate` and `CachedFileReader` from several goroutines through shared caches. It only proves anything under `-race`, which is why it lives in the root package: CI runs `-race` there and on `fixtures/...` only, since `generator`, `integration`, `arguments`, and `command` are single-threaded and the race detector triples their run time. Anything concurrent added to the tool needs coverage here, not in its own package.
 - `generator/generator_internals_test.go` unit-tests `NewFake`/`Generate` against fixtures directly.
 - `integration/roundtrip_test.go` copies fixtures into a temp module, generates fakes, and runs `go build` on the result; some cases compare byte-for-byte against `integration/testdata/expected_*.txt`. Set `writeToTestData = true` in that file to dump actual output to `integration/testdata/output/` (gitignored) when debugging a mismatch.
 - `.golangci.yaml` skips `fixtures/` from linting.
