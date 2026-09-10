@@ -117,6 +117,26 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("the destination directory already holds a package", func() {
+			it("joins that package rather than naming one after the directory", func() {
+				dir, err := filepath.Abs(filepath.Join("..", "fixtures", "seeded", "fakes"))
+				Expect(err).NotTo(HaveOccurred())
+				f, err = NewFake(InterfaceOrFunction, "Sower", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/seeded", "FakeSower", "fakes", "", "", &Cache{}, WithDestinationDir(dir))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.DestinationPackage).To(Equal("seeded_fakes"))
+				b, err := f.Generate(false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring("package seeded_fakes\n"))
+				Expect(string(b)).To(ContainSubstring("var _ seeded.Sower = new(FakeSower)"))
+			})
+
+			it("keeps the given name when the directory holds no Go files", func() {
+				f, err = NewFake(InterfaceOrFunction, "Sower", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/seeded", "FakeSower", "fakes", "", "", &Cache{}, WithDestinationDir(t.TempDir()))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.DestinationPackage).To(Equal("fakes"))
+			})
+		})
+
 		when("the destination is the same package as the target", func() {
 			var (
 				pkgPath string

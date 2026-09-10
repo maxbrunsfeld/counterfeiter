@@ -110,17 +110,16 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
+	// The fake joins whatever package already lives in the destination
+	// directory, whose name is not always the directory name.
 	inDir := sameDir(f.DestinationDir, packageDir(pkg))
 	if inDir {
-		// The directory name is not always the package name.
 		f.DestinationPackage = pkg.Name
+	} else {
+		f.DestinationPackage = destinationPackageName(f.DestinationDir, f.DestinationPackage)
 	}
 	if f.testPackage {
-		name := f.DestinationPackage
-		if !inDir {
-			name = destinationPackageName(f.DestinationDir, name)
-		}
-		f.DestinationPackage = strings.TrimSuffix(name, "_test") + "_test"
+		f.DestinationPackage = strings.TrimSuffix(f.DestinationPackage, "_test") + "_test"
 	}
 	f.inTargetPackage = inDir && f.DestinationPackage == pkg.Name
 	if !f.inTargetPackage {
@@ -274,7 +273,8 @@ func hasInvalidEmbed(iface *types.Interface, seen map[*types.Interface]bool) boo
 
 // destinationPackageName returns the name of the package whose files are in
 // dir, which is not always the directory's name. Only the package clauses are
-// read. It falls back to the given name when dir holds no Go package.
+// read. It falls back to the given name when dir holds no Go package, or
+// when the files there disagree about the package name.
 func destinationPackageName(dir, fallback string) string {
 	if dir == "" {
 		return fallback
