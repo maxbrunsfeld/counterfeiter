@@ -51,6 +51,10 @@ type Fake struct {
 	// the package that declares the target, so that package must not be
 	// imported and its names are used unqualified.
 	inTargetPackage bool
+
+	// testPackage is true when the fake belongs to the external test package
+	// ("<package>_test") of the destination directory.
+	testPackage bool
 }
 
 // Method is a method of the interface.
@@ -70,6 +74,17 @@ type Option func(*Fake)
 func WithDestinationDir(dir string) Option {
 	return func(f *Fake) {
 		f.DestinationDir = dir
+	}
+}
+
+// WithTestPackage generates the fake into the external test package of the
+// destination directory: the "<package>_test" package that go test compiles
+// next to the package living there. That package is distinct from the target's
+// own package even when the directory is the same, so the target is imported
+// and must be exported.
+func WithTestPackage() Option {
+	return func(f *Fake) {
+		f.testPackage = true
 	}
 }
 

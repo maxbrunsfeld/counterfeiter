@@ -4,7 +4,7 @@ const usage = `
 USAGE
 	counterfeiter
 		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-fake-name-template <template>] [-header <header-file>] [-q]
+		[-fake-name-template <template>] [-header <header-file>] [-q] [-test]
 		[<source-path>] <interface> [-]
 
 ARGUMENTS
@@ -52,8 +52,8 @@ OPTIONS
 		# writes "FakeMyOtherInterface" to ./mypackagefakes/fake_my_other_interface.go
 		# writes "FakeMyThirdInterface" to ./mypackagefakes/fake_my_third_interface.go
 
-		The -o, -fake-name-template, -header and -q flags given alongside
-		-generate are the defaults for every directive. A directive's own
+		The -o, -fake-name-template, -header, -q and -test flags given
+		alongside -generate are the defaults for every directive. A directive's own
 		flags take precedence.
 
 	example:
@@ -78,6 +78,25 @@ OPTIONS
 
 		# writes "FakeMyInterface" to ./mySpecialFakesDir/fake_my_interface.go
 		counterfeiter -o ./mySpecialFakesDir ./mypackage MyInterface
+
+	-test
+		Generate the fake into the external test package ("<package>_test")
+		of the output directory, in a _test.go file, so it is only compiled
+		for tests and black-box tests can use it unqualified. Without -o the
+		fake is written into the current directory, next to the tests that
+		use it, wherever the interface comes from. The interface's package
+		is imported as usual, so the interface must be exported.
+		Cannot be combined with -p.
+
+	example:
+		# writes "FakeMyInterface" to ./fake_my_interface_test.go, in package "mypackage_test"
+		counterfeiter -test . MyInterface
+
+		# writes "FakeOtherInterface" to ./fake_other_interface_test.go, in package "mypackage_test"
+		counterfeiter -test ../otherpackage OtherInterface
+
+		# writes "FakeWriteCloser" to ./fake_write_closer_test.go, in package "mypackage_test"
+		counterfeiter -test io.WriteCloser
 
 	-p
 		Package mode:  When invoked in package mode, counterfeiter

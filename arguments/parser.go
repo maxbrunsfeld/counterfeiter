@@ -81,6 +81,11 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater, opts ..
 		false,
 		"Suppress status statements",
 	)
+	testFlag := fs.Bool(
+		"test",
+		false,
+		"Generate the fake into the external test package (<package>_test) of the output directory",
+	)
 	helpFlag := fs.Bool(
 		"help",
 		false,
@@ -106,12 +111,17 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater, opts ..
 	outputPath := or(*outputPathFlag, defaults.OutputPath)
 
 	packageMode := *packageFlag
+	testPackage := *testFlag || defaults.TestPackage
+	if packageMode && testPackage {
+		return nil, errors.New("-test cannot be combined with -p: a package shim is not a test package")
+	}
 	result := &ParsedArguments{
 		PrintToStdOut: any(args, "-"),
 		GenerateInterfaceAndShimFromPackageDirectory: packageMode,
 		GenerateMode: *generateFlag,
 		HeaderFile:   or(*headerFlag, defaults.HeaderFile),
 		Quiet:        *quietFlag || defaults.Quiet,
+		TestPackage:  testPackage,
 	}
 	if *generateFlag {
 		// Keep the raw flag values: they become the defaults for every directive.
@@ -128,7 +138,10 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater, opts ..
 	if err != nil {
 		return nil, err
 	}
-	result.parseOutputPath(packageMode, workingDir, outputPath, fs.Args())
+	err = result.parseOutputPath(packageMode, workingDir, outputPath, fs.Args())
+	if err != nil {
+		return nil, err
+	}
 	result.parseDestinationPackageName(packageMode, fs.Args())
 	result.parsePackagePath(packageMode, fs.Args())
 	return result, nil
@@ -221,35 +234,44 @@ func (a *ParsedArguments) parseFakeName(packageMode bool, fakeName string, tmpl 
 	return nil
 }
 
-func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, outputPath string, args []string) {
-	outputPathIsFilename := false
-	if strings.HasSuffix(outputPath, ".go") {
-		outputPathIsFilename = true
-	}
+func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, outputPath string, args []string) error {
 	snakeCaseName := strings.ToLower(camelRegexp.ReplaceAllString(a.FakeImplName, "${1}_${2}"))
+	fileName := snakeCaseName + ".go"
+	if a.TestPackage {
+		fileName = snakeCaseName + "_test.go"
+	}
 
 	if outputPath != "" {
 		if !filepath.IsAbs(outputPath) {
 			outputPath = filepath.Join(workingDir, outputPath)
 		}
 		a.OutputPath = outputPath
-		if !outputPathIsFilename {
-			a.OutputPath = filepath.Join(a.OutputPath, snakeCaseName+".go")
+		if !strings.HasSuffix(outputPath, ".go") {
+			a.OutputPath = filepath.Join(outputPath, fileName)
+		} else if a.TestPackage && !strings.HasSuffix(outputPath, "_test.go") {
+			return fmt.Errorf("-test generates a _test package, which Go only compiles from a _test.go file, not %s", filepath.Base(outputPath))
 		}
-		return
+		return nil
 	}
 
 	if packageMode {
 		a.parseDestinationPackageName(packageMode, args)
-		a.OutputPath = path.Join(workingDir, a.DestinationPackageName, snakeCaseName+".go")
-		return
+		a.OutputPath = path.Join(workingDir, a.DestinationPackageName, fileName)
+		return nil
 	}
 
+	if a.TestPackage {
+		// The fake belongs to the tests in the directory counterfeiter runs
+		// in, wherever the interface comes from.
+		a.OutputPath = filepath.Join(workingDir, fileName)
+		return nil
+	}
 	d := workingDir
 	if len(args) > 1 {
 		d = a.SourcePackageDir
 	}
-	a.OutputPath = filepath.Join(d, packageNameForPath(d), snakeCaseName+".go")
+	a.OutputPath = filepath.Join(d, packageNameForPath(d), fileName)
+	return nil
 }
 
 func (a *ParsedArguments) parseDestinationPackageName(packageMode bool, args []string) {
@@ -260,6 +282,9 @@ func (a *ParsedArguments) parseDestinationPackageName(packageMode bool, args []s
 	}
 
 	a.DestinationPackageName = restrictToValidPackageName(filepath.Base(filepath.Dir(a.OutputPath)))
+	if a.TestPackage {
+		a.DestinationPackageName += "_test"
+	}
 }
 
 func (a *ParsedArguments) parsePackagePath(packageMode bool, args []string) {
@@ -294,6 +319,7 @@ type ParsedArguments struct {
 	PrintToStdOut bool
 	GenerateMode  bool
 	Quiet         bool
+	TestPackage   bool // write the fake into the external test package (<package>_test) of its directory
 
 	HeaderFile       string
 	FakeNameTemplate string // text/template for FakeImplName, evaluated against {{.TargetName}}

@@ -106,7 +106,7 @@ $ go tool counterfeiter
 USAGE
 	counterfeiter
 		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-fake-name-template <template>] [-header <header-file>] [-q]
+		[-fake-name-template <template>] [-header <header-file>] [-q] [-test]
 		[<source-path>] <interface> [-]
 ```
 
@@ -121,7 +121,7 @@ $ ~/go/bin/counterfeiter
 USAGE
 	counterfeiter
 		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-fake-name-template <template>] [-header <header-file>] [-q]
+		[-fake-name-template <template>] [-header <header-file>] [-q] [-test]
 		[<source-path>] <interface> [-]
 ```
 
@@ -156,9 +156,21 @@ By default the fake lives in a sibling `<package>fakes` package, which cannot be
 
 When the output directory is the directory of the package that declares the interface, `counterfeiter` generates the fake as a member of that package: it does not import the package, refers to its types unqualified, and can fake unexported interfaces too. `-o` may also name a file in that directory, for example `-o fake_my_special_interface_test.go` to keep the fake out of the non-test build.
 
+#### Generating a test double into the external test package
+
+If your tests are black-box tests in `<package>_test`, `-test` generates the fake into that external test package instead, as a `_test.go` file in the current directory, next to the tests that use it:
+
+```go
+//counterfeiter:generate -test . MySpecialInterface
+//counterfeiter:generate -test ../otherpackage OtherInterface
+//counterfeiter:generate -test io.WriteCloser
+```
+
+The fake is then only compiled for tests, and the tests use it unqualified (`&FakeMySpecialInterface{}`). The interface's package is imported as usual, so the interface must be exported. This works for interfaces from the package itself, from other packages in your module, from the standard library and from third-party modules, and the fakes sit with the tests rather than in a fakes package next to each interface. With `-o <dir>` the fake goes into the external test package of that directory.
+
 #### Setting defaults for every directive
 
-Flags given alongside `-generate` on the `//go:generate` line are the defaults for every `//counterfeiter:generate` directive in the package: `-o`, `-header`, `-q` and `-fake-name-template`. A directive's own flags take precedence. `-fake-name-template` is a Go `text/template` in which `{{.TargetName}}` is the name of the interface being faked (first letter upper-cased); `-fake-name` on a directive still wins over it. So if you would rather keep all of a package's fakes in a `fake` package, named after their interfaces, you can write that once:
+Flags given alongside `-generate` on the `//go:generate` line are the defaults for every `//counterfeiter:generate` directive in the package: `-o`, `-header`, `-q`, `-test` and `-fake-name-template`. A directive's own flags take precedence. `-fake-name-template` is a Go `text/template` in which `{{.TargetName}}` is the name of the interface being faked (first letter upper-cased); `-fake-name` on a directive still wins over it. So if you would rather keep all of a package's fakes in a `fake` package, named after their interfaces, you can write that once:
 
 ```go
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate -o fake -fake-name-template '{{.TargetName}}'

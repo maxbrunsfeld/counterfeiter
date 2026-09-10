@@ -189,6 +189,30 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("generating a fake into the external test package of the interface's package", func() {
+		it.Before(func() {
+			baseDir = filepath.Join(baseDir, "samepackage")
+			relativeDir = filepath.Join(relativeDir, "samepackage")
+			copyFileFunc("samepackage.go")
+			WriteOutput([]byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage\n\ngo 1.18\n"), filepath.Join(baseDir, "go.mod"))
+			WriteOutput([]byte("package samepackage_test\n\nimport \"testing\"\n\nfunc TestFake(t *testing.T) {\n\tw := &FakeWidget{}\n\tif w.DoCallCount() != 0 {\n\t\tt.Fatal(\"unexpected call\")\n\t}\n}\n"), filepath.Join(baseDir, "samepackage_test.go"))
+		})
+
+		it("imports the package under test and vets together with the black-box tests", func() {
+			cache := &generator.FakeCache{}
+			pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage"
+			f, err := generator.NewFake(generator.InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "samepackage_test", "", baseDir, cache, generator.WithDestinationDir(baseDir), generator.WithTestPackage())
+			Expect(err).NotTo(HaveOccurred())
+			b, err := f.Generate(true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(b)).To(ContainSubstring("package samepackage_test\n"))
+			Expect(string(b)).To(ContainSubstring("var _ samepackage.Widget = new(FakeWidget)"))
+			WriteOutput(b, filepath.Join(baseDir, "fake_widget_test.go"))
+			RunBuild(baseDir)
+			RunVet(baseDir)
+		})
+	})
+
 	when("a test file imports the fake package that does not exist yet", func() {
 		it.Before(func() {
 			baseDir = filepath.Join(baseDir, "widgets")
