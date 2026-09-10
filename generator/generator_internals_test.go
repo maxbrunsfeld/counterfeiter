@@ -364,67 +364,34 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
-			when("the target is an interface", func() {
-				it.Before(func() {
-					f.Mode = InterfaceOrFunction
-					f.TargetPackage = "os"
-					f.TargetName = "FileInfo"
-					c := &Cache{}
-					err := f.loadPackages(c, "")
-					g.Expect(err).NotTo(HaveOccurred())
-					err = f.findPackage()
-					g.Expect(err).NotTo(HaveOccurred())
-				})
-
-				it("IsInterface() is true", func() {
-					g.Expect(f.IsInterface()).To(BeTrue())
-				})
-
-				it("IsFunction() is false", func() {
-					g.Expect(f.IsFunction()).To(BeFalse())
-				})
+			it("recognises an interface", func() {
+				f.Mode = InterfaceOrFunction
+				f.TargetPackage = "os"
+				f.TargetName = "FileInfo"
+				g.Expect(f.loadPackages(&Cache{}, "")).To(Succeed())
+				g.Expect(f.findPackage()).To(Succeed())
+				g.Expect(f.IsInterface()).To(BeTrue())
+				g.Expect(f.IsFunction()).To(BeFalse())
 			})
 
-			when("the target is a function", func() {
-				it.Before(func() {
-					f.Mode = InterfaceOrFunction
-					f.TargetPackage = "net/http"
-					f.TargetName = "HandlerFunc"
-					c := &Cache{}
-					err := f.loadPackages(c, "")
-					g.Expect(err).NotTo(HaveOccurred())
-					err = f.findPackage()
-					g.Expect(err).NotTo(HaveOccurred())
-				})
-
-				it("IsInterface() is false", func() {
-					g.Expect(f.IsInterface()).To(BeFalse())
-				})
-
-				it("IsFunction() is true", func() {
-					g.Expect(f.IsFunction()).To(BeTrue())
-				})
+			it("recognises a function", func() {
+				f.Mode = InterfaceOrFunction
+				f.TargetPackage = "net/http"
+				f.TargetName = "HandlerFunc"
+				g.Expect(f.loadPackages(&Cache{}, "")).To(Succeed())
+				g.Expect(f.findPackage()).To(Succeed())
+				g.Expect(f.IsInterface()).To(BeFalse())
+				g.Expect(f.IsFunction()).To(BeTrue())
 			})
 
-			when("the target is a struct", func() {
-				it.Before(func() {
-					f.Mode = InterfaceOrFunction
-					f.TargetPackage = "net/http"
-					f.TargetName = "Client"
-					c := &Cache{}
-					err := f.loadPackages(c, "")
-					g.Expect(err).NotTo(HaveOccurred())
-					err = f.findPackage()
-					g.Expect(err).To(HaveOccurred())
-				})
-
-				it("is not a function", func() {
-					g.Expect(f.IsFunction()).To(BeFalse())
-				})
-
-				it("is not an interface", func() {
-					g.Expect(f.IsInterface()).To(BeFalse())
-				})
+			it("treats a struct as neither", func() {
+				f.Mode = InterfaceOrFunction
+				f.TargetPackage = "net/http"
+				f.TargetName = "Client"
+				g.Expect(f.loadPackages(&Cache{}, "")).To(Succeed())
+				g.Expect(f.findPackage()).NotTo(Succeed())
+				g.Expect(f.IsInterface()).To(BeFalse())
+				g.Expect(f.IsFunction()).To(BeFalse())
 			})
 		})
 
@@ -459,49 +426,23 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("targeting the os package", func() {
-				it.Before(func() {
+				it("loads the package, finds it even behind an invalid entry, and loads its methods", func() {
 					f.TargetPackage = "os"
-					c := &Cache{}
-					err := f.loadPackages(c, "")
-					g.Expect(err).NotTo(HaveOccurred())
-				})
-
-				it("can load packages", func() {
+					g.Expect(f.loadPackages(&Cache{}, "")).To(Succeed())
 					g.Expect(len(f.Packages)).To(BeNumerically(">=", 1))
 					g.Expect(f.Packages[0].Name).To(Equal("os"))
-				})
 
-				it("can find the package with the os package path", func() {
-					err := f.findPackage()
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(f.Package).NotTo(BeNil())
+					g.Expect(f.findPackage()).To(Succeed())
 					g.Expect(f.Package).To(Equal(f.Packages[0]))
-				})
 
-				it("skips invalid packages", func() {
-					var p []*packages.Package
-					empty := &packages.Package{}
-					p = append(p, empty)
-					p = append(p, f.Packages...)
-					f.Packages = p
-					err := f.findPackage()
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(f.Package).NotTo(BeNil())
+					f.Packages = append([]*packages.Package{{}}, f.Packages...)
+					g.Expect(f.findPackage()).To(Succeed())
 					g.Expect(f.Package).To(Equal(f.Packages[1]))
-				})
 
-				it("can identify the method set for the package", func() {
-					err := f.findPackage()
-					g.Expect(err).NotTo(HaveOccurred())
 					methods := packageMethodSet(f.Package)
 					g.Expect(len(methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
-				})
 
-				it("can load the methods", func() {
-					err := f.findPackage()
-					g.Expect(err).NotTo(HaveOccurred())
-					err = f.loadMethods()
-					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(f.loadMethods()).To(Succeed())
 					g.Expect(len(f.Methods)).To(BeNumerically(">=", 51)) // yes, this is crazy because go 1.11 added a function
 					g.Expect(len(f.Imports.ByAlias)).To(Equal(3))
 				})
