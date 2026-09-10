@@ -23,7 +23,7 @@ func testUsage(t *testing.T, when spec.G, it spec.S) {
 		readme, err := os.ReadFile("../README.md")
 		Expect(err).NotTo(HaveOccurred())
 
-		_, section, found := strings.Cut(string(readme), "### Command reference\n")
+		_, section, found := strings.Cut(string(readme), "## Command reference\n")
 		Expect(found).To(BeTrue(), "the README has no 'Command reference' section")
 		_, block, found := strings.Cut(section, "```text\n")
 		Expect(found).To(BeTrue(), "the command reference has no ```text block")

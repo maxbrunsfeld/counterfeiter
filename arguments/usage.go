@@ -87,7 +87,7 @@ OPTIONS
 	-test
 		Generate the fake into the external test package ("<package>_test")
 		of the output directory, in a _test.go file, so it is only compiled
-		for tests and black-box tests can use it unqualified. Without -o the
+		for tests and tests in that package can use it unqualified. Without -o the
 		fake is written into the current directory, next to the tests that
 		use it, wherever the interface comes from. The interface's package
 		is imported as usual, so the interface must be exported.
