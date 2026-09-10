@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Full CI pipeline (vet → install → regenerate fakes → verify clean git tree → build → race tests):
+Full CI pipeline (vet → regenerate fakes → verify clean git tree → race tests):
 
 ```shell
 ./scripts/ci.sh          # Linux/macOS

@@ -16,12 +16,6 @@ ${GOCOMMAND} vet ./...
 
 # counterfeit all the things
 echo
-echo "Installing counterfeiter..."
-echo
-${GOCOMMAND} install .
-
-# counterfeit all the things
-echo
 echo "Generating fakes used by tests..."
 echo
 ${GOCOMMAND} generate ./...
@@ -36,12 +30,6 @@ if output=$(git status --porcelain) && [ ! -z "$output" ]; then
   echo "that you have committed or ignored all files before running ./scripts/ci.sh"
   exit 1
 fi
-
-# check that the fakes compile
-echo
-echo "Ensuring generated fakes compile..."
-echo
-${GOCOMMAND} build -v ./...
 
 # run the tests using the fakes
 echo

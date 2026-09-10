@@ -22,28 +22,11 @@ if ($LASTEXITCODE -ne 0) {
   ExitWithCode -exitcode $LASTEXITCODE
 }
 
-echo "installing counterfeiter..."
-echo "---------------------------"
-echo ""
-go install .
-if ($LASTEXITCODE -ne 0) {
-  ExitWithCode -exitcode $LASTEXITCODE
-}
-set-alias counterfeiter counterfeiter.exe
-
 echo "generating fakes..."
 echo "-------------------"
 echo ""
 
 go generate ./...
-if ($LASTEXITCODE -ne 0) {
-  ExitWithCode -exitcode $LASTEXITCODE
-}
-
-echo "ensuring generated fakes compile..."
-echo "-----------------------------------"
-echo ""
-go build -v ./...
 if ($LASTEXITCODE -ne 0) {
   ExitWithCode -exitcode $LASTEXITCODE
 }
