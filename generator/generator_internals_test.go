@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -27,6 +28,31 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		RegisterTestingT(t)
+	})
+
+	when("generating the same fake from several goroutines", func() {
+		it("produces the same output every time", func() {
+			f, err = NewFake(InterfaceOrFunction, "FileInfo", "os", "FakeFileInfo", "osfakes", "", "", &Cache{})
+			Expect(err).NotTo(HaveOccurred())
+			want, err := f.Generate(false)
+			Expect(err).NotTo(HaveOccurred())
+
+			results := make([][]byte, 8)
+			errs := make([]error, len(results))
+			var wg sync.WaitGroup
+			for i := range results {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					results[i], errs[i] = f.Generate(false)
+				}()
+			}
+			wg.Wait()
+			for i := range results {
+				Expect(errs[i]).NotTo(HaveOccurred())
+				Expect(string(results[i])).To(Equal(string(want)))
+			}
+		})
 	})
 
 	when("constructing a fake with NewFake()", func() {
