@@ -4,7 +4,32 @@ When writing unit-tests for an object, it is often useful to have fake implement
 of the object's collaborators. In go, such fake implementations cannot be generated
 automatically at runtime, and writing them by hand can be quite arduous.
 
-`counterfeiter` allows you to simply generate test doubles for a given interface.
+`counterfeiter` generates test doubles for a given interface. Given this:
+
+```go
+package foo
+
+//go:generate go tool counterfeiter -generate
+
+//counterfeiter:generate . MySpecialInterface
+type MySpecialInterface interface {
+	DoThings(string, uint64) (int, error)
+}
+```
+
+`go generate` writes `foofakes/fake_my_special_interface.go`, and your tests can do this:
+
+```go
+fake := &foofakes.FakeMySpecialInterface{}
+fake.DoThingsReturns(3, nil)
+
+num, err := fake.DoThings("stuff", 5)
+
+Expect(num).To(Equal(3))
+Expect(fake.DoThingsCallCount()).To(Equal(1))
+str, _ := fake.DoThingsArgsForCall(0)
+Expect(str).To(Equal("stuff"))
+```
 
 ### Supported Versions Of `go`
 
@@ -14,7 +39,7 @@ automatically at runtime, and writing them by hand can be quite arduous.
 
 If you are having problems with `counterfeiter` and are not using a supported version of go, please update to use a supported version of go before opening an issue.
 
-### Using `counterfeiter`
+### Getting Started
 
 ⚠️ Please use [`go modules`](https://blog.golang.org/using-go-modules) when working with counterfeiter.
 
@@ -30,34 +55,9 @@ Establish a tool dependency on counterfeiter by running the following command:
 go get -tool github.com/maxbrunsfeld/counterfeiter/v6
 ```
 
-#### Step 2a - Add `go:generate` Directives
+#### Step 2 - Add directives
 
-You can add directives right next to your interface definitions (or not), in any `.go` file in your module.
-
-```shell
-$ cat myinterface.go
-```
-
-```go
-package foo
-
-//go:generate go tool counterfeiter . MySpecialInterface
-
-type MySpecialInterface interface {
-	DoThings(string, uint64) (int, error)
-}
-```
-
-```shell
-$ go generate ./...
-Writing `FakeMySpecialInterface` to `foofakes/fake_my_special_interface.go`... Done
-```
-
-#### Step 2b - Add `counterfeiter:generate` Directives
-
-If you plan to have many directives in a single package, consider using this
-option, as it will speed things up considerably. You can add directives right
-next to your interface definitions (or not), in any `.go` file in your module.
+Add one `go:generate` directive per package that runs `counterfeiter -generate`, and one `counterfeiter:generate` directive per interface you want a fake for. You can add them right next to your interface definitions (or not), in any `.go` file in the package.
 
 ```shell
 $ cat myinterface.go
@@ -82,11 +82,15 @@ type MyOtherInterface interface {
 }
 ```
 
-```shell
-$ go generate ./...
-Writing `FakeMySpecialInterface` to `foofakes/fake_my_special_interface.go`... Done
-Writing `FakeMyOtherInterface` to `foofakes/fake_my_other_interface.go`... Done
+A `counterfeiter:generate` directive takes the same arguments as the command line: the directory of the package that declares the interface (`.` for the package the directive is in) and the name of the interface, plus any of the flags described below.
+
+If a package only has an interface or two, you can skip `-generate` and the `counterfeiter:generate` directives, and run `counterfeiter` directly from one `go:generate` line per interface instead:
+
+```go
+//go:generate go tool counterfeiter . MySpecialInterface
 ```
+
+`-generate` is much faster once there are several directives in a package, because it loads the package once and writes every fake from one process, where each `go:generate` line starts a new one.
 
 #### Step 3 - Run `go generate`
 
@@ -94,59 +98,79 @@ You can run `go generate` in the directory with your directive, or in the root o
 
 ```shell
 $ go generate ./...
+Writing `FakeMySpecialInterface` to `foofakes/fake_my_special_interface.go`... Done
+Writing `FakeMyOtherInterface` to `foofakes/fake_my_other_interface.go`... Done
 ```
 
-#### Invoking `counterfeiter` from the shell
+### What Gets Generated, And Where
 
-You can use the following command to invoke `counterfeiter` from within a go module:
+For `//counterfeiter:generate . MySpecialInterface` in package `foo`:
 
-```shell
-$ go tool counterfeiter
+| | default | change it with |
+|---|---|---|
+| fake type | `FakeMySpecialInterface` (`Fake` + the interface name) | `-fake-name`, `-fake-name-template` |
+| file | `fake_my_special_interface.go` (the fake's name in snake case) | `-o <path>.go` |
+| directory | `foofakes/`, next to the package that declares the interface | `-o <dir>` |
+| package | `foofakes`, or whatever package already lives in the output directory | `-o`, `-test`, or a file declaring the package |
 
-USAGE
-	counterfeiter
-		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-fake-name-template <template>] [-header <header-file>] [-q] [-test]
-		[<source-path>] <interface> [-]
-```
+The generated file ends with `var _ foo.MySpecialInterface = new(FakeMySpecialInterface)`, so when the interface changes, the stale fake stops compiling until you run `go generate` again.
 
-#### Installing `counterfeiter` to `$GOPATH/bin`
+### Common Setups
 
-This is unnecessary if you're using the approach described above, but does allow you to invoke `counterfeiter` in your shell _outside_ of a module:
+The examples below are `counterfeiter:generate` directives. They go in a package that has the `//go:generate go tool counterfeiter -generate` line from Step 2. One such line per package is enough, however many `counterfeiter:generate` directives the package has.
 
-```shell
-$ go install github.com/maxbrunsfeld/counterfeiter/v6
-$ ~/go/bin/counterfeiter
+#### Shared settings for every directive in a package
 
-USAGE
-	counterfeiter
-		[-generate>] [-o <output-path>] [-p] [--fake-name <fake-name>]
-		[-fake-name-template <template>] [-header <header-file>] [-q] [-test]
-		[<source-path>] <interface> [-]
-```
-
-### Generating Test Doubles
-
-Given a path to a package and an interface name, you can generate a test double.
-
-```shell
-$ cat path/to/foo/file.go
-```
+Flags given alongside `-generate` on the `//go:generate` line are the defaults for every `//counterfeiter:generate` directive in the package: `-o`, `-header`, `-q`, `-test` and `-fake-name-template`. A directive's own flags take precedence. So if you would rather keep all of a package's fakes in a `fake` package, named after their interfaces, you can write that once:
 
 ```go
-package foo
+//go:generate go tool counterfeiter -generate -o fake -fake-name-template '{{.TargetName}}'
 
-type MySpecialInterface interface {
-		DoThings(string, uint64) (int, error)
-}
+//counterfeiter:generate . MyRepository
+//counterfeiter:generate . MyPresenter
 ```
 
 ```shell
-$ go tool counterfeiter path/to/foo MySpecialInterface
-Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
+$ go generate ./...
+Writing `MyRepository` to `fake/my_repository.go`... Done
+Writing `MyPresenter` to `fake/my_presenter.go`... Done
 ```
 
-#### Naming the fakes package
+#### Interfaces from other packages, the standard library or third-party modules
+
+You can fake any interface your module can import. Name it as `<package-path>.<interface>`, or give the directory of the package and the interface name:
+
+```go
+//counterfeiter:generate io.WriteCloser
+//counterfeiter:generate github.com/go-redis/redis.Pipeliner
+//counterfeiter:generate ../otherpackage OtherInterface
+```
+
+With the `<package-path>.<interface>` form the fake goes into the fakes package of the directory the directive is in, so in package `foo` the first line writes `foofakes/fake_write_closer.go`. With a directory and a name, the fake goes next to that package, here `../otherpackage/otherpackagefakes/fake_other_interface.go`. Use `-o` to put it somewhere else.
+
+#### Fakes for white-box tests in the interface's own package
+
+By default the fake lives in a sibling `<package>fakes` package, which cannot be imported by tests inside `<package>` itself (it would be an import cycle). If you want to use a fake from a white-box test in the same package, point `-o` at the interface's own directory:
+
+```go
+//counterfeiter:generate -o . . MySpecialInterface
+```
+
+When the output directory is the directory of the package that declares the interface, `counterfeiter` generates the fake as a member of that package: it does not import the package, refers to its types unqualified, and can fake unexported interfaces too. `-o` may also name a file in that directory, for example `-o fake_my_special_interface_test.go` to keep the fake out of the non-test build.
+
+#### Fakes for black-box tests in `<package>_test`
+
+If your tests are black-box tests in `<package>_test`, `-test` generates the fake into that external test package instead, as a `_test.go` file in the current directory, next to the tests that use it:
+
+```go
+//counterfeiter:generate -test . MySpecialInterface
+//counterfeiter:generate -test ../otherpackage OtherInterface
+//counterfeiter:generate -test io.WriteCloser
+```
+
+The fake is then only compiled for tests, and the tests use it unqualified (`&FakeMySpecialInterface{}`). The interface's package is imported as usual, so the interface must be exported. This works for interfaces from the package itself, from other packages in your module, from the standard library and from third-party modules, and the fakes sit with the tests rather than in a fakes package next to each interface. With `-o <dir>` the fake goes into the external test package of that directory.
+
+#### A fakes package whose name is not its directory name
 
 The package clause of a fake follows the package that already lives in the output directory, and is named after the directory only when there is none yet. So to name the package differently from its directory, say `impl_fakes` in `fakes/`, add a file declaring that package first:
 
@@ -159,44 +183,71 @@ package impl_fakes
 //counterfeiter:generate -o fakes . MyInterface
 ```
 
-#### Generating a test double into the interface's own package
+#### Naming fakes
 
-By default the fake lives in a sibling `<package>fakes` package, which cannot be imported by tests inside `<package>` itself (it would be an import cycle). If you want to use a fake from a white-box test in the same package, point `-o` at the interface's own directory:
-
-```go
-//counterfeiter:generate -o . . MySpecialInterface
-```
-
-When the output directory is the directory of the package that declares the interface, `counterfeiter` generates the fake as a member of that package: it does not import the package, refers to its types unqualified, and can fake unexported interfaces too. `-o` may also name a file in that directory, for example `-o fake_my_special_interface_test.go` to keep the fake out of the non-test build.
-
-#### Generating a test double into the external test package
-
-If your tests are black-box tests in `<package>_test`, `-test` generates the fake into that external test package instead, as a `_test.go` file in the current directory, next to the tests that use it:
+`-fake-name` names one fake. `-fake-name-template` is a Go `text/template` in which `{{.TargetName}}` is the name of the interface being faked (first letter upper-cased); it applies wherever `-fake-name` is not given, and can be set once for the package on the `-generate` line. The file name follows the fake's name.
 
 ```go
-//counterfeiter:generate -test . MySpecialInterface
-//counterfeiter:generate -test ../otherpackage OtherInterface
-//counterfeiter:generate -test io.WriteCloser
-```
-
-The fake is then only compiled for tests, and the tests use it unqualified (`&FakeMySpecialInterface{}`). The interface's package is imported as usual, so the interface must be exported. This works for interfaces from the package itself, from other packages in your module, from the standard library and from third-party modules, and the fakes sit with the tests rather than in a fakes package next to each interface. With `-o <dir>` the fake goes into the external test package of that directory.
-
-#### Setting defaults for every directive
-
-Flags given alongside `-generate` on the `//go:generate` line are the defaults for every `//counterfeiter:generate` directive in the package: `-o`, `-header`, `-q`, `-test` and `-fake-name-template`. A directive's own flags take precedence. `-fake-name-template` is a Go `text/template` in which `{{.TargetName}}` is the name of the interface being faked (first letter upper-cased); `-fake-name` on a directive still wins over it. So if you would rather keep all of a package's fakes in a `fake` package, named after their interfaces, you can write that once:
-
-```go
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate -o fake -fake-name-template '{{.TargetName}}'
-
-//counterfeiter:generate . MyRepository
-//counterfeiter:generate . MyPresenter
+//counterfeiter:generate -fake-name Repo . MyRepository
+//counterfeiter:generate -fake-name-template '{{.TargetName}}Double' . MyPresenter
 ```
 
 ```shell
 $ go generate ./...
-Writing `MyRepository` to `fake/my_repository.go`... Done
-Writing `MyPresenter` to `fake/my_presenter.go`... Done
+Writing `Repo` to `foofakes/repo.go`... Done
+Writing `MyPresenterDouble` to `foofakes/my_presenter_double.go`... Done
 ```
+
+#### A header on every fake
+
+`-header` prepends the contents of a file to every generated fake, for a licence header for example. Set it once on the `-generate` line, or per directive.
+
+```go
+//go:generate go tool counterfeiter -generate -header ../LICENSE.header
+```
+
+#### Faking a function type
+
+Function types can be faked as well. The fake is a struct whose `Spy` method has the function's signature, so `fake.Spy` goes wherever the function is expected. `Returns`, `CallCount`, `ArgsForCall` and the rest work as for a method, without a method name in front.
+
+```go
+//counterfeiter:generate . RequestHandler
+type RequestHandler func(*http.Request) error
+```
+
+```go
+fake := &foofakes.FakeRequestHandler{}
+fake.Returns(nil)
+
+server := NewServer(fake.Spy)
+```
+
+#### Faking a whole package
+
+Package mode, `-p`, is for code that calls package-level functions directly, `os.Hostname()` say, and has no interface to fake. It writes a file with an interface whose methods are the package's exported functions, and a shim struct that forwards each method to the package. The file carries a `counterfeiter:generate` directive of its own, so the next `go generate` produces a fake of that interface.
+
+```go
+//counterfeiter:generate -p os
+```
+
+```shell
+$ go generate ./...
+Writing `Os` to `osshim/os.go`... Done
+$ go generate ./...
+Writing `FakeOs` to `osshimfakes/fake_os.go`... Done
+```
+
+Your code takes the `osshim.Os` interface, production code passes `&osshim.OsShim{}`, tests pass the fake.
+
+#### Printing to stdout, quieter output
+
+A trailing `-` prints the fake to standard output instead of writing a file:
+
+```shell
+$ go tool counterfeiter . MySpecialInterface -
+```
+
+`-q` drops the `Writing ...` lines, which is useful in a `-generate` line for a package with many fakes.
 
 ### Using Test Doubles In Your Tests
 
@@ -207,6 +258,36 @@ import "my-repo/path/to/foo/foofakes"
 
 var fake = &foofakes.FakeMySpecialInterface{}
 ```
+
+Every method `M` of the interface gives the fake a set of methods named after it. You can stub return values:
+
+```go
+fake.DoThingsReturns(3, errors.New("the-error"))
+
+num, err := fake.DoThings("stuff", 5)
+Expect(num).To(Equal(3))
+Expect(err).To(Equal(errors.New("the-error")))
+```
+
+or stub them for one call at a time, counting from zero; calls without an entry fall back to `Returns`:
+
+```go
+fake.DoThingsReturnsOnCall(0, 1, nil)
+fake.DoThingsReturnsOnCall(1, 0, errors.New("the-error"))
+```
+
+When the result depends on the arguments, give the fake a function instead. It takes precedence over `Returns` and `ReturnsOnCall`, and calling either of those clears it again:
+
+```go
+fake.DoThingsStub = func(s string, n uint64) (int, error) {
+	if s == "stuff" {
+		return 3, nil
+	}
+	return 0, errors.New("unexpected")
+}
+```
+
+`fake.DoThingsCalls(stub)` does the same under the fake's lock. Without a stub or return values, the fake returns zero values.
 
 Fakes record the arguments they were called with:
 
@@ -220,24 +301,174 @@ Expect(str).To(Equal("stuff"))
 Expect(num).To(Equal(uint64(5)))
 ```
 
-You can stub their return values:
-
-```go
-fake.DoThingsReturns(3, errors.New("the-error"))
-
-num, err := fake.DoThings("stuff", 5)
-Expect(num).To(Equal(3))
-Expect(err).To(Equal(errors.New("the-error")))
-```
+Slice and array arguments are recorded as copies, so a caller that reuses its buffer does not change what the fake recorded; a stub function still receives the original. `fake.Invocations()` returns every recorded call of every method, keyed by method name. Fakes are safe to use from several goroutines at once.
 
 For more examples of using the `counterfeiter` API, look at [some of the provided examples](https://github.com/maxbrunsfeld/counterfeiter/blob/master/generated_fakes_test.go).
 
-### Generating Test Doubles For Third Party Interfaces
+### Command reference
 
-For third party interfaces, you can specify the interface using the alternative syntax `<package>.<interface>`, for example:
+`go tool counterfeiter -help` prints the following. Outside a module, `go install github.com/maxbrunsfeld/counterfeiter/v6` puts a `counterfeiter` binary in `$GOPATH/bin` that takes the same arguments.
 
-```shell
-$ go tool counterfeiter github.com/go-redis/redis.Pipeliner
+```text
+USAGE
+	counterfeiter
+		[-generate] [-o <output-path>] [-p] [-fake-name <fake-name>]
+		[-fake-name-template <template>] [-header <header-file>] [-q] [-test]
+		[<source-path>] <interface> [-]
+
+ARGUMENTS
+	source-path
+		Path to the file or directory containing the interface to fake.
+		In package mode (-p), source-path is the import path of the package
+		to generate an interface and shim for; a standard library package
+		can be given by name (e.g. "os").
+
+	interface
+		If source-path is specified: name of the interface to fake.
+		If no source-path is specified: fully qualified path of the
+		interface to fake, <package-path>.<interface>.
+		Not used in package mode (-p), where the interface is named after
+		the package.
+
+	example:
+		# in directory "mypackage", writes "FakeStdInterface" to
+		# ./mypackagefakes/fake_std_interface.go
+		counterfeiter package/subpackage.StdInterface
+
+	'-' argument
+		Write code to standard out instead of to a file
+
+OPTIONS
+	-generate
+		Identify all //counterfeiter:generate directives in .go files in the
+		current working directory and generate fakes for them. You can pass
+		arguments as usual.
+
+		NOTE: This is not the same as //go:generate directives
+		(used with the 'go generate' command), but it can be combined with
+		go generate by adding the following to a .go file:
+
+		# runs counterfeiter in generate mode
+		//go:generate go tool counterfeiter -generate
+
+	example:
+		Add the following to a .go file:
+
+		//counterfeiter:generate . MyInterface
+		//counterfeiter:generate . MyOtherInterface
+		//counterfeiter:generate . MyThirdInterface
+
+		# run counterfeiter
+		counterfeiter -generate
+		# writes "FakeMyInterface" to ./mypackagefakes/fake_my_interface.go
+		# writes "FakeMyOtherInterface" to ./mypackagefakes/fake_my_other_interface.go
+		# writes "FakeMyThirdInterface" to ./mypackagefakes/fake_my_third_interface.go
+
+		The -o, -fake-name-template, -header, -q and -test flags given
+		alongside -generate are the defaults for every directive. A directive's
+		own flags take precedence.
+
+	example:
+		# every fake goes into ./fake and is named after its interface
+		//go:generate go tool counterfeiter -generate -o fake -fake-name-template {{.TargetName}}
+		//counterfeiter:generate . MyInterface
+		//counterfeiter:generate -o otherfake . MyOtherInterface
+
+		# writes "MyInterface" to ./fake/my_interface.go
+		# writes "MyOtherInterface" to ./otherfake/my_other_interface.go
+
+	-o
+		Path to the file or directory for the generated fakes.
+		This also determines the package name that will be used:
+		if the directory already holds a Go package the fake joins
+		it, otherwise the package is named after the directory.
+		By default, the generated fakes will be generated in
+		the package "xyzfakes" which is nested in package "xyz",
+		where "xyz" is the name of referenced package.
+
+	example:
+		# writes "FakeMyInterface" to ./mySpecialFakesDir/specialFake.go
+		counterfeiter -o ./mySpecialFakesDir/specialFake.go ./mypackage MyInterface
+
+		# writes "FakeMyInterface" to ./mySpecialFakesDir/fake_my_interface.go
+		counterfeiter -o ./mySpecialFakesDir ./mypackage MyInterface
+
+	-test
+		Generate the fake into the external test package ("<package>_test")
+		of the output directory, in a _test.go file, so it is only compiled
+		for tests and black-box tests can use it unqualified. Without -o the
+		fake is written into the current directory, next to the tests that
+		use it, wherever the interface comes from. The interface's package
+		is imported as usual, so the interface must be exported.
+		Cannot be combined with -p.
+
+	example:
+		# writes "FakeMyInterface" to ./fake_my_interface_test.go, in package "mypackage_test"
+		counterfeiter -test . MyInterface
+
+		# writes "FakeOtherInterface" to ./fake_other_interface_test.go, in package "mypackage_test"
+		counterfeiter -test ../otherpackage OtherInterface
+
+		# writes "FakeWriteCloser" to ./fake_write_closer_test.go, in package "mypackage_test"
+		counterfeiter -test io.WriteCloser
+
+	-p
+		Package mode: counterfeiter generates an interface and a shim
+		implementation for a package in your module or the standard
+		library. The interface has the package's exported functions as
+		methods, and the shim forwards each method to the package. The
+		generated file carries a //counterfeiter:generate directive, so
+		running go generate there produces a fake of the interface.
+
+	example:
+		# writes the "Os" interface and "OsShim" to ${PWD}/osshim/os.go
+		counterfeiter -p os
+		# now generate "FakeOs" in ${PWD}/osshim/osshimfakes/fake_os.go
+		go generate ./osshim/...
+
+	-header
+		Path to the file which should be used as a header for all generated fakes.
+		By default, no special header is used.
+		This is useful to e.g. add a licence header to every fake.
+
+		In generate mode the header can be set once for the whole package on
+		the "go:generate" line; a "counterfeiter:generate" line that specifies
+		its own header file takes precedence.
+
+	example:
+		# having the following code in a package ...
+		//go:generate go tool counterfeiter -header ./generic.go.txt -generate
+		//counterfeiter:generate -header ./specific.go.txt . MyInterface
+		//counterfeiter:generate . MyOtherInterface
+		//counterfeiter:generate . MyThirdInterface
+
+		# ... generating the fakes ...
+		go generate .
+
+		# writes "FakeMyInterface" with ./specific.go.txt as a header
+		# writes "FakeMyOtherInterface" & "FakeMyThirdInterface" with ./generic.go.txt as a header
+
+	-fake-name
+		Name of the fake struct to generate. By default, 'Fake' will
+		be prepended to the name of the original interface. (ignored in
+		-p mode)
+
+	example:
+		# writes "CoolThing" to ./mypackagefakes/cool_thing.go
+		counterfeiter -fake-name CoolThing ./mypackage MyInterface
+
+	-fake-name-template
+		A text/template for the name of the fake struct, used when -fake-name
+		is not given. {{.TargetName}} is the name of the interface being faked,
+		with its first letter upper-cased. In generate mode it can be set once
+		for the whole package on the "go:generate" line. (ignored in -p mode)
+
+	example:
+		# writes "MyInterfaceDouble" to ./mypackagefakes/my_interface_double.go
+		counterfeiter -fake-name-template '{{.TargetName}}Double' ./mypackage MyInterface
+
+	-q
+		Suppress the "Writing ..." status lines. Errors are still reported.
 ```
 
 ### Running The Tests For `counterfeiter`
