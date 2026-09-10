@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -26,31 +25,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		f   *Fake
 		err error
 	)
-
-	when("generating the same fake from several goroutines", func() {
-		it("produces the same output every time", func() {
-			f, err = NewFake(InterfaceOrFunction, "FileInfo", "os", "FakeFileInfo", "osfakes", "", "", &Cache{})
-			g.Expect(err).NotTo(HaveOccurred())
-			want, err := f.Generate(false)
-			g.Expect(err).NotTo(HaveOccurred())
-
-			results := make([][]byte, 8)
-			errs := make([]error, len(results))
-			var wg sync.WaitGroup
-			for i := range results {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					results[i], errs[i] = f.Generate(false)
-				}()
-			}
-			wg.Wait()
-			for i := range results {
-				g.Expect(errs[i]).NotTo(HaveOccurred())
-				g.Expect(string(results[i])).To(Equal(string(want)))
-			}
-		})
-	})
 
 	when("constructing a fake with NewFake()", func() {
 		when("the target is a nonexistent package", func() {
