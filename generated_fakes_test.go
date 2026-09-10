@@ -2,7 +2,7 @@ package main_test
 
 import (
 	"errors"
-
+	"sync"
 	"testing"
 
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures"
@@ -277,6 +277,16 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			Expect(strings).To(Equal([]string{"one", "two", "three"}))
 		})
 
+		it("records the var-args as a copy", func() {
+			strings := []string{"one", "two"}
+
+			fake.DoThings(5, strings...)
+
+			strings[0] = "changed"
+			_, recorded := fake.DoThingsArgsForCall(0)
+			Expect(recorded).To(Equal([]string{"one", "two"}))
+		})
+
 		it("passes the var-args to stub functions", func() {
 			fake.DoThingsStub = func(x int, strings ...string) int {
 				Expect(strings).To(Equal([]string{"one", "two", "three"}))
@@ -302,6 +312,45 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			go func() { _, _ = fake.DoThings("1", 1) }()
 		})
 	})
+
+	when("reading invocations while the fake is being called", func() {
+		const calls = 5000
+
+		it("does not deadlock for an interface fake", func() {
+			fake := new(fixturesfakes.FakeSomething)
+			done := hammer(calls, fake.DoNothing, func() { fake.Invocations() })
+			Eventually(done, 5.0).Should(BeClosed())
+			Expect(fake.DoNothingCallCount()).To(Equal(calls))
+		})
+
+		it("does not deadlock for a function fake", func() {
+			fake := new(fixturesfakes.FakeSomethingFactory)
+			done := hammer(calls, func() { fake.Spy("", nil) }, func() { fake.Invocations() })
+			Eventually(done, 5.0).Should(BeClosed())
+			Expect(fake.CallCount()).To(Equal(calls))
+		})
+	})
+}
+
+// hammer runs each of the given functions count times, all concurrently, and
+// closes the returned channel once every one of them has finished.
+func hammer(count int, fns ...func()) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		var wg sync.WaitGroup
+		for _, fn := range fns {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for i := 0; i < count; i++ {
+					fn()
+				}
+			}()
+		}
+		wg.Wait()
+		close(done)
+	}()
+	return done
 }
 
 type InvocationRecorder interface {

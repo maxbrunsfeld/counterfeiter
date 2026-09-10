@@ -38,16 +38,21 @@ type FakeHasVarArgs struct {
 }
 
 func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int {
+	var arg3Copy []string
+	if arg3 != nil {
+		arg3Copy = make([]string, len(arg3))
+		copy(arg3Copy, arg3)
+	}
 	fake.doMoreThingsMutex.Lock()
 	ret, specificReturn := fake.doMoreThingsReturnsOnCall[len(fake.doMoreThingsArgsForCall)]
 	fake.doMoreThingsArgsForCall = append(fake.doMoreThingsArgsForCall, struct {
 		arg1 int
 		arg2 int
 		arg3 []string
-	}{arg1, arg2, arg3})
+	}{arg1, arg2, arg3Copy})
 	stub := fake.DoMoreThingsStub
 	fakeReturns := fake.doMoreThingsReturns
-	fake.recordInvocation("DoMoreThings", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("DoMoreThings", []interface{}{arg1, arg2, arg3Copy})
 	fake.doMoreThingsMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2, arg3...)
@@ -101,15 +106,20 @@ func (fake *FakeHasVarArgs) DoMoreThingsReturnsOnCall(i int, result1 int) {
 }
 
 func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
+	var arg2Copy []string
+	if arg2 != nil {
+		arg2Copy = make([]string, len(arg2))
+		copy(arg2Copy, arg2)
+	}
 	fake.doThingsMutex.Lock()
 	ret, specificReturn := fake.doThingsReturnsOnCall[len(fake.doThingsArgsForCall)]
 	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
 		arg1 int
 		arg2 []string
-	}{arg1, arg2})
+	}{arg1, arg2Copy})
 	stub := fake.DoThingsStub
 	fakeReturns := fake.doThingsReturns
-	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
+	fake.recordInvocation("DoThings", []interface{}{arg1, arg2Copy})
 	fake.doThingsMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2...)

@@ -28,15 +28,20 @@ type FakeDB struct {
 }
 
 func (fake *FakeDB) Exec(arg1 string, arg2 ...interface{}) (sqla.Result, error) {
+	var arg2Copy []interface{}
+	if arg2 != nil {
+		arg2Copy = make([]interface{}, len(arg2))
+		copy(arg2Copy, arg2)
+	}
 	fake.execMutex.Lock()
 	ret, specificReturn := fake.execReturnsOnCall[len(fake.execArgsForCall)]
 	fake.execArgsForCall = append(fake.execArgsForCall, struct {
 		arg1 string
 		arg2 []interface{}
-	}{arg1, arg2})
+	}{arg1, arg2Copy})
 	stub := fake.ExecStub
 	fakeReturns := fake.execReturns
-	fake.recordInvocation("Exec", []interface{}{arg1, arg2})
+	fake.recordInvocation("Exec", []interface{}{arg1, arg2Copy})
 	fake.execMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2...)

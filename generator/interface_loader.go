@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
-	"strings"
 
 	"golang.org/x/tools/go/types/typeutil"
 )
@@ -32,11 +31,12 @@ func methodForSignature(sig *types.Signature, methodName string, imports Imports
 		if isVariadic {
 			typ = "..." + typ[2:] // Change []string to ...string
 		}
+		_, isSlice := param.Type().Underlying().(*types.Slice)
 		p := Param{
 			Name:       fmt.Sprintf("arg%v", i+1),
 			Type:       typ,
 			IsVariadic: isVariadic,
-			IsSlice:    strings.HasPrefix(typ, "[]"),
+			IsSlice:    isSlice,
 		}
 		params = append(params, p)
 	}

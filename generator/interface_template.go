@@ -56,9 +56,9 @@ type {{.Name}}{{.GenericTypeParametersAndConstraints}} struct {
 {{range .Methods -}}
 func (fake *{{$.Name}}{{$.GenericTypeParameters}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.AsReturnSignature}} {
 	{{- range .Params.Slices}}
-	var {{UnExport .Name}}Copy {{.Type}}
+	var {{UnExport .Name}}Copy {{Replace .Type "..." "[]" -1}}
 	if {{UnExport .Name}} != nil {
-		{{UnExport .Name}}Copy = make({{.Type}}, len({{UnExport .Name}}))
+		{{UnExport .Name}}Copy = make({{Replace .Type "..." "[]" -1}}, len({{UnExport .Name}}))
 		copy({{UnExport .Name}}Copy, {{UnExport .Name}})
 	}
 	{{- end}}
