@@ -107,6 +107,25 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("when a single argument is provided followed by '-'", func() {
+		it.Before(func() {
+			args = []string{"counterfeiter", "io.WriteCloser", "-"}
+			justBefore()
+		})
+
+		it("still treats the argument as a fully qualified interface", func() {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedArgs.PackagePath).To(Equal("io"))
+			Expect(parsedArgs.InterfaceName).To(Equal("WriteCloser"))
+			Expect(parsedArgs.FakeImplName).To(Equal("FakeWriteCloser"))
+			Expect(parsedArgs.SourcePackageDir).To(BeEmpty())
+		})
+
+		it("indicates that the fake should be printed to stdout", func() {
+			Expect(parsedArgs.PrintToStdOut).To(BeTrue())
+		})
+	})
+
 	when("when a single argument is provided with the output directory", func() {
 		it.Before(func() {
 			args = []string{"counterfeiter", "-o", "/tmp/foo", "io.Writer"}

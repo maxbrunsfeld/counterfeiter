@@ -129,21 +129,23 @@ func New(args []string, workingDir string, evaler Evaler, stater Stater, opts ..
 		result.FakeNameTemplate = fakeNameTemplateText
 		return result, nil
 	}
-	err = result.parseSourcePackageDir(packageMode, workingDir, evaler, stater, fs.Args())
+	// "-" only asks for stdout; it is not a source path or an interface.
+	positional := without(fs.Args(), "-")
+	err = result.parseSourcePackageDir(packageMode, workingDir, evaler, stater, positional)
 	if err != nil {
 		return nil, err
 	}
-	result.parseInterfaceName(packageMode, fs.Args())
-	err = result.parseFakeName(packageMode, *fakeNameFlag, fakeNameTemplate, fs.Args())
+	result.parseInterfaceName(packageMode, positional)
+	err = result.parseFakeName(packageMode, *fakeNameFlag, fakeNameTemplate, positional)
 	if err != nil {
 		return nil, err
 	}
-	err = result.parseOutputPath(packageMode, workingDir, outputPath, fs.Args())
+	err = result.parseOutputPath(packageMode, workingDir, outputPath, positional)
 	if err != nil {
 		return nil, err
 	}
-	result.parseDestinationPackageName(packageMode, fs.Args())
-	result.parsePackagePath(packageMode, fs.Args())
+	result.parseDestinationPackageName(packageMode, positional)
+	result.parsePackagePath(packageMode, positional)
 	return result, nil
 }
 
@@ -360,6 +362,16 @@ func getSourceDir(path string, workingDir string, evaler Evaler, stater Stater) 
 		return filepath.Dir(path), nil
 	}
 	return path, nil
+}
+
+func without(slice []string, needle string) []string {
+	result := make([]string, 0, len(slice))
+	for _, str := range slice {
+		if str != needle {
+			result = append(result, str)
+		}
+	}
+	return result
 }
 
 func any(slice []string, needle string) bool {
