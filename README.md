@@ -1,4 +1,4 @@
-# `counterfeiter` [![GitHub Actions](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml/badge.svg)](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/maxbrunsfeld/counterfeiter/v6)](https://goreportcard.com/report/github.com/maxbrunsfeld/counterfeiter/v6) [![Go Reference](https://pkg.go.dev/badge/github.com/maxbrunsfeld/counterfeiter/v6.svg)](https://pkg.go.dev/github.com/maxbrunsfeld/counterfeiter/v6)
+# `counterfeiter` [![GitHub Actions](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml/badge.svg)](https://github.com/maxbrunsfeld/counterfeiter/actions/workflows/go.yml) [![Go Reference](https://pkg.go.dev/badge/github.com/maxbrunsfeld/counterfeiter/v6.svg)](https://pkg.go.dev/github.com/maxbrunsfeld/counterfeiter/v6)
 
 Go code declares what it needs from its dependencies as interfaces, usually small ones
 defined by the package that uses them. Testing that code means supplying fake
