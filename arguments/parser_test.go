@@ -375,6 +375,19 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("when '-fake-name' is used", func() {
+		it.Before(func() {
+			args = []string{"counterfeiter", "-fake-name", "Explicit", "my/mypackage", "mySpecialInterface"}
+			justBefore()
+		})
+
+		it("records that the name was given explicitly", func() {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedArgs.FakeImplName).To(Equal("Explicit"))
+			Expect(parsedArgs.FakeNameExplicit).To(BeTrue())
+		})
+	})
+
 	when("when '-fake-name-template' is used", func() {
 		it.Before(func() {
 			args = []string{"counterfeiter", "-fake-name-template", "The{{.TargetName}}Imposter", "my/mypackage", "mySpecialInterface"}
@@ -384,6 +397,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		it("names the fake by evaluating the template against the target name", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(parsedArgs.FakeImplName).To(Equal("TheMySpecialInterfaceImposter"))
+			Expect(parsedArgs.FakeNameExplicit).To(BeFalse())
 		})
 
 		it("snake cases the templated name for the output file", func() {

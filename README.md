@@ -156,7 +156,7 @@ By default the fake lives in a sibling `<package>fakes` package, which cannot be
 //counterfeiter:generate -o . . MySpecialInterface
 ```
 
-When the output directory is the directory of the package that declares the interface, `counterfeiter` generates the fake as a member of that package: it does not import the package, refers to its types unqualified, and can fake unexported interfaces too. `-o` may also name a file in that directory, for example `-o fake_my_special_interface_test.go` to keep the fake out of the non-test build.
+When the output directory is the directory of the package that declares the interface, `counterfeiter` generates the fake as a member of that package: it does not import the package, refers to its types unqualified, and can fake unexported interfaces too, in which case the fake is unexported as well (`gadget` gets `fakeGadget`) unless `-fake-name` names it. `-o` may also name a file in that directory, for example `-o fake_my_special_interface_test.go` to keep the fake out of the non-test build.
 
 #### Fakes for black-box tests in `<package>_test`
 
@@ -449,9 +449,10 @@ OPTIONS
 		# writes "FakeMyOtherInterface" & "FakeMyThirdInterface" with ./generic.go.txt as a header
 
 	-fake-name
-		Name of the fake struct to generate. By default, 'Fake' will
-		be prepended to the name of the original interface. (ignored in
-		-p mode)
+		Name of the fake struct to generate, used as given. By default,
+		'Fake' will be prepended to the name of the original interface;
+		a fake of an unexported interface generated into the interface's
+		own package is unexported. (ignored in -p mode)
 
 	example:
 		# writes "CoolThing" to ./mypackagefakes/cool_thing.go

@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type FakeGadget struct {
+type fakeGadget struct {
 	SpinStub        func(int) error
 	spinMutex       sync.RWMutex
 	spinArgsForCall []struct {
@@ -25,7 +25,7 @@ type FakeGadget struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeGadget) Spin(arg1 int) error {
+func (fake *fakeGadget) Spin(arg1 int) error {
 	fake.spinMutex.Lock()
 	ret, specificReturn := fake.spinReturnsOnCall[len(fake.spinArgsForCall)]
 	fake.spinArgsForCall = append(fake.spinArgsForCall, struct {
@@ -44,26 +44,26 @@ func (fake *FakeGadget) Spin(arg1 int) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeGadget) SpinCallCount() int {
+func (fake *fakeGadget) SpinCallCount() int {
 	fake.spinMutex.RLock()
 	defer fake.spinMutex.RUnlock()
 	return len(fake.spinArgsForCall)
 }
 
-func (fake *FakeGadget) SpinCalls(stub func(int) error) {
+func (fake *fakeGadget) SpinCalls(stub func(int) error) {
 	fake.spinMutex.Lock()
 	defer fake.spinMutex.Unlock()
 	fake.SpinStub = stub
 }
 
-func (fake *FakeGadget) SpinArgsForCall(i int) int {
+func (fake *fakeGadget) SpinArgsForCall(i int) int {
 	fake.spinMutex.RLock()
 	defer fake.spinMutex.RUnlock()
 	argsForCall := fake.spinArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeGadget) SpinReturns(result1 error) {
+func (fake *fakeGadget) SpinReturns(result1 error) {
 	fake.spinMutex.Lock()
 	defer fake.spinMutex.Unlock()
 	fake.SpinStub = nil
@@ -72,7 +72,7 @@ func (fake *FakeGadget) SpinReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeGadget) SpinReturnsOnCall(i int, result1 error) {
+func (fake *fakeGadget) SpinReturnsOnCall(i int, result1 error) {
 	fake.spinMutex.Lock()
 	defer fake.spinMutex.Unlock()
 	fake.SpinStub = nil
@@ -86,7 +86,7 @@ func (fake *FakeGadget) SpinReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeGadget) stop() {
+func (fake *fakeGadget) stop() {
 	fake.stopMutex.Lock()
 	fake.stopArgsForCall = append(fake.stopArgsForCall, struct {
 	}{})
@@ -98,19 +98,19 @@ func (fake *FakeGadget) stop() {
 	}
 }
 
-func (fake *FakeGadget) StopCallCount() int {
+func (fake *fakeGadget) StopCallCount() int {
 	fake.stopMutex.RLock()
 	defer fake.stopMutex.RUnlock()
 	return len(fake.stopArgsForCall)
 }
 
-func (fake *FakeGadget) StopCalls(stub func()) {
+func (fake *fakeGadget) StopCalls(stub func()) {
 	fake.stopMutex.Lock()
 	defer fake.stopMutex.Unlock()
 	fake.stopStub = stub
 }
 
-func (fake *FakeGadget) Invocations() map[string][][]interface{} {
+func (fake *fakeGadget) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
@@ -120,7 +120,7 @@ func (fake *FakeGadget) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeGadget) recordInvocation(key string, args []interface{}) {
+func (fake *fakeGadget) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -132,4 +132,4 @@ func (fake *FakeGadget) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ gadget = new(FakeGadget)
+var _ gadget = new(fakeGadget)

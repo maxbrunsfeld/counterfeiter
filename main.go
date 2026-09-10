@@ -109,13 +109,18 @@ func invokedByGoGenerate() bool {
 }
 
 func generate(workingDir string, args *arguments.ParsedArguments, cache generator.Cacher, headerReader generator.FileReader) error {
+	f, err := newFake(workingDir, args, cache, headerReader)
+	if err != nil {
+		return err
+	}
+
 	if !args.Quiet {
-		if err := reportStarting(workingDir, args.OutputPath, args.FakeImplName); err != nil {
+		if err := reportStarting(workingDir, args.OutputPath, f.Name); err != nil {
 			return err
 		}
 	}
 
-	b, err := doGenerate(workingDir, args, cache, headerReader)
+	b, err := f.Generate(true)
 	if err != nil {
 		return err
 	}
@@ -131,7 +136,7 @@ func generate(workingDir string, args *arguments.ParsedArguments, cache generato
 	return nil
 }
 
-func doGenerate(workingDir string, args *arguments.ParsedArguments, cache generator.Cacher, headerReader generator.FileReader) ([]byte, error) {
+func newFake(workingDir string, args *arguments.ParsedArguments, cache generator.Cacher, headerReader generator.FileReader) (*generator.Fake, error) {
 	mode := generator.InterfaceOrFunction
 	if args.GenerateInterfaceAndShimFromPackageDirectory {
 		mode = generator.Package
@@ -146,11 +151,10 @@ func doGenerate(workingDir string, args *arguments.ParsedArguments, cache genera
 	if args.TestPackage {
 		opts = append(opts, generator.WithTestPackage())
 	}
-	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, headerContent, workingDir, cache, opts...)
-	if err != nil {
-		return nil, err
+	if args.FakeNameExplicit {
+		opts = append(opts, generator.WithExplicitName())
 	}
-	return f.Generate(true)
+	return generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, headerContent, workingDir, cache, opts...)
 }
 
 func printCode(code []byte, outputPath string, printToStdOut bool) error {

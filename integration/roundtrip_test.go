@@ -153,7 +153,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage"
 			for _, target := range []struct{ name, fake, file string }{
 				{"Widget", "FakeWidget", "fake_widget.go"},
-				{"gadget", "FakeGadget", "fake_gadget.go"},
+				{"gadget", "fakeGadget", "fake_gadget.go"},
 			} {
 				f, err := generator.NewFake(generator.InterfaceOrFunction, target.name, pkgPath, target.fake, "samepackage", "", baseDir, cache, generator.WithDestinationDir(baseDir))
 				Expect(err).NotTo(HaveOccurred())

@@ -7,7 +7,7 @@ import "testing"
 func TestUseWithSamePackageFakes(t *testing.T) {
 	w := &FakeWidget{}
 	w.DoReturns(Thing{Name: "out"}, nil)
-	g := &FakeGadget{}
+	g := &fakeGadget{}
 
 	got, err := Use(w, g)
 	if err != nil {

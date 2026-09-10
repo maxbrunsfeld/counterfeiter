@@ -55,6 +55,10 @@ type Fake struct {
 	// testPackage is true when the fake belongs to the external test package
 	// ("<package>_test") of the destination directory.
 	testPackage bool
+
+	// explicitName is true when the user chose the fake's name, so it is
+	// used as given.
+	explicitName bool
 }
 
 // Method is a method of the interface.
@@ -85,6 +89,15 @@ func WithDestinationDir(dir string) Option {
 func WithTestPackage() Option {
 	return func(f *Fake) {
 		f.testPackage = true
+	}
+}
+
+// WithExplicitName records that the fake's name was chosen by the user rather
+// than derived from the target's name. The name is then used as given; in
+// particular it stays exported for an unexported target in its own package.
+func WithExplicitName() Option {
+	return func(f *Fake) {
+		f.explicitName = true
 	}
 }
 

@@ -131,6 +131,12 @@ func (f *Fake) findPackage() error {
 		if f.testPackage && inDir && !isExported(f.TargetName) {
 			return fmt.Errorf("cannot generate a fake for %s in package %s because it is unexported", f.TargetName, f.DestinationPackage)
 		}
+		if f.inTargetPackage && !isExported(f.TargetName) && !f.explicitName {
+			// An unexported interface can only be faked from inside its
+			// package, and a fake named after it should not become part
+			// of the package's API.
+			f.Name = unexport(f.Name)
+		}
 	}
 	f.loadGenericTypeParams()
 

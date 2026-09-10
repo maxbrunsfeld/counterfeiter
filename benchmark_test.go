@@ -55,8 +55,13 @@ func BenchmarkDoGenerate(b *testing.B) {
 					args.HeaderFile = headerFile
 					b.StartTimer()
 					for i := 0; i < b.N; i++ {
-						if _, err := doGenerate(workingDir, args, caches.cache, caches.headerReader); err != nil {
-							b.Errorf("Expected doGenerate not to return an error, got %v", err)
+						f, err := newFake(workingDir, args, caches.cache, caches.headerReader)
+						if err != nil {
+							b.Errorf("Expected newFake not to return an error, got %v", err)
+							continue
+						}
+						if _, err := f.Generate(true); err != nil {
+							b.Errorf("Expected Generate not to return an error, got %v", err)
 						}
 					}
 				}) // b.Run for headerFiles
