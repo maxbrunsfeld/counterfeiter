@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 
 	"io/fs"
-
-	. "github.com/onsi/gomega"
 )
 
 func WriteOutput(b []byte, file string) {
@@ -18,17 +16,17 @@ func WriteOutput(b []byte, file string) {
 }
 
 // RunVet type-checks the module including its test files.
-func RunVet(baseDir string) {
+func RunVet(baseDir string) error {
 	cmd := exec.Command("go", "vet", "./...")
 	cmd.Dir = baseDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(string(out))
 	}
-	Expect(err).NotTo(HaveOccurred())
+	return err
 }
 
-func RunBuild(baseDir string) {
+func RunBuild(baseDir string) error {
 	cmd := exec.Command("go", "build", "./...")
 	cmd.Dir = baseDir
 	stdout := &bytes.Buffer{}
@@ -40,5 +38,5 @@ func RunBuild(baseDir string) {
 		fmt.Println(stdout.String())
 		fmt.Println(stderr.String())
 	}
-	Expect(err).NotTo(HaveOccurred())
+	return err
 }

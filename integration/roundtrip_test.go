@@ -16,6 +16,7 @@ import (
 )
 
 func runTests(t *testing.T, when spec.G, it spec.S) {
+	g := NewWithT(t)
 	log.SetOutput(io.Discard) // Comment this out to see verbose log output
 	log.SetFlags(log.Llongfile)
 	var (
@@ -31,20 +32,19 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 	name := "working with a module"
 
 	it.Before(func() {
-		RegisterTestingT(t)
 		var err error
 		testDir, err = os.MkdirTemp("", "counterfeiter-integration")
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 		os.Unsetenv("GOPATH")
 		baseDir = testDir
 		err = os.MkdirAll(baseDir, 0777)
-		Expect(err).ToNot(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 		relativeDir = filepath.Join("..", "fixtures")
 		copyDirFunc = func() {
 			err = os.MkdirAll(baseDir, 0777)
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 			err = Copy(relativeDir, baseDir)
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 		}
 		copyFileFunc = func(name string) {
 			dir := baseDir
@@ -54,16 +54,16 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			err = os.MkdirAll(dir, 0777)
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 			b, err := os.ReadFile(filepath.Join(relativeDir, name))
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 			err = os.WriteFile(filepath.Join(baseDir, name), b, 0755)
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 		}
 		initModuleFunc = func() {
 			copyFileFunc("blank.go")
 			err := os.WriteFile(filepath.Join(baseDir, "go.mod"), []byte("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures\n\ngo 1.18\n"), 0755)
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 		}
 		// Set this to true to write the output of tests to the testdata/output
 		// directory 🙃 happy debugging!
@@ -75,7 +75,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			return
 		}
 		err := os.RemoveAll(testDir)
-		Expect(err).ToNot(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 	})
 
 	when("generating a fake for stdlib interfaces", func() {
@@ -88,17 +88,17 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 				initModuleFunc()
 				cache := &generator.FakeCache{}
 				f, err := generator.NewFake(generator.InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "custom", header, baseDir, cache)
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				b, err := f.Generate(true) // Flip to false to see output if goimports fails
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				if writeToTestData {
 					WriteOutput(b, filepath.Join("testdata", "output", "write_closer", "actual."+variant+".go"))
 				}
 				WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_write_closer."+variant+".go"))
-				RunBuild(baseDir)
+				g.Expect(RunBuild(baseDir)).To(Succeed())
 				b2, err := os.ReadFile(filepath.Join("testdata", "expected_fake_writecloser."+variant+".txt"))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(string(b2)).To(Equal(string(b)))
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(string(b2)).To(Equal(string(b)))
 			})
 		}
 		t("", noHeader)
@@ -110,14 +110,14 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			initModuleFunc()
 			cache := &generator.FakeCache{}
 			f, err := generator.NewFake(generator.Package, "", "os", "Os", "custom", "", baseDir, cache)
-			Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true) // Flip to false to see output if goimports fails
-			Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			if writeToTestData {
 				WriteOutput(b, filepath.Join("testdata", "output", "package_mode", "actual.go"))
 			}
 			WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_os.go"))
-			RunBuild(baseDir)
+			g.Expect(RunBuild(baseDir)).To(Succeed())
 		})
 	})
 
@@ -132,11 +132,11 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			interfaceName := "WithAliasedType"
 			fakePackageName := "type_aliasesfakes"
 			f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, "", baseDir, cache)
-			Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(false)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(b)).NotTo(ContainSubstring("primitive"))
-			Expect(string(b)).To(ContainSubstring(`"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/type_aliases/extra"`))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(string(b)).NotTo(ContainSubstring("primitive"))
+			g.Expect(string(b)).To(ContainSubstring(`"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/type_aliases/extra"`))
 		})
 	})
 
@@ -156,13 +156,13 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 				{"gadget", "fakeGadget", "fake_gadget.go"},
 			} {
 				f, err := generator.NewFake(generator.InterfaceOrFunction, target.name, pkgPath, target.fake, "samepackage", "", baseDir, cache, generator.WithDestinationDir(baseDir))
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				b, err := f.Generate(true)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(string(b)).To(ContainSubstring("var _ " + target.name + " = new(" + target.fake + ")"))
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(string(b)).To(ContainSubstring("var _ " + target.name + " = new(" + target.fake + ")"))
 				WriteOutput(b, filepath.Join(baseDir, target.file))
 			}
-			RunBuild(baseDir)
+			g.Expect(RunBuild(baseDir)).To(Succeed())
 		})
 
 		it("regenerates after the interface changed, even though the stale fake no longer compiles", func() {
@@ -170,22 +170,21 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage"
 			generate := func() {
 				f, err := generator.NewFake(generator.InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "samepackage", "", baseDir, cache, generator.WithDestinationDir(baseDir))
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				b, err := f.Generate(true)
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				WriteOutput(b, filepath.Join(baseDir, "fake_widget.go"))
 			}
 			generate()
-			RunBuild(baseDir)
-
+			g.Expect(RunBuild(baseDir)).To(Succeed())
 			src, err := os.ReadFile(filepath.Join(baseDir, "samepackage.go"))
-			Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			changed := strings.Replace(string(src), "Do(Thing) (Thing, error)\n", "Do(Thing) (Thing, error)\n\tUndo() error\n", 1)
-			Expect(changed).NotTo(Equal(string(src)))
+			g.Expect(changed).NotTo(Equal(string(src)))
 			WriteOutput([]byte(changed), filepath.Join(baseDir, "samepackage.go"))
 
 			generate()
-			RunBuild(baseDir)
+			g.Expect(RunBuild(baseDir)).To(Succeed())
 		})
 	})
 
@@ -202,14 +201,14 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			cache := &generator.FakeCache{}
 			pkgPath := "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/samepackage"
 			f, err := generator.NewFake(generator.InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "samepackage_test", "", baseDir, cache, generator.WithDestinationDir(baseDir), generator.WithTestPackage())
-			Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(b)).To(ContainSubstring("package samepackage_test\n"))
-			Expect(string(b)).To(ContainSubstring("var _ samepackage.Widget = new(FakeWidget)"))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(string(b)).To(ContainSubstring("package samepackage_test\n"))
+			g.Expect(string(b)).To(ContainSubstring("var _ samepackage.Widget = new(FakeWidget)"))
 			WriteOutput(b, filepath.Join(baseDir, "fake_widget_test.go"))
-			RunBuild(baseDir)
-			RunVet(baseDir)
+			g.Expect(RunBuild(baseDir)).To(Succeed())
+			g.Expect(RunVet(baseDir)).To(Succeed())
 		})
 	})
 
@@ -224,12 +223,12 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		it("generates the fake the test file is waiting for", func() {
 			cache := &generator.FakeCache{}
 			f, err := generator.NewFake(generator.InterfaceOrFunction, "Widget", "example.com/widgets", "FakeWidget", "widgetsfakes", "", baseDir, cache)
-			Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			b, err := f.Generate(true)
-			Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			WriteOutput(b, filepath.Join(baseDir, "widgetsfakes", "fake_widget.go"))
-			RunBuild(baseDir)
-			RunVet(baseDir)
+			g.Expect(RunBuild(baseDir)).To(Succeed())
+			g.Expect(RunVet(baseDir)).To(Succeed())
 		})
 	})
 
@@ -264,37 +263,37 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		it("ignores an import that cannot be resolved when the target does not use it", func() {
 			write("report.go", "package fooer\n\nimport nonexistent \""+missingImport+"\"\n\nfunc ProcessFooer(f Fooer) nonexistent.Report {\n\treturn nonexistent.NewReport().WithFooer(f)\n}\n")
 			out, err := generate("Fooer")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring("SayHello(arg1 string) string"))
-			Expect(out).NotTo(ContainSubstring("invalid type"))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("SayHello(arg1 string) string"))
+			g.Expect(out).NotTo(ContainSubstring("invalid type"))
 		})
 
 		it("ignores a type error in another file", func() {
 			write("broken.go", "package fooer\n\nvar broken int = \"not an int\"\n")
 			out, err := generate("Fooer")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring("SayHello(arg1 string) string"))
-			Expect(out).NotTo(ContainSubstring("invalid type"))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("SayHello(arg1 string) string"))
+			g.Expect(out).NotTo(ContainSubstring("invalid type"))
 		})
 
 		it("fails when a method uses a type that could not be loaded", func() {
 			write("report.go", "package fooer\n\nimport nonexistent \""+missingImport+"\"\n\ntype Reporter interface {\n\tReport() nonexistent.Report\n}\n")
 			_, err := generate("Reporter")
-			Expect(err).To(MatchError(ContainSubstring("method Report")))
-			Expect(err).To(MatchError(ContainSubstring(missingImport)))
+			g.Expect(err).To(MatchError(ContainSubstring("method Report")))
+			g.Expect(err).To(MatchError(ContainSubstring(missingImport)))
 		})
 
 		it("fails when the interface embeds an interface that could not be loaded", func() {
 			write("report.go", "package fooer\n\nimport nonexistent \""+missingImport+"\"\n\ntype Reporter interface {\n\tnonexistent.Reporter\n\tFooer\n}\n")
 			_, err := generate("Reporter")
-			Expect(err).To(MatchError(ContainSubstring("embedded interface")))
-			Expect(err).To(MatchError(ContainSubstring(missingImport)))
+			g.Expect(err).To(MatchError(ContainSubstring("embedded interface")))
+			g.Expect(err).To(MatchError(ContainSubstring(missingImport)))
 		})
 
 		it("still fails on a syntax error in another file", func() {
 			write("broken.go", "package fooer\n\nfunc (\n")
 			_, err := generate("Fooer")
-			Expect(err).To(HaveOccurred())
+			g.Expect(err).To(HaveOccurred())
 		})
 	})
 
@@ -321,14 +320,14 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 					WriteOutput([]byte(fmt.Sprintf("module github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s\n\ngo 1.18\n", suffix)), filepath.Join(baseDir, "go.mod"))
 					cache := &generator.FakeCache{}
 					f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, fmt.Sprintf("github.com/maxbrunsfeld/counterfeiter/v6/fixtures%s", suffix), "Fake"+interfaceName, "fixturesfakes", "", baseDir, cache)
-					Expect(err).NotTo(HaveOccurred())
+					g.Expect(err).NotTo(HaveOccurred())
 					b, err := f.Generate(true) // Flip to false to see output if goimports fails
-					Expect(err).NotTo(HaveOccurred())
+					g.Expect(err).NotTo(HaveOccurred())
 					if writeToTestData {
 						WriteOutput(b, filepath.Join("testdata", "output", strings.Replace(filename, ".go", "", -1), "actual.go"))
 					}
 					WriteOutput(b, filepath.Join(baseDir, "fixturesfakes", "fake_"+filename))
-					RunBuild(baseDir)
+					g.Expect(RunBuild(baseDir)).To(Succeed())
 				})
 			})
 		}
@@ -368,14 +367,14 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 						}
 						cache := &generator.FakeCache{}
 						f, err := generator.NewFake(generator.InterfaceOrFunction, interfaceName, pkgPath, "Fake"+interfaceName, fakePackageName, "", baseDir, cache)
-						Expect(err).NotTo(HaveOccurred())
+						g.Expect(err).NotTo(HaveOccurred())
 						b, err := f.Generate(false) // Flip to false to see output if goimports fails
-						Expect(err).NotTo(HaveOccurred())
+						g.Expect(err).NotTo(HaveOccurred())
 						if writeToTestData {
 							WriteOutput(b, filepath.Join("testdata", "output", "dup_"+strings.ToLower(interfaceName), "actual.go"))
 						}
 						WriteOutput(b, filepath.Join(baseDir, offset, fakePackageName, "fake_"+strings.ToLower(interfaceName)+".go"))
-						RunBuild(filepath.Join(baseDir, offset, fakePackageName))
+						g.Expect(RunBuild(filepath.Join(baseDir, offset, fakePackageName))).To(Succeed())
 					})
 				})
 			}
