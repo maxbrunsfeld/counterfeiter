@@ -142,7 +142,11 @@ func doGenerate(workingDir string, args *arguments.ParsedArguments, cache genera
 		return nil, err
 	}
 
-	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, headerContent, workingDir, cache, generator.WithDestinationDir(filepath.Dir(args.OutputPath)))
+	opts := []generator.Option{generator.WithDestinationDir(filepath.Dir(args.OutputPath))}
+	if args.TestPackage {
+		opts = append(opts, generator.WithTestPackage())
+	}
+	f, err := generator.NewFake(mode, args.InterfaceName, args.PackagePath, args.FakeImplName, args.DestinationPackageName, headerContent, workingDir, cache, opts...)
 	if err != nil {
 		return nil, err
 	}

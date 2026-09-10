@@ -107,6 +107,25 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("when a single argument is provided followed by '-'", func() {
+		it.Before(func() {
+			args = []string{"counterfeiter", "io.WriteCloser", "-"}
+			justBefore()
+		})
+
+		it("still treats the argument as a fully qualified interface", func() {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedArgs.PackagePath).To(Equal("io"))
+			Expect(parsedArgs.InterfaceName).To(Equal("WriteCloser"))
+			Expect(parsedArgs.FakeImplName).To(Equal("FakeWriteCloser"))
+			Expect(parsedArgs.SourcePackageDir).To(BeEmpty())
+		})
+
+		it("indicates that the fake should be printed to stdout", func() {
+			Expect(parsedArgs.PrintToStdOut).To(BeTrue())
+		})
+	})
+
 	when("when a single argument is provided with the output directory", func() {
 		it.Before(func() {
 			args = []string{"counterfeiter", "-o", "/tmp/foo", "io.Writer"}
@@ -412,9 +431,92 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("when '-test' is used", func() {
+		when("with a source path and an interface", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-test", "my/mypackage", "MySpecialInterface"}
+				justBefore()
+			})
+
+			it("records that the fake goes into the external test package", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.TestPackage).To(BeTrue())
+			})
+
+			it("writes a test file into the working directory, next to the tests that use it", func() {
+				Expect(parsedArgs.SourcePackageDir).To(Equal(filepath.Join(workingDir, "my", "mypackage")))
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "fake_my_special_interface_test.go")))
+			})
+
+			it("names the destination package after the working directory with a _test suffix", func() {
+				Expect(parsedArgs.DestinationPackageName).To(Equal("workspace_test"))
+			})
+		})
+
+		when("with a fully qualified interface", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-test", "io.WriteCloser"}
+				justBefore()
+			})
+
+			it("writes a test file into the working directory", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "fake_write_closer_test.go")))
+				Expect(parsedArgs.DestinationPackageName).To(Equal("workspace_test"))
+			})
+		})
+
+		when("with an output directory", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-test", "-o", "other", "my/mypackage", "MySpecialInterface"}
+				justBefore()
+			})
+
+			it("writes a test file into that directory", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "other", "fake_my_special_interface_test.go")))
+				Expect(parsedArgs.DestinationPackageName).To(Equal("other_test"))
+			})
+		})
+
+		when("with an output file that is a test file", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-test", "-o", "thing_test.go", "my/mypackage", "MySpecialInterface"}
+				justBefore()
+			})
+
+			it("keeps the file name", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "thing_test.go")))
+			})
+		})
+
+		when("with an output file that is not a test file", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-test", "-o", "thing.go", "my/mypackage", "MySpecialInterface"}
+				justBefore()
+			})
+
+			it("returns an error, since Go only compiles a _test package from test files", func() {
+				Expect(err).To(MatchError(And(ContainSubstring("-test"), ContainSubstring("_test.go"))))
+			})
+		})
+
+		when("together with '-p'", func() {
+			it.Before(func() {
+				args = []string{"counterfeiter", "-p", "-test", "os"}
+				justBefore()
+			})
+
+			it("returns an error", func() {
+				Expect(err).To(MatchError(ContainSubstring("-test")))
+			})
+		})
+	})
+
 	when("when '-generate' is used", func() {
 		it.Before(func() {
-			args = []string{"counterfeiter", "-generate", "-o", "fake", "-fake-name-template", "{{.TargetName}}", "-header", "generic.txt", "-q"}
+			args = []string{"counterfeiter", "-generate", "-o", "fake", "-fake-name-template", "{{.TargetName}}", "-header", "generic.txt", "-q", "-test"}
 			justBefore()
 		})
 
@@ -425,6 +527,7 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 			Expect(parsedArgs.FakeNameTemplate).To(Equal("{{.TargetName}}"))
 			Expect(parsedArgs.HeaderFile).To(Equal("generic.txt"))
 			Expect(parsedArgs.Quiet).To(BeTrue())
+			Expect(parsedArgs.TestPackage).To(BeTrue())
 		})
 
 		when("the fake name template does not parse", func() {
@@ -482,6 +585,22 @@ func testParsingArguments(t *testing.T, when spec.G, it spec.S) {
 				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "other", "other.go")))
 				Expect(parsedArgs.DestinationPackageName).To(Equal("other"))
 				Expect(parsedArgs.HeaderFile).To(Equal("specific.txt"))
+			})
+		})
+
+		when("the defaults ask for the external test package", func() {
+			it.Before(func() {
+				defaults, err = arguments.New([]string{"counterfeiter", "-generate", "-test"}, workingDir, evaler, stater)
+				Expect(err).NotTo(HaveOccurred())
+				args = []string{"counterfeiter", ".", "MySpecialInterface"}
+				justBeforeWithDefaults()
+			})
+
+			it("generates the directive's fake into the external test package", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedArgs.TestPackage).To(BeTrue())
+				Expect(parsedArgs.OutputPath).To(Equal(filepath.Join(workingDir, "fake_my_special_interface_test.go")))
+				Expect(parsedArgs.DestinationPackageName).To(Equal("workspace_test"))
 			})
 		})
 

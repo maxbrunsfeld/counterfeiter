@@ -150,6 +150,68 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(b)).To(ContainSubstring("var _ gadget = new(FakeGadget)"))
 			})
 
+			it("names the package after the target's package, not its directory", func() {
+				hyphenDir, err := filepath.Abs(filepath.Join("..", "fixtures", "go-hyphenpackage"))
+				Expect(err).NotTo(HaveOccurred())
+				f, err = NewFake(InterfaceOrFunction, "Hyphenated", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/go-hyphenpackage", "FakeHyphenated", "gohyphenpackage", "", "", &Cache{}, WithDestinationDir(hyphenDir))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.DestinationPackage).To(Equal("hyphenpackage"))
+				b, err := f.Generate(false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring("package hyphenpackage\n"))
+			})
+
+			when("the fake goes into the external test package", func() {
+				it("names the package <package>_test and imports the target package", func() {
+					f, err = NewFake(InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "samepackage_test", "", "", &Cache{}, WithDestinationDir(dir), WithTestPackage())
+					Expect(err).NotTo(HaveOccurred())
+					Expect(f.DestinationPackage).To(Equal("samepackage_test"))
+					Expect(f.TargetAlias).To(Equal("samepackage"))
+					Expect(f.Imports.ByPkgPath).To(HaveKey(pkgPath))
+					b, err := f.Generate(true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(b)).To(ContainSubstring("package samepackage_test\n"))
+					Expect(string(b)).To(ContainSubstring("Do(arg1 samepackage.Thing) (samepackage.Thing, error)"))
+					Expect(string(b)).To(ContainSubstring("var _ samepackage.Widget = new(FakeWidget)"))
+				})
+
+				it("refuses an unexported interface, which the test package cannot see", func() {
+					f, err = NewFake(InterfaceOrFunction, "gadget", pkgPath, "FakeGadget", "samepackage_test", "", "", &Cache{}, WithDestinationDir(dir), WithTestPackage())
+					Expect(err).To(MatchError(And(ContainSubstring("gadget"), ContainSubstring("samepackage_test"), ContainSubstring("unexported"))))
+				})
+
+				it("uses the name of the package in the destination directory, not the directory name", func() {
+					hyphenDir, err := filepath.Abs(filepath.Join("..", "fixtures", "go-hyphenpackage"))
+					Expect(err).NotTo(HaveOccurred())
+					f, err = NewFake(InterfaceOrFunction, "WriteCloser", "io", "FakeWriteCloser", "gohyphenpackage_test", "", "", &Cache{}, WithDestinationDir(hyphenDir), WithTestPackage())
+					Expect(err).NotTo(HaveOccurred())
+					Expect(f.DestinationPackage).To(Equal("hyphenpackage_test"))
+					Expect(f.TargetAlias).To(Equal("io"))
+					Expect(f.Imports.ByPkgPath).To(HaveKey("io"))
+				})
+
+				it("keeps the given name when the destination directory has no Go files", func() {
+					f, err = NewFake(InterfaceOrFunction, "Widget", pkgPath, "FakeWidget", "other_test", "", "", &Cache{}, WithDestinationDir(t.TempDir()), WithTestPackage())
+					Expect(err).NotTo(HaveOccurred())
+					Expect(f.DestinationPackage).To(Equal("other_test"))
+					Expect(f.TargetAlias).To(Equal("samepackage"))
+				})
+
+				it("fakes an interface from a third-party module into the test package", func() {
+					testDir, err := filepath.Abs(filepath.Join("..", "fixtures", "externaltest"))
+					Expect(err).NotTo(HaveOccurred())
+					f, err = NewFake(InterfaceOrFunction, "GomegaMatcher", "github.com/onsi/gomega/types", "FakeGomegaMatcher", "externaltest_test", "", "", &Cache{}, WithDestinationDir(testDir), WithTestPackage())
+					Expect(err).NotTo(HaveOccurred())
+					Expect(f.DestinationPackage).To(Equal("externaltest_test"))
+					Expect(f.TargetAlias).To(Equal("types"))
+					Expect(f.Imports.ByPkgPath).To(HaveKey("github.com/onsi/gomega/types"))
+					b, err := f.Generate(true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(b)).To(ContainSubstring("package externaltest_test\n"))
+					Expect(string(b)).To(ContainSubstring("var _ types.GomegaMatcher = new(FakeGomegaMatcher)"))
+				})
+			})
+
 			when("the destination only shares the target's package name", func() {
 				it("still imports the target package", func() {
 					other := t.TempDir()

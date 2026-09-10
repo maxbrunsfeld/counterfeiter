@@ -110,13 +110,28 @@ func (f *Fake) findPackage() error {
 	f.Target = target
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
-	f.inTargetPackage = sameDir(f.DestinationDir, packageDir(pkg))
+	inDir := sameDir(f.DestinationDir, packageDir(pkg))
+	if inDir {
+		// The directory name is not always the package name.
+		f.DestinationPackage = pkg.Name
+	}
+	if f.testPackage {
+		name := f.DestinationPackage
+		if !inDir {
+			name = destinationPackageName(f.DestinationDir, name)
+		}
+		f.DestinationPackage = strings.TrimSuffix(name, "_test") + "_test"
+	}
+	f.inTargetPackage = inDir && f.DestinationPackage == pkg.Name
 	if !f.inTargetPackage {
 		t := f.Imports.Add(pkg.Name, f.TargetPackage)
 		f.TargetAlias = t.Alias
 	}
 	if f.Mode != Package {
 		f.TargetName = target.Name()
+		if f.testPackage && inDir && !isExported(f.TargetName) {
+			return fmt.Errorf("cannot generate a fake for %s in package %s because it is unexported", f.TargetName, f.DestinationPackage)
+		}
 	}
 	f.loadGenericTypeParams()
 
@@ -255,6 +270,20 @@ func hasInvalidEmbed(iface *types.Interface, seen map[*types.Interface]bool) boo
 		}
 	}
 	return false
+}
+
+// destinationPackageName returns the name of the package whose files are in
+// dir, which is not always the directory's name. Only the package clauses are
+// read. It falls back to the given name when dir holds no Go package.
+func destinationPackageName(dir, fallback string) string {
+	if dir == "" {
+		return fallback
+	}
+	bp, err := build.Default.ImportDir(dir, 0)
+	if err != nil || bp.Name == "" {
+		return fallback
+	}
+	return bp.Name
 }
 
 // packageDir returns the directory holding the package's source files.
