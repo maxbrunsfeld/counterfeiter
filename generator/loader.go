@@ -111,7 +111,10 @@ func (f *Fake) findPackage() error {
 	f.Package = pkg
 	f.TargetPackage = imports.VendorlessPath(pkg.PkgPath)
 	f.inTargetPackage = sameDir(f.DestinationDir, packageDir(pkg))
-	if !f.inTargetPackage {
+	if f.inTargetPackage {
+		// The directory name is not always the package name.
+		f.DestinationPackage = pkg.Name
+	} else {
 		t := f.Imports.Add(pkg.Name, f.TargetPackage)
 		f.TargetAlias = t.Alias
 	}

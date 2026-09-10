@@ -150,6 +150,17 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(b)).To(ContainSubstring("var _ gadget = new(FakeGadget)"))
 			})
 
+			it("names the package after the target's package, not its directory", func() {
+				hyphenDir, err := filepath.Abs(filepath.Join("..", "fixtures", "go-hyphenpackage"))
+				Expect(err).NotTo(HaveOccurred())
+				f, err = NewFake(InterfaceOrFunction, "Hyphenated", "github.com/maxbrunsfeld/counterfeiter/v6/fixtures/go-hyphenpackage", "FakeHyphenated", "gohyphenpackage", "", "", &Cache{}, WithDestinationDir(hyphenDir))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.DestinationPackage).To(Equal("hyphenpackage"))
+				b, err := f.Generate(false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring("package hyphenpackage\n"))
+			})
+
 			when("the destination only shares the target's package name", func() {
 				it("still imports the target package", func() {
 					other := t.TempDir()
