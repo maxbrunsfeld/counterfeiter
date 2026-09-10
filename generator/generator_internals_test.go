@@ -162,12 +162,24 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(b)).NotTo(ContainSubstring("samepackage."))
 			})
 
-			it("asserts that a fake of an unexported interface implements it", func() {
+			it("keeps the fake of an unexported interface unexported and asserts that it implements it", func() {
 				f, err = NewFake(InterfaceOrFunction, "gadget", pkgPath, "FakeGadget", "samepackage", "", "", &Cache{}, WithDestinationDir(dir))
 				Expect(err).NotTo(HaveOccurred())
+				Expect(f.Name).To(Equal("fakeGadget"))
 				b, err := f.Generate(false)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(string(b)).To(ContainSubstring("var _ gadget = new(FakeGadget)"))
+				Expect(string(b)).To(ContainSubstring("type fakeGadget struct"))
+				Expect(string(b)).To(ContainSubstring("var _ gadget = new(fakeGadget)"))
+				Expect(string(b)).NotTo(ContainSubstring("FakeGadget"))
+			})
+
+			it("uses a name given with -fake-name as it is, even for an unexported interface", func() {
+				f, err = NewFake(InterfaceOrFunction, "gadget", pkgPath, "GadgetDouble", "samepackage", "", "", &Cache{}, WithDestinationDir(dir), WithExplicitName())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(f.Name).To(Equal("GadgetDouble"))
+				b, err := f.Generate(false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(ContainSubstring("var _ gadget = new(GadgetDouble)"))
 			})
 
 			it("names the package after the target's package, not its directory", func() {
@@ -244,10 +256,11 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Expect(string(b)).To(ContainSubstring("var _ samepackage.Widget = new(FakeWidget)"))
 				})
 
-				it("does not assert an unexported interface", func() {
+				it("does not assert an unexported interface, and keeps the fake exported", func() {
 					other := t.TempDir()
 					f, err = NewFake(InterfaceOrFunction, "gadget", pkgPath, "FakeGadget", "samepackage", "", "", &Cache{}, WithDestinationDir(other))
 					Expect(err).NotTo(HaveOccurred())
+					Expect(f.Name).To(Equal("FakeGadget"))
 					b, err := f.Generate(false)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(string(b)).NotTo(ContainSubstring("var _ "))

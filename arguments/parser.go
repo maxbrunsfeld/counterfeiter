@@ -225,15 +225,14 @@ func (a *ParsedArguments) parseFakeName(packageMode bool, fakeName string, tmpl 
 		a.FakeImplName = strings.ToUpper(path.Base(a.PackagePath))[:1] + path.Base(a.PackagePath)[1:]
 		return nil
 	}
-	if fakeName == "" {
-		var err error
-		fakeName, err = tmpl.render(fixupUnexportedNames(a.InterfaceName))
-		if err != nil {
-			return err
-		}
+	if fakeName != "" {
+		a.FakeImplName = fakeName
+		a.FakeNameExplicit = true
+		return nil
 	}
-	a.FakeImplName = fakeName
-	return nil
+	var err error
+	a.FakeImplName, err = tmpl.render(fixupUnexportedNames(a.InterfaceName))
+	return err
 }
 
 func (a *ParsedArguments) parseOutputPath(packageMode bool, workingDir string, outputPath string, args []string) error {
@@ -315,8 +314,9 @@ type ParsedArguments struct {
 
 	DestinationPackageName string // often the base-dir for OutputPath but must be a valid package name
 
-	InterfaceName string // the interface to counterfeit
-	FakeImplName  string // the name of the struct implementing the given interface
+	InterfaceName    string // the interface to counterfeit
+	FakeImplName     string // the name of the struct implementing the given interface
+	FakeNameExplicit bool   // FakeImplName came from -fake-name and is used as given
 
 	PrintToStdOut bool
 	GenerateMode  bool

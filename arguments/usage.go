@@ -140,9 +140,10 @@ OPTIONS
 		# writes "FakeMyOtherInterface" & "FakeMyThirdInterface" with ./generic.go.txt as a header
 
 	-fake-name
-		Name of the fake struct to generate. By default, 'Fake' will
-		be prepended to the name of the original interface. (ignored in
-		-p mode)
+		Name of the fake struct to generate, used as given. By default,
+		'Fake' will be prepended to the name of the original interface;
+		a fake of an unexported interface generated into the interface's
+		own package is unexported. (ignored in -p mode)
 
 	example:
 		# writes "CoolThing" to ./mypackagefakes/cool_thing.go
