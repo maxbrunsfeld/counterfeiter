@@ -131,8 +131,6 @@ func (fake *{{.Name}}) ReturnsOnCall(i int, {{.Function.Returns.AsNamedArgsWithT
 func (fake *{{.Name}}) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.mutex.RLock()
-	defer fake.mutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

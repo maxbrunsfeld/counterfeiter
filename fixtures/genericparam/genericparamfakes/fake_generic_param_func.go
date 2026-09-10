@@ -88,8 +88,6 @@ func (fake *FakeGenericParamFunc) ReturnsOnCall(i int, result1 genericparam.Gene
 func (fake *FakeGenericParamFunc) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.mutex.RLock()
-	defer fake.mutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
