@@ -146,6 +146,19 @@ $ go tool counterfeiter path/to/foo MySpecialInterface
 Wrote `FakeMySpecialInterface` to `path/to/foo/foofakes/fake_my_special_interface.go`
 ```
 
+#### Naming the fakes package
+
+The package clause of a fake follows the package that already lives in the output directory, and is named after the directory only when there is none yet. So to name the package differently from its directory, say `impl_fakes` in `fakes/`, add a file declaring that package first:
+
+```go
+// fakes/doc.go
+package impl_fakes
+```
+
+```go
+//counterfeiter:generate -o fakes . MyInterface
+```
+
 #### Generating a test double into the interface's own package
 
 By default the fake lives in a sibling `<package>fakes` package, which cannot be imported by tests inside `<package>` itself (it would be an import cycle). If you want to use a fake from a white-box test in the same package, point `-o` at the interface's own directory:

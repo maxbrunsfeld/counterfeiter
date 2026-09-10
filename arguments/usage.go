@@ -67,7 +67,9 @@ OPTIONS
 
 	-o
 		Path to the file or directory for the generated fakes.
-		This also determines the package name that will be used.
+		This also determines the package name that will be used:
+		if the directory already holds a Go package the fake joins
+		it, otherwise the package is named after the directory.
 		By default, the generated fakes will be generated in
 		the package "xyzfakes" which is nested in package "xyz",
 		where "xyz" is the name of referenced package.
