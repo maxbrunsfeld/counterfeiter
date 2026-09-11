@@ -16,12 +16,6 @@ ${GOCOMMAND} vet ./...
 
 # counterfeit all the things
 echo
-echo "Installing counterfeiter..."
-echo
-${GOCOMMAND} install .
-
-# counterfeit all the things
-echo
 echo "Generating fakes used by tests..."
 echo
 ${GOCOMMAND} generate ./...
@@ -37,17 +31,14 @@ if output=$(git status --porcelain) && [ ! -z "$output" ]; then
   exit 1
 fi
 
-# check that the fakes compile
-echo
-echo "Ensuring generated fakes compile..."
-echo
-${GOCOMMAND} build -v ./...
-
 # run the tests using the fakes
 echo
 echo "Running tests..."
 echo
-${GOCOMMAND} test -race ./...
+# the root package runs the generated fakes and the generator concurrently, so it
+# and the fixture packages get the race detector; the rest is single-threaded
+${GOCOMMAND} test -race . ./fixtures/...
+${GOCOMMAND} test ./arguments/ ./command/ ./generator/ ./integration/
 
 echo "
  _______  _     _  _______  _______  _______
