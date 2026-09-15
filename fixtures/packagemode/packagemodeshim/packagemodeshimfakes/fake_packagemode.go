@@ -243,7 +243,7 @@ func (fake *FakePackagemode) BoolVar(arg1 *bool, arg2 string, arg3 bool, arg4 st
 	fake.recordInvocation("BoolVar", []interface{}{arg1, arg2, arg3, arg4})
 	fake.boolVarMutex.Unlock()
 	if stub != nil {
-		fake.BoolVarStub(arg1, arg2, arg3, arg4)
+		stub(arg1, arg2, arg3, arg4)
 	}
 }
 

@@ -54,7 +54,7 @@ func (fake *FakeSomething) DoASlice(arg1 []byte) {
 	fake.recordInvocation("DoASlice", []interface{}{arg1Copy})
 	fake.doASliceMutex.Unlock()
 	if stub != nil {
-		fake.DoASliceStub(arg1)
+		stub(arg1)
 	}
 }
 
@@ -86,7 +86,7 @@ func (fake *FakeSomething) DoAnArray(arg1 [4]byte) {
 	fake.recordInvocation("DoAnArray", []interface{}{arg1})
 	fake.doAnArrayMutex.Unlock()
 	if stub != nil {
-		fake.DoAnArrayStub(arg1)
+		stub(arg1)
 	}
 }
 
@@ -117,7 +117,7 @@ func (fake *FakeSomething) DoNothing() {
 	fake.recordInvocation("DoNothing", []interface{}{})
 	fake.doNothingMutex.Unlock()
 	if stub != nil {
-		fake.DoNothingStub()
+		stub()
 	}
 }
 

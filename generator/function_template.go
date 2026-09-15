@@ -67,7 +67,7 @@ func (fake *{{.Name}}) Spy({{.Function.Params.AsNamedArgsWithTypes}}) {{.Functio
 	fake.recordInvocation("{{.TargetName}}", []interface{}{ {{- if .Function.Params.HasLength}}{{.Function.Params.AsNamedArgs}}{{end -}} })
 	fake.mutex.Unlock()
 	if stub != nil {
-		{{if .Function.Returns.HasLength}}return stub({{.Function.Params.AsNamedArgsForInvocation}}){{else}}fake.Stub({{.Function.Params.AsNamedArgsForInvocation}}){{end}}
+		{{if .Function.Returns.HasLength}}return {{end}}stub({{.Function.Params.AsNamedArgsForInvocation}})
 	}
 	{{- if .Function.Returns.HasLength}}
 	if specificReturn {

@@ -24,7 +24,7 @@ func (fake *FakeCustomOutput) CustomFolder() {
 	fake.recordInvocation("CustomFolder", []interface{}{})
 	fake.customFolderMutex.Unlock()
 	if stub != nil {
-		fake.CustomFolderStub()
+		stub()
 	}
 }
 

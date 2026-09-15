@@ -39,7 +39,7 @@ func (fake *FakeAnotherInterface) AnotherMethod(arg1 []another_package.SomeType,
 	fake.recordInvocation("AnotherMethod", []interface{}{arg1Copy, arg2, arg3, arg4, arg5})
 	fake.anotherMethodMutex.Unlock()
 	if stub != nil {
-		fake.AnotherMethodStub(arg1, arg2, arg3, arg4, arg5)
+		stub(arg1, arg2, arg3, arg4, arg5)
 	}
 }
 

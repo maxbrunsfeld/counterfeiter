@@ -82,9 +82,7 @@ func (fake *{{$.Name}}{{$.GenericTypeParameters}}) {{.Name}}({{.Params.AsNamedAr
 	fake.recordInvocation("{{.Name}}", []interface{}{ {{- if .Params.HasLength}}{{.Params.AsNamedArgs}}{{end -}} })
 	fake.{{UnExport .Name}}Mutex.Unlock()
 	if stub != nil {
-		{{- if .Returns.HasLength}}
-		return stub({{.Params.AsNamedArgsForInvocation}}){{else}}fake.{{.Name}}Stub({{.Params.AsNamedArgsForInvocation}})
-		{{- end}}
+		{{if .Returns.HasLength}}return {{end}}stub({{.Params.AsNamedArgsForInvocation}})
 	}
 	{{- if .Returns.HasLength}}
 	if specificReturn {

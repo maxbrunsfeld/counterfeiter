@@ -35,7 +35,7 @@ func (fake *FakeGenericImportedConstraint[T]) DoSomething() {
 	fake.recordInvocation("DoSomething", []interface{}{})
 	fake.doSomethingMutex.Unlock()
 	if stub != nil {
-		fake.DoSomethingStub()
+		stub()
 	}
 }
 

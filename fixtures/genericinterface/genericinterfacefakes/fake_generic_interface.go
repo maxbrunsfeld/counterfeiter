@@ -50,7 +50,7 @@ func (fake *FakeGenericInterface[T]) DoSomething() {
 	fake.recordInvocation("DoSomething", []interface{}{})
 	fake.doSomethingMutex.Unlock()
 	if stub != nil {
-		fake.DoSomethingStub()
+		stub()
 	}
 }
 
@@ -189,7 +189,7 @@ func (fake *FakeGenericInterface[T]) TakeT(arg1 T) {
 	fake.recordInvocation("TakeT", []interface{}{arg1})
 	fake.takeTMutex.Unlock()
 	if stub != nil {
-		fake.TakeTStub(arg1)
+		stub(arg1)
 	}
 }
 
