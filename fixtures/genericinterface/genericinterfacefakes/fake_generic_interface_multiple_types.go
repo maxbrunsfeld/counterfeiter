@@ -119,7 +119,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) DoSomething() {
 	fake.recordInvocation("DoSomething", []interface{}{})
 	fake.doSomethingMutex.Unlock()
 	if stub != nil {
-		fake.DoSomethingStub()
+		stub()
 	}
 }
 
@@ -493,7 +493,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeT(arg1 T) {
 	fake.recordInvocation("TakeT", []interface{}{arg1})
 	fake.takeTMutex.Unlock()
 	if stub != nil {
-		fake.TakeTStub(arg1)
+		stub(arg1)
 	}
 }
 
@@ -587,7 +587,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndU(arg1 T, arg2 U) {
 	fake.recordInvocation("TakeTAndU", []interface{}{arg1, arg2})
 	fake.takeTAndUMutex.Unlock()
 	if stub != nil {
-		fake.TakeTAndUStub(arg1, arg2)
+		stub(arg1, arg2)
 	}
 }
 
@@ -619,7 +619,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeU(arg1 U) {
 	fake.recordInvocation("TakeU", []interface{}{arg1})
 	fake.takeUMutex.Unlock()
 	if stub != nil {
-		fake.TakeUStub(arg1)
+		stub(arg1)
 	}
 }
 

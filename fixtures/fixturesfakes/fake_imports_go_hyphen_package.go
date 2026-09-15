@@ -27,7 +27,7 @@ func (fake *FakeImportsGoHyphenPackage) UseHyphenType(arg1 hyphenpackage.HyphenT
 	fake.recordInvocation("UseHyphenType", []interface{}{arg1})
 	fake.useHyphenTypeMutex.Unlock()
 	if stub != nil {
-		fake.UseHyphenTypeStub(arg1)
+		stub(arg1)
 	}
 }
 

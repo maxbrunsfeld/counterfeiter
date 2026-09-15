@@ -24,7 +24,7 @@ func (fake *FakeContext) DoSomething() {
 	fake.recordInvocation("DoSomething", []interface{}{})
 	fake.doSomethingMutex.Unlock()
 	if stub != nil {
-		fake.DoSomethingStub()
+		stub()
 	}
 }
 

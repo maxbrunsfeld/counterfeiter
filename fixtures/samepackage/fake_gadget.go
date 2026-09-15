@@ -94,7 +94,7 @@ func (fake *fakeGadget) stop() {
 	fake.recordInvocation("stop", []interface{}{})
 	fake.stopMutex.Unlock()
 	if stub != nil {
-		fake.stopStub()
+		stub()
 	}
 }
 
