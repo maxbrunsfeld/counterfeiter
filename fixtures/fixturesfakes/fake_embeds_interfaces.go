@@ -61,7 +61,7 @@ func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType,
 	fake.recordInvocation("AnotherMethod", []interface{}{arg1Copy, arg2, arg3, arg4, arg5})
 	fake.anotherMethodMutex.Unlock()
 	if stub != nil {
-		fake.AnotherMethodStub(arg1, arg2, arg3, arg4, arg5)
+		stub(arg1, arg2, arg3, arg4, arg5)
 	}
 }
 
@@ -92,7 +92,7 @@ func (fake *FakeEmbedsInterfaces) DoThings() {
 	fake.recordInvocation("DoThings", []interface{}{})
 	fake.doThingsMutex.Unlock()
 	if stub != nil {
-		fake.DoThingsStub()
+		stub()
 	}
 }
 
@@ -171,7 +171,7 @@ func (fake *FakeEmbedsInterfaces) ServeHTTP(arg1 http.ResponseWriter, arg2 *http
 	fake.recordInvocation("ServeHTTP", []interface{}{arg1, arg2})
 	fake.serveHTTPMutex.Unlock()
 	if stub != nil {
-		fake.ServeHTTPStub(arg1, arg2)
+		stub(arg1, arg2)
 	}
 }
 

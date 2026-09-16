@@ -313,6 +313,30 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("swapping the stub while a method without return values is being called", func() {
+		const calls = 5000
+
+		it("does not race for an interface fake", func() {
+			fake := new(fixturesfakes.FakeSomething)
+			done := hammer(calls, fake.DoNothing, func() {
+				fake.DoNothingCalls(func() {})
+				fake.DoNothingCalls(nil)
+			})
+			Eventually(done, 5.0).Should(BeClosed())
+			Expect(fake.DoNothingCallCount()).To(Equal(calls))
+		})
+
+		it("does not race for a function fake", func() {
+			fake := new(fixturesfakes.FakeNotifier)
+			done := hammer(calls, func() { fake.Spy("") }, func() {
+				fake.Calls(func(string) {})
+				fake.Calls(nil)
+			})
+			Eventually(done, 5.0).Should(BeClosed())
+			Expect(fake.CallCount()).To(Equal(calls))
+		})
+	})
+
 	when("reading invocations while the fake is being called", func() {
 		const calls = 5000
 

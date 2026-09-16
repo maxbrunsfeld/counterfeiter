@@ -31,7 +31,7 @@ func (fake *FakeHasVarArgsWithLocalTypes) DoThings(arg1 ...fixtures.LocalType) {
 	fake.recordInvocation("DoThings", []interface{}{arg1Copy})
 	fake.doThingsMutex.Unlock()
 	if stub != nil {
-		fake.DoThingsStub(arg1...)
+		stub(arg1...)
 	}
 }
 
