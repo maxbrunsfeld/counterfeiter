@@ -7,6 +7,10 @@ import (
 
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures"
 	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/fixturesfakes"
+	"github.com/maxbrunsfeld/counterfeiter/v6/fixtures/genericinterface/genericinterfacefakes"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
@@ -82,6 +86,44 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 		arg1, arg2 := fake.DoThingsArgsForCall(0)
 		Expect(arg1).To(Equal("stuff"))
 		Expect(arg2).To(Equal(uint64(5)))
+	})
+
+	it("exposes the recorded arguments as structs", func() {
+		Expect(fake.DoThingsArgs()).To(BeEmpty())
+
+		_, _ = fake.DoThings("stuff", 5)
+		_, _ = fake.DoThings("more", 6)
+
+		Expect(fake.DoThingsArgs()).To(Equal([]fixturesfakes.FakeSomethingDoThingsArgs{
+			{Arg1: "stuff", Arg2: 5},
+			{Arg1: "more", Arg2: 6},
+		}))
+	})
+
+	it("exposes the recorded arguments in a form go-cmp can compare", func() {
+		_, _ = fake.DoThings("stuff", 5)
+		_, _ = fake.DoThings("more", 6)
+
+		want := []fixturesfakes.FakeSomethingDoThingsArgs{
+			{Arg1: "stuff", Arg2: 5},
+			{Arg1: "more", Arg2: 6},
+		}
+		Expect(cmp.Diff(want, fake.DoThingsArgs())).To(BeEmpty())
+
+		want[1].Arg2 = 7
+		Expect(cmp.Diff(want, fake.DoThingsArgs())).NotTo(BeEmpty())
+		Expect(cmp.Diff(want, fake.DoThingsArgs(), cmpopts.IgnoreFields(fixturesfakes.FakeSomethingDoThingsArgs{}, "Arg2"))).To(BeEmpty())
+	})
+
+	it("returns a copy of the recorded arguments", func() {
+		_, _ = fake.DoThings("stuff", 5)
+
+		args := fake.DoThingsArgs()
+		args[0].Arg1 = "changed"
+
+		Expect(fake.DoThingsArgs()).To(Equal([]fixturesfakes.FakeSomethingDoThingsArgs{
+			{Arg1: "stuff", Arg2: 5},
+		}))
 	})
 
 	it("records a slice argument as a copy", func() {
@@ -287,6 +329,16 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			Expect(recorded).To(Equal([]string{"one", "two"}))
 		})
 
+		it("exposes the var-args as a slice field", func() {
+			fake.DoMoreThings(1, 2, "one", "two")
+			fake.DoMoreThings(3, 4)
+
+			Expect(fake.DoMoreThingsArgs()).To(Equal([]fixturesfakes.FakeHasVarArgsDoMoreThingsArgs{
+				{Arg1: 1, Arg2: 2, Arg3: []string{"one", "two"}},
+				{Arg1: 3, Arg2: 4, Arg3: nil},
+			}))
+		})
+
 		it("passes the var-args to stub functions", func() {
 			fake.DoThingsStub = func(x int, strings ...string) int {
 				Expect(strings).To(Equal([]string{"one", "two", "three"}))
@@ -295,6 +347,32 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 
 			val := fake.DoThings(5, "one", "two", "three")
 			Expect(val).To(Equal(11))
+		})
+	})
+
+	when("faking a function", func() {
+		it("exposes the recorded arguments as structs", func() {
+			fake := new(fixturesfakes.FakeSomethingFactory)
+			fake.Spy("one", map[string]interface{}{"a": 1})
+			fake.Spy("two", nil)
+
+			Expect(fake.Args()).To(Equal([]fixturesfakes.FakeSomethingFactoryArgs{
+				{Arg1: "one", Arg2: map[string]interface{}{"a": 1}},
+				{Arg1: "two", Arg2: nil},
+			}))
+		})
+	})
+
+	when("faking a generic interface", func() {
+		it("exposes the recorded arguments as structs with the type parameters", func() {
+			fake := new(genericinterfacefakes.FakeGenericInterfaceMultipleTypes[string, int])
+			fake.TakeTAndU("one", 1)
+			fake.TakeTAndU("two", 2)
+
+			Expect(fake.TakeTAndUArgs()).To(Equal([]genericinterfacefakes.FakeGenericInterfaceMultipleTypesTakeTAndUArgs[string, int]{
+				{Arg1: "one", Arg2: 1},
+				{Arg1: "two", Arg2: 2},
+			}))
 		})
 	})
 
@@ -352,6 +430,24 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			done := hammer(calls, func() { fake.Spy("", nil) }, func() { fake.Invocations() })
 			Eventually(done, 5.0).Should(BeClosed())
 			Expect(fake.CallCount()).To(Equal(calls))
+		})
+	})
+
+	when("reading the recorded arguments while the fake is being called", func() {
+		const calls = 5000
+
+		it("does not race for an interface fake", func() {
+			fake := new(fixturesfakes.FakeSomething)
+			done := hammer(calls, func() { _, _ = fake.DoThings("", 0) }, func() { fake.DoThingsArgs() })
+			Eventually(done, 5.0).Should(BeClosed())
+			Expect(fake.DoThingsArgs()).To(HaveLen(calls))
+		})
+
+		it("does not race for a function fake", func() {
+			fake := new(fixturesfakes.FakeSomethingFactory)
+			done := hammer(calls, func() { fake.Spy("", nil) }, func() { fake.Args() })
+			Eventually(done, 5.0).Should(BeClosed())
+			Expect(fake.Args()).To(HaveLen(calls))
 		})
 	})
 }

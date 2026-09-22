@@ -10,9 +10,8 @@ import (
 type FakeSecondInterface struct {
 	EmbeddedMethodStub        func() string
 	embeddedMethodMutex       sync.RWMutex
-	embeddedMethodArgsForCall []struct {
-	}
-	embeddedMethodReturns struct {
+	embeddedMethodArgsForCall []struct{}
+	embeddedMethodReturns     struct {
 		result1 string
 	}
 	embeddedMethodReturnsOnCall map[int]struct {
@@ -25,8 +24,7 @@ type FakeSecondInterface struct {
 func (fake *FakeSecondInterface) EmbeddedMethod() string {
 	fake.embeddedMethodMutex.Lock()
 	ret, specificReturn := fake.embeddedMethodReturnsOnCall[len(fake.embeddedMethodArgsForCall)]
-	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct {
-	}{})
+	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct{}{})
 	stub := fake.EmbeddedMethodStub
 	fakeReturns := fake.embeddedMethodReturns
 	fake.recordInvocation("EmbeddedMethod", []interface{}{})

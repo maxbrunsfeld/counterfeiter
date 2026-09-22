@@ -10,10 +10,8 @@ import (
 type FakeGomegaMatcher struct {
 	FailureMessageStub        func(any) string
 	failureMessageMutex       sync.RWMutex
-	failureMessageArgsForCall []struct {
-		arg1 any
-	}
-	failureMessageReturns struct {
+	failureMessageArgsForCall []FakeGomegaMatcherFailureMessageArgs
+	failureMessageReturns     struct {
 		result1 string
 	}
 	failureMessageReturnsOnCall map[int]struct {
@@ -21,10 +19,8 @@ type FakeGomegaMatcher struct {
 	}
 	MatchStub        func(any) (bool, error)
 	matchMutex       sync.RWMutex
-	matchArgsForCall []struct {
-		arg1 any
-	}
-	matchReturns struct {
+	matchArgsForCall []FakeGomegaMatcherMatchArgs
+	matchReturns     struct {
 		result1 bool
 		result2 error
 	}
@@ -34,10 +30,8 @@ type FakeGomegaMatcher struct {
 	}
 	NegatedFailureMessageStub        func(any) string
 	negatedFailureMessageMutex       sync.RWMutex
-	negatedFailureMessageArgsForCall []struct {
-		arg1 any
-	}
-	negatedFailureMessageReturns struct {
+	negatedFailureMessageArgsForCall []FakeGomegaMatcherNegatedFailureMessageArgs
+	negatedFailureMessageReturns     struct {
 		result1 string
 	}
 	negatedFailureMessageReturnsOnCall map[int]struct {
@@ -47,12 +41,25 @@ type FakeGomegaMatcher struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeGomegaMatcherFailureMessageArgs holds the arguments of one call to FailureMessage.
+type FakeGomegaMatcherFailureMessageArgs struct {
+	Arg1 any
+}
+
+// FakeGomegaMatcherMatchArgs holds the arguments of one call to Match.
+type FakeGomegaMatcherMatchArgs struct {
+	Arg1 any
+}
+
+// FakeGomegaMatcherNegatedFailureMessageArgs holds the arguments of one call to NegatedFailureMessage.
+type FakeGomegaMatcherNegatedFailureMessageArgs struct {
+	Arg1 any
+}
+
 func (fake *FakeGomegaMatcher) FailureMessage(arg1 any) string {
 	fake.failureMessageMutex.Lock()
 	ret, specificReturn := fake.failureMessageReturnsOnCall[len(fake.failureMessageArgsForCall)]
-	fake.failureMessageArgsForCall = append(fake.failureMessageArgsForCall, struct {
-		arg1 any
-	}{arg1})
+	fake.failureMessageArgsForCall = append(fake.failureMessageArgsForCall, FakeGomegaMatcherFailureMessageArgs{arg1})
 	stub := fake.FailureMessageStub
 	fakeReturns := fake.failureMessageReturns
 	fake.recordInvocation("FailureMessage", []interface{}{arg1})
@@ -82,7 +89,15 @@ func (fake *FakeGomegaMatcher) FailureMessageArgsForCall(i int) any {
 	fake.failureMessageMutex.RLock()
 	defer fake.failureMessageMutex.RUnlock()
 	argsForCall := fake.failureMessageArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGomegaMatcher) FailureMessageArgs() []FakeGomegaMatcherFailureMessageArgs {
+	fake.failureMessageMutex.RLock()
+	defer fake.failureMessageMutex.RUnlock()
+	args := make([]FakeGomegaMatcherFailureMessageArgs, len(fake.failureMessageArgsForCall))
+	copy(args, fake.failureMessageArgsForCall)
+	return args
 }
 
 func (fake *FakeGomegaMatcher) FailureMessageReturns(result1 string) {
@@ -111,9 +126,7 @@ func (fake *FakeGomegaMatcher) FailureMessageReturnsOnCall(i int, result1 string
 func (fake *FakeGomegaMatcher) Match(arg1 any) (bool, error) {
 	fake.matchMutex.Lock()
 	ret, specificReturn := fake.matchReturnsOnCall[len(fake.matchArgsForCall)]
-	fake.matchArgsForCall = append(fake.matchArgsForCall, struct {
-		arg1 any
-	}{arg1})
+	fake.matchArgsForCall = append(fake.matchArgsForCall, FakeGomegaMatcherMatchArgs{arg1})
 	stub := fake.MatchStub
 	fakeReturns := fake.matchReturns
 	fake.recordInvocation("Match", []interface{}{arg1})
@@ -143,7 +156,15 @@ func (fake *FakeGomegaMatcher) MatchArgsForCall(i int) any {
 	fake.matchMutex.RLock()
 	defer fake.matchMutex.RUnlock()
 	argsForCall := fake.matchArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGomegaMatcher) MatchArgs() []FakeGomegaMatcherMatchArgs {
+	fake.matchMutex.RLock()
+	defer fake.matchMutex.RUnlock()
+	args := make([]FakeGomegaMatcherMatchArgs, len(fake.matchArgsForCall))
+	copy(args, fake.matchArgsForCall)
+	return args
 }
 
 func (fake *FakeGomegaMatcher) MatchReturns(result1 bool, result2 error) {
@@ -175,9 +196,7 @@ func (fake *FakeGomegaMatcher) MatchReturnsOnCall(i int, result1 bool, result2 e
 func (fake *FakeGomegaMatcher) NegatedFailureMessage(arg1 any) string {
 	fake.negatedFailureMessageMutex.Lock()
 	ret, specificReturn := fake.negatedFailureMessageReturnsOnCall[len(fake.negatedFailureMessageArgsForCall)]
-	fake.negatedFailureMessageArgsForCall = append(fake.negatedFailureMessageArgsForCall, struct {
-		arg1 any
-	}{arg1})
+	fake.negatedFailureMessageArgsForCall = append(fake.negatedFailureMessageArgsForCall, FakeGomegaMatcherNegatedFailureMessageArgs{arg1})
 	stub := fake.NegatedFailureMessageStub
 	fakeReturns := fake.negatedFailureMessageReturns
 	fake.recordInvocation("NegatedFailureMessage", []interface{}{arg1})
@@ -207,7 +226,15 @@ func (fake *FakeGomegaMatcher) NegatedFailureMessageArgsForCall(i int) any {
 	fake.negatedFailureMessageMutex.RLock()
 	defer fake.negatedFailureMessageMutex.RUnlock()
 	argsForCall := fake.negatedFailureMessageArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGomegaMatcher) NegatedFailureMessageArgs() []FakeGomegaMatcherNegatedFailureMessageArgs {
+	fake.negatedFailureMessageMutex.RLock()
+	defer fake.negatedFailureMessageMutex.RUnlock()
+	args := make([]FakeGomegaMatcherNegatedFailureMessageArgs, len(fake.negatedFailureMessageArgsForCall))
+	copy(args, fake.negatedFailureMessageArgsForCall)
+	return args
 }
 
 func (fake *FakeGomegaMatcher) NegatedFailureMessageReturns(result1 string) {

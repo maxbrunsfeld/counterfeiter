@@ -10,20 +10,20 @@ import (
 type FakeReusesArgTypes struct {
 	DoThingsStub        func(string, string)
 	doThingsMutex       sync.RWMutex
-	doThingsArgsForCall []struct {
-		arg1 string
-		arg2 string
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	doThingsArgsForCall []FakeReusesArgTypesDoThingsArgs
+	invocations         map[string][][]interface{}
+	invocationsMutex    sync.RWMutex
+}
+
+// FakeReusesArgTypesDoThingsArgs holds the arguments of one call to DoThings.
+type FakeReusesArgTypesDoThingsArgs struct {
+	Arg1 string
+	Arg2 string
 }
 
 func (fake *FakeReusesArgTypes) DoThings(arg1 string, arg2 string) {
 	fake.doThingsMutex.Lock()
-	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
+	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, FakeReusesArgTypesDoThingsArgs{arg1, arg2})
 	stub := fake.DoThingsStub
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
 	fake.doThingsMutex.Unlock()
@@ -48,7 +48,15 @@ func (fake *FakeReusesArgTypes) DoThingsArgsForCall(i int) (string, string) {
 	fake.doThingsMutex.RLock()
 	defer fake.doThingsMutex.RUnlock()
 	argsForCall := fake.doThingsArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeReusesArgTypes) DoThingsArgs() []FakeReusesArgTypesDoThingsArgs {
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
+	args := make([]FakeReusesArgTypesDoThingsArgs, len(fake.doThingsArgsForCall))
+	copy(args, fake.doThingsArgsForCall)
+	return args
 }
 
 func (fake *FakeReusesArgTypes) Invocations() map[string][][]interface{} {

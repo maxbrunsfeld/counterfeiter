@@ -10,13 +10,11 @@ import (
 type FakeGenericInterfaceCustomTypeConstraintU[T genericinterface.CustomTypeConstraintU] struct {
 	DoSomethingStub        func()
 	doSomethingMutex       sync.RWMutex
-	doSomethingArgsForCall []struct {
-	}
-	ReturnTStub        func() T
-	returnTMutex       sync.RWMutex
-	returnTArgsForCall []struct {
-	}
-	returnTReturns struct {
+	doSomethingArgsForCall []struct{}
+	ReturnTStub            func() T
+	returnTMutex           sync.RWMutex
+	returnTArgsForCall     []struct{}
+	returnTReturns         struct {
 		result1 T
 	}
 	returnTReturnsOnCall map[int]struct {
@@ -24,10 +22,8 @@ type FakeGenericInterfaceCustomTypeConstraintU[T genericinterface.CustomTypeCons
 	}
 	TakeAndReturnTStub        func(T) T
 	takeAndReturnTMutex       sync.RWMutex
-	takeAndReturnTArgsForCall []struct {
-		arg1 T
-	}
-	takeAndReturnTReturns struct {
+	takeAndReturnTArgsForCall []FakeGenericInterfaceCustomTypeConstraintUTakeAndReturnTArgs[T]
+	takeAndReturnTReturns     struct {
 		result1 T
 	}
 	takeAndReturnTReturnsOnCall map[int]struct {
@@ -35,17 +31,24 @@ type FakeGenericInterfaceCustomTypeConstraintU[T genericinterface.CustomTypeCons
 	}
 	TakeTStub        func(T)
 	takeTMutex       sync.RWMutex
-	takeTArgsForCall []struct {
-		arg1 T
-	}
+	takeTArgsForCall []FakeGenericInterfaceCustomTypeConstraintUTakeTArgs[T]
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
+// FakeGenericInterfaceCustomTypeConstraintUTakeAndReturnTArgs holds the arguments of one call to TakeAndReturnT.
+type FakeGenericInterfaceCustomTypeConstraintUTakeAndReturnTArgs[T genericinterface.CustomTypeConstraintU] struct {
+	Arg1 T
+}
+
+// FakeGenericInterfaceCustomTypeConstraintUTakeTArgs holds the arguments of one call to TakeT.
+type FakeGenericInterfaceCustomTypeConstraintUTakeTArgs[T genericinterface.CustomTypeConstraintU] struct {
+	Arg1 T
+}
+
 func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) DoSomething() {
 	fake.doSomethingMutex.Lock()
-	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct {
-	}{})
+	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct{}{})
 	stub := fake.DoSomethingStub
 	fake.recordInvocation("DoSomething", []interface{}{})
 	fake.doSomethingMutex.Unlock()
@@ -69,8 +72,7 @@ func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) DoSomethingCalls(stub 
 func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) ReturnT() T {
 	fake.returnTMutex.Lock()
 	ret, specificReturn := fake.returnTReturnsOnCall[len(fake.returnTArgsForCall)]
-	fake.returnTArgsForCall = append(fake.returnTArgsForCall, struct {
-	}{})
+	fake.returnTArgsForCall = append(fake.returnTArgsForCall, struct{}{})
 	stub := fake.ReturnTStub
 	fakeReturns := fake.returnTReturns
 	fake.recordInvocation("ReturnT", []interface{}{})
@@ -122,9 +124,7 @@ func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) ReturnTReturnsOnCall(i
 func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeAndReturnT(arg1 T) T {
 	fake.takeAndReturnTMutex.Lock()
 	ret, specificReturn := fake.takeAndReturnTReturnsOnCall[len(fake.takeAndReturnTArgsForCall)]
-	fake.takeAndReturnTArgsForCall = append(fake.takeAndReturnTArgsForCall, struct {
-		arg1 T
-	}{arg1})
+	fake.takeAndReturnTArgsForCall = append(fake.takeAndReturnTArgsForCall, FakeGenericInterfaceCustomTypeConstraintUTakeAndReturnTArgs[T]{arg1})
 	stub := fake.TakeAndReturnTStub
 	fakeReturns := fake.takeAndReturnTReturns
 	fake.recordInvocation("TakeAndReturnT", []interface{}{arg1})
@@ -154,7 +154,15 @@ func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeAndReturnTArgsForC
 	fake.takeAndReturnTMutex.RLock()
 	defer fake.takeAndReturnTMutex.RUnlock()
 	argsForCall := fake.takeAndReturnTArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeAndReturnTArgs() []FakeGenericInterfaceCustomTypeConstraintUTakeAndReturnTArgs[T] {
+	fake.takeAndReturnTMutex.RLock()
+	defer fake.takeAndReturnTMutex.RUnlock()
+	args := make([]FakeGenericInterfaceCustomTypeConstraintUTakeAndReturnTArgs[T], len(fake.takeAndReturnTArgsForCall))
+	copy(args, fake.takeAndReturnTArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeAndReturnTReturns(result1 T) {
@@ -182,9 +190,7 @@ func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeAndReturnTReturnsO
 
 func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeT(arg1 T) {
 	fake.takeTMutex.Lock()
-	fake.takeTArgsForCall = append(fake.takeTArgsForCall, struct {
-		arg1 T
-	}{arg1})
+	fake.takeTArgsForCall = append(fake.takeTArgsForCall, FakeGenericInterfaceCustomTypeConstraintUTakeTArgs[T]{arg1})
 	stub := fake.TakeTStub
 	fake.recordInvocation("TakeT", []interface{}{arg1})
 	fake.takeTMutex.Unlock()
@@ -209,7 +215,15 @@ func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeTArgsForCall(i int
 	fake.takeTMutex.RLock()
 	defer fake.takeTMutex.RUnlock()
 	argsForCall := fake.takeTArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) TakeTArgs() []FakeGenericInterfaceCustomTypeConstraintUTakeTArgs[T] {
+	fake.takeTMutex.RLock()
+	defer fake.takeTMutex.RUnlock()
+	args := make([]FakeGenericInterfaceCustomTypeConstraintUTakeTArgs[T], len(fake.takeTArgsForCall))
+	copy(args, fake.takeTArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceCustomTypeConstraintU[T]) Invocations() map[string][][]interface{} {

@@ -35,11 +35,7 @@ type {{.Name}}{{.GenericTypeParametersAndConstraints}} struct {
 	{{- range .Methods}}
 	{{.Name}}Stub func({{.Params.AsArgs}}) {{.Returns.AsReturnSignature}}
 	{{UnExport .Name}}Mutex sync.RWMutex
-	{{UnExport .Name}}ArgsForCall []struct{
-		{{- range .Params}}
-		{{.Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
-		{{- end}}
-	}
+	{{UnExport .Name}}ArgsForCall []{{if .Params.HasLength}}{{$.Name}}{{Title .Name}}Args{{$.GenericTypeParameters}}{{else}}struct{}{{end}}
 	{{- if .Returns.HasLength}}
 	{{UnExport .Name}}Returns struct{
 		{{- range .Returns}}
@@ -58,6 +54,18 @@ type {{.Name}}{{.GenericTypeParametersAndConstraints}} struct {
 }
 
 {{range .Methods -}}
+{{if .Params.HasLength -}}
+// {{$.Name}}{{Title .Name}}Args holds the arguments of one call to {{.Name}}.
+type {{$.Name}}{{Title .Name}}Args{{$.GenericTypeParametersAndConstraints}} struct {
+	{{- range .Params}}
+	{{Title .Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
+	{{- end}}
+}
+
+{{end -}}
+{{end -}}
+
+{{range .Methods -}}
 func (fake *{{$.Name}}{{$.GenericTypeParameters}}) {{.Name}}({{.Params.AsNamedArgsWithTypes}}) {{.Returns.AsReturnSignature}} {
 	{{- range .Params.Slices}}
 	var {{UnExport .Name}}Copy {{Replace .Type "..." "[]" -1}}
@@ -70,11 +78,7 @@ func (fake *{{$.Name}}{{$.GenericTypeParameters}}) {{.Name}}({{.Params.AsNamedAr
 	{{- if .Returns.HasLength}}
 	ret, specificReturn := fake.{{UnExport .Name}}ReturnsOnCall[len(fake.{{UnExport .Name}}ArgsForCall)]
 	{{- end}}
-	fake.{{UnExport .Name}}ArgsForCall = append(fake.{{UnExport .Name}}ArgsForCall, struct{
-		{{- range .Params}}
-		{{.Name}} {{if .IsVariadic}}{{Replace .Type "..." "[]" -1}}{{else}}{{.Type}}{{end}}
-		{{- end}}
-	}{ {{- .Params.AsNamedArgs -}} })
+	fake.{{UnExport .Name}}ArgsForCall = append(fake.{{UnExport .Name}}ArgsForCall, {{if .Params.HasLength}}{{$.Name}}{{Title .Name}}Args{{$.GenericTypeParameters}}{{else}}struct{}{{end}}{ {{- .Params.AsNamedArgs -}} })
 	stub := fake.{{.Name}}Stub
 	{{- if .Returns.HasLength}}
 	fakeReturns := fake.{{UnExport .Name}}Returns
@@ -109,7 +113,15 @@ func (fake *{{$.Name}}{{$.GenericTypeParameters}}) {{Title .Name}}ArgsForCall(i 
 	fake.{{UnExport .Name}}Mutex.RLock()
 	defer fake.{{UnExport .Name}}Mutex.RUnlock()
 	argsForCall := fake.{{UnExport .Name}}ArgsForCall[i]
-	return {{.Params.WithPrefix "argsForCall."}}
+	return {{.Params.AsFieldsWithPrefix "argsForCall."}}
+}
+
+func (fake *{{$.Name}}{{$.GenericTypeParameters}}) {{Title .Name}}Args() []{{$.Name}}{{Title .Name}}Args{{$.GenericTypeParameters}} {
+	fake.{{UnExport .Name}}Mutex.RLock()
+	defer fake.{{UnExport .Name}}Mutex.RUnlock()
+	args := make([]{{$.Name}}{{Title .Name}}Args{{$.GenericTypeParameters}}, len(fake.{{UnExport .Name}}ArgsForCall))
+	copy(args, fake.{{UnExport .Name}}ArgsForCall)
+	return args
 }
 {{- end}}
 

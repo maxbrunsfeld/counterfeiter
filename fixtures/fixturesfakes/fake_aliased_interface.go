@@ -11,15 +11,18 @@ import (
 type FakeAliasedInterface struct {
 	AnotherMethodStub        func([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType, chan another_package.SomeType)
 	anotherMethodMutex       sync.RWMutex
-	anotherMethodArgsForCall []struct {
-		arg1 []another_package.SomeType
-		arg2 map[another_package.SomeType]another_package.SomeType
-		arg3 *another_package.SomeType
-		arg4 another_package.SomeType
-		arg5 chan another_package.SomeType
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	anotherMethodArgsForCall []FakeAliasedInterfaceAnotherMethodArgs
+	invocations              map[string][][]interface{}
+	invocationsMutex         sync.RWMutex
+}
+
+// FakeAliasedInterfaceAnotherMethodArgs holds the arguments of one call to AnotherMethod.
+type FakeAliasedInterfaceAnotherMethodArgs struct {
+	Arg1 []another_package.SomeType
+	Arg2 map[another_package.SomeType]another_package.SomeType
+	Arg3 *another_package.SomeType
+	Arg4 another_package.SomeType
+	Arg5 chan another_package.SomeType
 }
 
 func (fake *FakeAliasedInterface) AnotherMethod(arg1 []another_package.SomeType, arg2 map[another_package.SomeType]another_package.SomeType, arg3 *another_package.SomeType, arg4 another_package.SomeType, arg5 chan another_package.SomeType) {
@@ -29,13 +32,7 @@ func (fake *FakeAliasedInterface) AnotherMethod(arg1 []another_package.SomeType,
 		copy(arg1Copy, arg1)
 	}
 	fake.anotherMethodMutex.Lock()
-	fake.anotherMethodArgsForCall = append(fake.anotherMethodArgsForCall, struct {
-		arg1 []another_package.SomeType
-		arg2 map[another_package.SomeType]another_package.SomeType
-		arg3 *another_package.SomeType
-		arg4 another_package.SomeType
-		arg5 chan another_package.SomeType
-	}{arg1Copy, arg2, arg3, arg4, arg5})
+	fake.anotherMethodArgsForCall = append(fake.anotherMethodArgsForCall, FakeAliasedInterfaceAnotherMethodArgs{arg1Copy, arg2, arg3, arg4, arg5})
 	stub := fake.AnotherMethodStub
 	fake.recordInvocation("AnotherMethod", []interface{}{arg1Copy, arg2, arg3, arg4, arg5})
 	fake.anotherMethodMutex.Unlock()
@@ -60,7 +57,15 @@ func (fake *FakeAliasedInterface) AnotherMethodArgsForCall(i int) ([]another_pac
 	fake.anotherMethodMutex.RLock()
 	defer fake.anotherMethodMutex.RUnlock()
 	argsForCall := fake.anotherMethodArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3, argsForCall.Arg4, argsForCall.Arg5
+}
+
+func (fake *FakeAliasedInterface) AnotherMethodArgs() []FakeAliasedInterfaceAnotherMethodArgs {
+	fake.anotherMethodMutex.RLock()
+	defer fake.anotherMethodMutex.RUnlock()
+	args := make([]FakeAliasedInterfaceAnotherMethodArgs, len(fake.anotherMethodArgsForCall))
+	copy(args, fake.anotherMethodArgsForCall)
+	return args
 }
 
 func (fake *FakeAliasedInterface) Invocations() map[string][][]interface{} {

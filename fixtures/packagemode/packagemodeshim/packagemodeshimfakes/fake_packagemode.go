@@ -10,10 +10,8 @@ import (
 type FakePackagemode struct {
 	ArgStub        func(int) string
 	argMutex       sync.RWMutex
-	argArgsForCall []struct {
-		arg1 int
-	}
-	argReturns struct {
+	argArgsForCall []FakePackagemodeArgArgs
+	argReturns     struct {
 		result1 string
 	}
 	argReturnsOnCall map[int]struct {
@@ -21,9 +19,8 @@ type FakePackagemode struct {
 	}
 	ArgsStub        func() []string
 	argsMutex       sync.RWMutex
-	argsArgsForCall []struct {
-	}
-	argsReturns struct {
+	argsArgsForCall []struct{}
+	argsReturns     struct {
 		result1 []string
 	}
 	argsReturnsOnCall map[int]struct {
@@ -31,12 +28,8 @@ type FakePackagemode struct {
 	}
 	BoolStub        func(string, bool, string) *bool
 	boolMutex       sync.RWMutex
-	boolArgsForCall []struct {
-		arg1 string
-		arg2 bool
-		arg3 string
-	}
-	boolReturns struct {
+	boolArgsForCall []FakePackagemodeBoolArgs
+	boolReturns     struct {
 		result1 *bool
 	}
 	boolReturnsOnCall map[int]struct {
@@ -44,22 +37,35 @@ type FakePackagemode struct {
 	}
 	BoolVarStub        func(*bool, string, bool, string)
 	boolVarMutex       sync.RWMutex
-	boolVarArgsForCall []struct {
-		arg1 *bool
-		arg2 string
-		arg3 bool
-		arg4 string
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	boolVarArgsForCall []FakePackagemodeBoolVarArgs
+	invocations        map[string][][]interface{}
+	invocationsMutex   sync.RWMutex
+}
+
+// FakePackagemodeArgArgs holds the arguments of one call to Arg.
+type FakePackagemodeArgArgs struct {
+	Arg1 int
+}
+
+// FakePackagemodeBoolArgs holds the arguments of one call to Bool.
+type FakePackagemodeBoolArgs struct {
+	Arg1 string
+	Arg2 bool
+	Arg3 string
+}
+
+// FakePackagemodeBoolVarArgs holds the arguments of one call to BoolVar.
+type FakePackagemodeBoolVarArgs struct {
+	Arg1 *bool
+	Arg2 string
+	Arg3 bool
+	Arg4 string
 }
 
 func (fake *FakePackagemode) Arg(arg1 int) string {
 	fake.argMutex.Lock()
 	ret, specificReturn := fake.argReturnsOnCall[len(fake.argArgsForCall)]
-	fake.argArgsForCall = append(fake.argArgsForCall, struct {
-		arg1 int
-	}{arg1})
+	fake.argArgsForCall = append(fake.argArgsForCall, FakePackagemodeArgArgs{arg1})
 	stub := fake.ArgStub
 	fakeReturns := fake.argReturns
 	fake.recordInvocation("Arg", []interface{}{arg1})
@@ -89,7 +95,15 @@ func (fake *FakePackagemode) ArgArgsForCall(i int) int {
 	fake.argMutex.RLock()
 	defer fake.argMutex.RUnlock()
 	argsForCall := fake.argArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakePackagemode) ArgArgs() []FakePackagemodeArgArgs {
+	fake.argMutex.RLock()
+	defer fake.argMutex.RUnlock()
+	args := make([]FakePackagemodeArgArgs, len(fake.argArgsForCall))
+	copy(args, fake.argArgsForCall)
+	return args
 }
 
 func (fake *FakePackagemode) ArgReturns(result1 string) {
@@ -118,8 +132,7 @@ func (fake *FakePackagemode) ArgReturnsOnCall(i int, result1 string) {
 func (fake *FakePackagemode) Args() []string {
 	fake.argsMutex.Lock()
 	ret, specificReturn := fake.argsReturnsOnCall[len(fake.argsArgsForCall)]
-	fake.argsArgsForCall = append(fake.argsArgsForCall, struct {
-	}{})
+	fake.argsArgsForCall = append(fake.argsArgsForCall, struct{}{})
 	stub := fake.ArgsStub
 	fakeReturns := fake.argsReturns
 	fake.recordInvocation("Args", []interface{}{})
@@ -171,11 +184,7 @@ func (fake *FakePackagemode) ArgsReturnsOnCall(i int, result1 []string) {
 func (fake *FakePackagemode) Bool(arg1 string, arg2 bool, arg3 string) *bool {
 	fake.boolMutex.Lock()
 	ret, specificReturn := fake.boolReturnsOnCall[len(fake.boolArgsForCall)]
-	fake.boolArgsForCall = append(fake.boolArgsForCall, struct {
-		arg1 string
-		arg2 bool
-		arg3 string
-	}{arg1, arg2, arg3})
+	fake.boolArgsForCall = append(fake.boolArgsForCall, FakePackagemodeBoolArgs{arg1, arg2, arg3})
 	stub := fake.BoolStub
 	fakeReturns := fake.boolReturns
 	fake.recordInvocation("Bool", []interface{}{arg1, arg2, arg3})
@@ -205,7 +214,15 @@ func (fake *FakePackagemode) BoolArgsForCall(i int) (string, bool, string) {
 	fake.boolMutex.RLock()
 	defer fake.boolMutex.RUnlock()
 	argsForCall := fake.boolArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakePackagemode) BoolArgs() []FakePackagemodeBoolArgs {
+	fake.boolMutex.RLock()
+	defer fake.boolMutex.RUnlock()
+	args := make([]FakePackagemodeBoolArgs, len(fake.boolArgsForCall))
+	copy(args, fake.boolArgsForCall)
+	return args
 }
 
 func (fake *FakePackagemode) BoolReturns(result1 *bool) {
@@ -233,12 +250,7 @@ func (fake *FakePackagemode) BoolReturnsOnCall(i int, result1 *bool) {
 
 func (fake *FakePackagemode) BoolVar(arg1 *bool, arg2 string, arg3 bool, arg4 string) {
 	fake.boolVarMutex.Lock()
-	fake.boolVarArgsForCall = append(fake.boolVarArgsForCall, struct {
-		arg1 *bool
-		arg2 string
-		arg3 bool
-		arg4 string
-	}{arg1, arg2, arg3, arg4})
+	fake.boolVarArgsForCall = append(fake.boolVarArgsForCall, FakePackagemodeBoolVarArgs{arg1, arg2, arg3, arg4})
 	stub := fake.BoolVarStub
 	fake.recordInvocation("BoolVar", []interface{}{arg1, arg2, arg3, arg4})
 	fake.boolVarMutex.Unlock()
@@ -263,7 +275,15 @@ func (fake *FakePackagemode) BoolVarArgsForCall(i int) (*bool, string, bool, str
 	fake.boolVarMutex.RLock()
 	defer fake.boolVarMutex.RUnlock()
 	argsForCall := fake.boolVarArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3, argsForCall.Arg4
+}
+
+func (fake *FakePackagemode) BoolVarArgs() []FakePackagemodeBoolVarArgs {
+	fake.boolVarMutex.RLock()
+	defer fake.boolVarMutex.RUnlock()
+	args := make([]FakePackagemodeBoolVarArgs, len(fake.boolVarArgsForCall))
+	copy(args, fake.boolVarArgsForCall)
+	return args
 }
 
 func (fake *FakePackagemode) Invocations() map[string][][]interface{} {

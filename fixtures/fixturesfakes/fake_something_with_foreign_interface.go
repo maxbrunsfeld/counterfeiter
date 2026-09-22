@@ -10,10 +10,8 @@ import (
 type FakeSomethingWithForeignInterface struct {
 	StuffStub        func(int) string
 	stuffMutex       sync.RWMutex
-	stuffArgsForCall []struct {
-		arg1 int
-	}
-	stuffReturns struct {
+	stuffArgsForCall []FakeSomethingWithForeignInterfaceStuffArgs
+	stuffReturns     struct {
 		result1 string
 	}
 	stuffReturnsOnCall map[int]struct {
@@ -23,12 +21,15 @@ type FakeSomethingWithForeignInterface struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeSomethingWithForeignInterfaceStuffArgs holds the arguments of one call to Stuff.
+type FakeSomethingWithForeignInterfaceStuffArgs struct {
+	Arg1 int
+}
+
 func (fake *FakeSomethingWithForeignInterface) Stuff(arg1 int) string {
 	fake.stuffMutex.Lock()
 	ret, specificReturn := fake.stuffReturnsOnCall[len(fake.stuffArgsForCall)]
-	fake.stuffArgsForCall = append(fake.stuffArgsForCall, struct {
-		arg1 int
-	}{arg1})
+	fake.stuffArgsForCall = append(fake.stuffArgsForCall, FakeSomethingWithForeignInterfaceStuffArgs{arg1})
 	stub := fake.StuffStub
 	fakeReturns := fake.stuffReturns
 	fake.recordInvocation("Stuff", []interface{}{arg1})
@@ -58,7 +59,15 @@ func (fake *FakeSomethingWithForeignInterface) StuffArgsForCall(i int) int {
 	fake.stuffMutex.RLock()
 	defer fake.stuffMutex.RUnlock()
 	argsForCall := fake.stuffArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeSomethingWithForeignInterface) StuffArgs() []FakeSomethingWithForeignInterfaceStuffArgs {
+	fake.stuffMutex.RLock()
+	defer fake.stuffMutex.RUnlock()
+	args := make([]FakeSomethingWithForeignInterfaceStuffArgs, len(fake.stuffArgsForCall))
+	copy(args, fake.stuffArgsForCall)
+	return args
 }
 
 func (fake *FakeSomethingWithForeignInterface) StuffReturns(result1 string) {

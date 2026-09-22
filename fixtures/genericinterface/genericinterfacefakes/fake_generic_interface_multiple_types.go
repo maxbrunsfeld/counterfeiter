@@ -10,13 +10,11 @@ import (
 type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
 	DoSomethingStub        func()
 	doSomethingMutex       sync.RWMutex
-	doSomethingArgsForCall []struct {
-	}
-	ReturnTStub        func() T
-	returnTMutex       sync.RWMutex
-	returnTArgsForCall []struct {
-	}
-	returnTReturns struct {
+	doSomethingArgsForCall []struct{}
+	ReturnTStub            func() T
+	returnTMutex           sync.RWMutex
+	returnTArgsForCall     []struct{}
+	returnTReturns         struct {
 		result1 T
 	}
 	returnTReturnsOnCall map[int]struct {
@@ -24,9 +22,8 @@ type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U generic
 	}
 	ReturnTAndUStub        func() (T, U)
 	returnTAndUMutex       sync.RWMutex
-	returnTAndUArgsForCall []struct {
-	}
-	returnTAndUReturns struct {
+	returnTAndUArgsForCall []struct{}
+	returnTAndUReturns     struct {
 		result1 T
 		result2 U
 	}
@@ -36,9 +33,8 @@ type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U generic
 	}
 	ReturnUStub        func() U
 	returnUMutex       sync.RWMutex
-	returnUArgsForCall []struct {
-	}
-	returnUReturns struct {
+	returnUArgsForCall []struct{}
+	returnUReturns     struct {
 		result1 U
 	}
 	returnUReturnsOnCall map[int]struct {
@@ -46,10 +42,8 @@ type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U generic
 	}
 	TakeAndReturnTStub        func(T) T
 	takeAndReturnTMutex       sync.RWMutex
-	takeAndReturnTArgsForCall []struct {
-		arg1 T
-	}
-	takeAndReturnTReturns struct {
+	takeAndReturnTArgsForCall []FakeGenericInterfaceMultipleTypesTakeAndReturnTArgs[T, U]
+	takeAndReturnTReturns     struct {
 		result1 T
 	}
 	takeAndReturnTReturnsOnCall map[int]struct {
@@ -57,11 +51,8 @@ type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U generic
 	}
 	TakeAndReturnTAndUStub        func(T, U) (T, U)
 	takeAndReturnTAndUMutex       sync.RWMutex
-	takeAndReturnTAndUArgsForCall []struct {
-		arg1 T
-		arg2 U
-	}
-	takeAndReturnTAndUReturns struct {
+	takeAndReturnTAndUArgsForCall []FakeGenericInterfaceMultipleTypesTakeAndReturnTAndUArgs[T, U]
+	takeAndReturnTAndUReturns     struct {
 		result1 T
 		result2 U
 	}
@@ -71,26 +62,20 @@ type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U generic
 	}
 	TakeAndReturnUStub        func(U) U
 	takeAndReturnUMutex       sync.RWMutex
-	takeAndReturnUArgsForCall []struct {
-		arg1 U
-	}
-	takeAndReturnUReturns struct {
+	takeAndReturnUArgsForCall []FakeGenericInterfaceMultipleTypesTakeAndReturnUArgs[T, U]
+	takeAndReturnUReturns     struct {
 		result1 U
 	}
 	takeAndReturnUReturnsOnCall map[int]struct {
 		result1 U
 	}
-	TakeTStub        func(T)
-	takeTMutex       sync.RWMutex
-	takeTArgsForCall []struct {
-		arg1 T
-	}
+	TakeTStub                  func(T)
+	takeTMutex                 sync.RWMutex
+	takeTArgsForCall           []FakeGenericInterfaceMultipleTypesTakeTArgs[T, U]
 	TakeTAndReturnUStub        func(T) U
 	takeTAndReturnUMutex       sync.RWMutex
-	takeTAndReturnUArgsForCall []struct {
-		arg1 T
-	}
-	takeTAndReturnUReturns struct {
+	takeTAndReturnUArgsForCall []FakeGenericInterfaceMultipleTypesTakeTAndReturnUArgs[T, U]
+	takeTAndReturnUReturns     struct {
 		result1 U
 	}
 	takeTAndReturnUReturnsOnCall map[int]struct {
@@ -98,23 +83,54 @@ type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U generic
 	}
 	TakeTAndUStub        func(T, U)
 	takeTAndUMutex       sync.RWMutex
-	takeTAndUArgsForCall []struct {
-		arg1 T
-		arg2 U
-	}
-	TakeUStub        func(U)
-	takeUMutex       sync.RWMutex
-	takeUArgsForCall []struct {
-		arg1 U
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	takeTAndUArgsForCall []FakeGenericInterfaceMultipleTypesTakeTAndUArgs[T, U]
+	TakeUStub            func(U)
+	takeUMutex           sync.RWMutex
+	takeUArgsForCall     []FakeGenericInterfaceMultipleTypesTakeUArgs[T, U]
+	invocations          map[string][][]interface{}
+	invocationsMutex     sync.RWMutex
+}
+
+// FakeGenericInterfaceMultipleTypesTakeAndReturnTArgs holds the arguments of one call to TakeAndReturnT.
+type FakeGenericInterfaceMultipleTypesTakeAndReturnTArgs[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
+	Arg1 T
+}
+
+// FakeGenericInterfaceMultipleTypesTakeAndReturnTAndUArgs holds the arguments of one call to TakeAndReturnTAndU.
+type FakeGenericInterfaceMultipleTypesTakeAndReturnTAndUArgs[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
+	Arg1 T
+	Arg2 U
+}
+
+// FakeGenericInterfaceMultipleTypesTakeAndReturnUArgs holds the arguments of one call to TakeAndReturnU.
+type FakeGenericInterfaceMultipleTypesTakeAndReturnUArgs[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
+	Arg1 U
+}
+
+// FakeGenericInterfaceMultipleTypesTakeTArgs holds the arguments of one call to TakeT.
+type FakeGenericInterfaceMultipleTypesTakeTArgs[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
+	Arg1 T
+}
+
+// FakeGenericInterfaceMultipleTypesTakeTAndReturnUArgs holds the arguments of one call to TakeTAndReturnU.
+type FakeGenericInterfaceMultipleTypesTakeTAndReturnUArgs[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
+	Arg1 T
+}
+
+// FakeGenericInterfaceMultipleTypesTakeTAndUArgs holds the arguments of one call to TakeTAndU.
+type FakeGenericInterfaceMultipleTypesTakeTAndUArgs[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
+	Arg1 T
+	Arg2 U
+}
+
+// FakeGenericInterfaceMultipleTypesTakeUArgs holds the arguments of one call to TakeU.
+type FakeGenericInterfaceMultipleTypesTakeUArgs[T genericinterface.CustomTypeT, U genericinterface.CustomTypeU] struct {
+	Arg1 U
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) DoSomething() {
 	fake.doSomethingMutex.Lock()
-	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct {
-	}{})
+	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct{}{})
 	stub := fake.DoSomethingStub
 	fake.recordInvocation("DoSomething", []interface{}{})
 	fake.doSomethingMutex.Unlock()
@@ -138,8 +154,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) DoSomethingCalls(stub func(
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) ReturnT() T {
 	fake.returnTMutex.Lock()
 	ret, specificReturn := fake.returnTReturnsOnCall[len(fake.returnTArgsForCall)]
-	fake.returnTArgsForCall = append(fake.returnTArgsForCall, struct {
-	}{})
+	fake.returnTArgsForCall = append(fake.returnTArgsForCall, struct{}{})
 	stub := fake.ReturnTStub
 	fakeReturns := fake.returnTReturns
 	fake.recordInvocation("ReturnT", []interface{}{})
@@ -191,8 +206,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) ReturnTReturnsOnCall(i int,
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) ReturnTAndU() (T, U) {
 	fake.returnTAndUMutex.Lock()
 	ret, specificReturn := fake.returnTAndUReturnsOnCall[len(fake.returnTAndUArgsForCall)]
-	fake.returnTAndUArgsForCall = append(fake.returnTAndUArgsForCall, struct {
-	}{})
+	fake.returnTAndUArgsForCall = append(fake.returnTAndUArgsForCall, struct{}{})
 	stub := fake.ReturnTAndUStub
 	fakeReturns := fake.returnTAndUReturns
 	fake.recordInvocation("ReturnTAndU", []interface{}{})
@@ -247,8 +261,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) ReturnTAndUReturnsOnCall(i 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) ReturnU() U {
 	fake.returnUMutex.Lock()
 	ret, specificReturn := fake.returnUReturnsOnCall[len(fake.returnUArgsForCall)]
-	fake.returnUArgsForCall = append(fake.returnUArgsForCall, struct {
-	}{})
+	fake.returnUArgsForCall = append(fake.returnUArgsForCall, struct{}{})
 	stub := fake.ReturnUStub
 	fakeReturns := fake.returnUReturns
 	fake.recordInvocation("ReturnU", []interface{}{})
@@ -300,9 +313,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) ReturnUReturnsOnCall(i int,
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnT(arg1 T) T {
 	fake.takeAndReturnTMutex.Lock()
 	ret, specificReturn := fake.takeAndReturnTReturnsOnCall[len(fake.takeAndReturnTArgsForCall)]
-	fake.takeAndReturnTArgsForCall = append(fake.takeAndReturnTArgsForCall, struct {
-		arg1 T
-	}{arg1})
+	fake.takeAndReturnTArgsForCall = append(fake.takeAndReturnTArgsForCall, FakeGenericInterfaceMultipleTypesTakeAndReturnTArgs[T, U]{arg1})
 	stub := fake.TakeAndReturnTStub
 	fakeReturns := fake.takeAndReturnTReturns
 	fake.recordInvocation("TakeAndReturnT", []interface{}{arg1})
@@ -332,7 +343,15 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTArgsForCall(i
 	fake.takeAndReturnTMutex.RLock()
 	defer fake.takeAndReturnTMutex.RUnlock()
 	argsForCall := fake.takeAndReturnTArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTArgs() []FakeGenericInterfaceMultipleTypesTakeAndReturnTArgs[T, U] {
+	fake.takeAndReturnTMutex.RLock()
+	defer fake.takeAndReturnTMutex.RUnlock()
+	args := make([]FakeGenericInterfaceMultipleTypesTakeAndReturnTArgs[T, U], len(fake.takeAndReturnTArgsForCall))
+	copy(args, fake.takeAndReturnTArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTReturns(result1 T) {
@@ -361,10 +380,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTReturnsOnCall
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTAndU(arg1 T, arg2 U) (T, U) {
 	fake.takeAndReturnTAndUMutex.Lock()
 	ret, specificReturn := fake.takeAndReturnTAndUReturnsOnCall[len(fake.takeAndReturnTAndUArgsForCall)]
-	fake.takeAndReturnTAndUArgsForCall = append(fake.takeAndReturnTAndUArgsForCall, struct {
-		arg1 T
-		arg2 U
-	}{arg1, arg2})
+	fake.takeAndReturnTAndUArgsForCall = append(fake.takeAndReturnTAndUArgsForCall, FakeGenericInterfaceMultipleTypesTakeAndReturnTAndUArgs[T, U]{arg1, arg2})
 	stub := fake.TakeAndReturnTAndUStub
 	fakeReturns := fake.takeAndReturnTAndUReturns
 	fake.recordInvocation("TakeAndReturnTAndU", []interface{}{arg1, arg2})
@@ -394,7 +410,15 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTAndUArgsForCa
 	fake.takeAndReturnTAndUMutex.RLock()
 	defer fake.takeAndReturnTAndUMutex.RUnlock()
 	argsForCall := fake.takeAndReturnTAndUArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTAndUArgs() []FakeGenericInterfaceMultipleTypesTakeAndReturnTAndUArgs[T, U] {
+	fake.takeAndReturnTAndUMutex.RLock()
+	defer fake.takeAndReturnTAndUMutex.RUnlock()
+	args := make([]FakeGenericInterfaceMultipleTypesTakeAndReturnTAndUArgs[T, U], len(fake.takeAndReturnTAndUArgsForCall))
+	copy(args, fake.takeAndReturnTAndUArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTAndUReturns(result1 T, result2 U) {
@@ -426,9 +450,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnTAndUReturnsOn
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnU(arg1 U) U {
 	fake.takeAndReturnUMutex.Lock()
 	ret, specificReturn := fake.takeAndReturnUReturnsOnCall[len(fake.takeAndReturnUArgsForCall)]
-	fake.takeAndReturnUArgsForCall = append(fake.takeAndReturnUArgsForCall, struct {
-		arg1 U
-	}{arg1})
+	fake.takeAndReturnUArgsForCall = append(fake.takeAndReturnUArgsForCall, FakeGenericInterfaceMultipleTypesTakeAndReturnUArgs[T, U]{arg1})
 	stub := fake.TakeAndReturnUStub
 	fakeReturns := fake.takeAndReturnUReturns
 	fake.recordInvocation("TakeAndReturnU", []interface{}{arg1})
@@ -458,7 +480,15 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnUArgsForCall(i
 	fake.takeAndReturnUMutex.RLock()
 	defer fake.takeAndReturnUMutex.RUnlock()
 	argsForCall := fake.takeAndReturnUArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnUArgs() []FakeGenericInterfaceMultipleTypesTakeAndReturnUArgs[T, U] {
+	fake.takeAndReturnUMutex.RLock()
+	defer fake.takeAndReturnUMutex.RUnlock()
+	args := make([]FakeGenericInterfaceMultipleTypesTakeAndReturnUArgs[T, U], len(fake.takeAndReturnUArgsForCall))
+	copy(args, fake.takeAndReturnUArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnUReturns(result1 U) {
@@ -486,9 +516,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeAndReturnUReturnsOnCall
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeT(arg1 T) {
 	fake.takeTMutex.Lock()
-	fake.takeTArgsForCall = append(fake.takeTArgsForCall, struct {
-		arg1 T
-	}{arg1})
+	fake.takeTArgsForCall = append(fake.takeTArgsForCall, FakeGenericInterfaceMultipleTypesTakeTArgs[T, U]{arg1})
 	stub := fake.TakeTStub
 	fake.recordInvocation("TakeT", []interface{}{arg1})
 	fake.takeTMutex.Unlock()
@@ -513,15 +541,21 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTArgsForCall(i int) T {
 	fake.takeTMutex.RLock()
 	defer fake.takeTMutex.RUnlock()
 	argsForCall := fake.takeTArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTArgs() []FakeGenericInterfaceMultipleTypesTakeTArgs[T, U] {
+	fake.takeTMutex.RLock()
+	defer fake.takeTMutex.RUnlock()
+	args := make([]FakeGenericInterfaceMultipleTypesTakeTArgs[T, U], len(fake.takeTArgsForCall))
+	copy(args, fake.takeTArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndReturnU(arg1 T) U {
 	fake.takeTAndReturnUMutex.Lock()
 	ret, specificReturn := fake.takeTAndReturnUReturnsOnCall[len(fake.takeTAndReturnUArgsForCall)]
-	fake.takeTAndReturnUArgsForCall = append(fake.takeTAndReturnUArgsForCall, struct {
-		arg1 T
-	}{arg1})
+	fake.takeTAndReturnUArgsForCall = append(fake.takeTAndReturnUArgsForCall, FakeGenericInterfaceMultipleTypesTakeTAndReturnUArgs[T, U]{arg1})
 	stub := fake.TakeTAndReturnUStub
 	fakeReturns := fake.takeTAndReturnUReturns
 	fake.recordInvocation("TakeTAndReturnU", []interface{}{arg1})
@@ -551,7 +585,15 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndReturnUArgsForCall(
 	fake.takeTAndReturnUMutex.RLock()
 	defer fake.takeTAndReturnUMutex.RUnlock()
 	argsForCall := fake.takeTAndReturnUArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndReturnUArgs() []FakeGenericInterfaceMultipleTypesTakeTAndReturnUArgs[T, U] {
+	fake.takeTAndReturnUMutex.RLock()
+	defer fake.takeTAndReturnUMutex.RUnlock()
+	args := make([]FakeGenericInterfaceMultipleTypesTakeTAndReturnUArgs[T, U], len(fake.takeTAndReturnUArgsForCall))
+	copy(args, fake.takeTAndReturnUArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndReturnUReturns(result1 U) {
@@ -579,10 +621,7 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndReturnUReturnsOnCal
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndU(arg1 T, arg2 U) {
 	fake.takeTAndUMutex.Lock()
-	fake.takeTAndUArgsForCall = append(fake.takeTAndUArgsForCall, struct {
-		arg1 T
-		arg2 U
-	}{arg1, arg2})
+	fake.takeTAndUArgsForCall = append(fake.takeTAndUArgsForCall, FakeGenericInterfaceMultipleTypesTakeTAndUArgs[T, U]{arg1, arg2})
 	stub := fake.TakeTAndUStub
 	fake.recordInvocation("TakeTAndU", []interface{}{arg1, arg2})
 	fake.takeTAndUMutex.Unlock()
@@ -607,14 +646,20 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndUArgsForCall(i int)
 	fake.takeTAndUMutex.RLock()
 	defer fake.takeTAndUMutex.RUnlock()
 	argsForCall := fake.takeTAndUArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeTAndUArgs() []FakeGenericInterfaceMultipleTypesTakeTAndUArgs[T, U] {
+	fake.takeTAndUMutex.RLock()
+	defer fake.takeTAndUMutex.RUnlock()
+	args := make([]FakeGenericInterfaceMultipleTypesTakeTAndUArgs[T, U], len(fake.takeTAndUArgsForCall))
+	copy(args, fake.takeTAndUArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeU(arg1 U) {
 	fake.takeUMutex.Lock()
-	fake.takeUArgsForCall = append(fake.takeUArgsForCall, struct {
-		arg1 U
-	}{arg1})
+	fake.takeUArgsForCall = append(fake.takeUArgsForCall, FakeGenericInterfaceMultipleTypesTakeUArgs[T, U]{arg1})
 	stub := fake.TakeUStub
 	fake.recordInvocation("TakeU", []interface{}{arg1})
 	fake.takeUMutex.Unlock()
@@ -639,7 +684,15 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeUArgsForCall(i int) U {
 	fake.takeUMutex.RLock()
 	defer fake.takeUMutex.RUnlock()
 	argsForCall := fake.takeUArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) TakeUArgs() []FakeGenericInterfaceMultipleTypesTakeUArgs[T, U] {
+	fake.takeUMutex.RLock()
+	defer fake.takeUMutex.RUnlock()
+	args := make([]FakeGenericInterfaceMultipleTypesTakeUArgs[T, U], len(fake.takeUArgsForCall))
+	copy(args, fake.takeUArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) Invocations() map[string][][]interface{} {

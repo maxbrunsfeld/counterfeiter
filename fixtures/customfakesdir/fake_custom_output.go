@@ -10,16 +10,14 @@ import (
 type FakeCustomOutput struct {
 	CustomFolderStub        func()
 	customFolderMutex       sync.RWMutex
-	customFolderArgsForCall []struct {
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	customFolderArgsForCall []struct{}
+	invocations             map[string][][]interface{}
+	invocationsMutex        sync.RWMutex
 }
 
 func (fake *FakeCustomOutput) CustomFolder() {
 	fake.customFolderMutex.Lock()
-	fake.customFolderArgsForCall = append(fake.customFolderArgsForCall, struct {
-	}{})
+	fake.customFolderArgsForCall = append(fake.customFolderArgsForCall, struct{}{})
 	stub := fake.CustomFolderStub
 	fake.recordInvocation("CustomFolder", []interface{}{})
 	fake.customFolderMutex.Unlock()

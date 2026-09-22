@@ -10,10 +10,8 @@ import (
 type FakeWidget struct {
 	DoStub        func(samepackage.Thing) (samepackage.Thing, error)
 	doMutex       sync.RWMutex
-	doArgsForCall []struct {
-		arg1 samepackage.Thing
-	}
-	doReturns struct {
+	doArgsForCall []FakeWidgetDoArgs
+	doReturns     struct {
 		result1 samepackage.Thing
 		result2 error
 	}
@@ -25,12 +23,15 @@ type FakeWidget struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeWidgetDoArgs holds the arguments of one call to Do.
+type FakeWidgetDoArgs struct {
+	Arg1 samepackage.Thing
+}
+
 func (fake *FakeWidget) Do(arg1 samepackage.Thing) (samepackage.Thing, error) {
 	fake.doMutex.Lock()
 	ret, specificReturn := fake.doReturnsOnCall[len(fake.doArgsForCall)]
-	fake.doArgsForCall = append(fake.doArgsForCall, struct {
-		arg1 samepackage.Thing
-	}{arg1})
+	fake.doArgsForCall = append(fake.doArgsForCall, FakeWidgetDoArgs{arg1})
 	stub := fake.DoStub
 	fakeReturns := fake.doReturns
 	fake.recordInvocation("Do", []interface{}{arg1})
@@ -60,7 +61,15 @@ func (fake *FakeWidget) DoArgsForCall(i int) samepackage.Thing {
 	fake.doMutex.RLock()
 	defer fake.doMutex.RUnlock()
 	argsForCall := fake.doArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeWidget) DoArgs() []FakeWidgetDoArgs {
+	fake.doMutex.RLock()
+	defer fake.doMutex.RUnlock()
+	args := make([]FakeWidgetDoArgs, len(fake.doArgsForCall))
+	copy(args, fake.doArgsForCall)
+	return args
 }
 
 func (fake *FakeWidget) DoReturns(result1 samepackage.Thing, result2 error) {

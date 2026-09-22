@@ -90,7 +90,7 @@ A gomock matcher runs when the call happens. With a fake you read the arguments 
 
 | `gomock` | `counterfeiter` |
 |---|---|
-| `mock.EXPECT().DoThings("stuff", uint64(5))` | `str, num := fake.DoThingsArgsForCall(0)`, then assert on `str` and `num` |
+| `mock.EXPECT().DoThings("stuff", uint64(5))` | `str, num := fake.DoThingsArgsForCall(0)`, then assert on `str` and `num`; or compare the whole call at once, `Expect(fake.DoThingsArgs()).To(Equal([]foofakes.FakeMySpecialInterfaceDoThingsArgs{{Arg1: "stuff", Arg2: 5}}))` |
 | `gomock.Any()` for an argument | leave that argument unchecked |
 | `gomock.Not(x)`, `gomock.Len(n)`, `gomock.Regex(s)` | `ArgsForCall` returns a `string` and a `uint64`, so use your assertion library's matcher, for example `Expect(str).To(MatchRegexp("^st"))` |
 | `.Times(2)` | `fake.DoThingsCallCount()` is 2 |
@@ -107,13 +107,18 @@ second := other.EXPECT().DoOtherThings("b", uint64(2)).Return(2, nil)
 gomock.InOrder(first, second)
 ```
 
-A fake records the calls to one method in the order they happened. After two calls to `DoThings`, `ArgsForCall(0)` is the first and `ArgsForCall(1)` the second:
+A fake records the calls to one method in the order they happened. After two calls to `DoThings`, `ArgsForCall(0)` is the first and `ArgsForCall(1)` the second, and `DoThingsArgs()` returns both in that order:
 
 ```go
 str, _ := fake.DoThingsArgsForCall(0)
 Expect(str).To(Equal("a"))
 str, _ = fake.DoThingsArgsForCall(1)
 Expect(str).To(Equal("b"))
+
+Expect(fake.DoThingsArgs()).To(Equal([]foofakes.FakeMySpecialInterfaceDoThingsArgs{
+	{Arg1: "a", Arg2: 1},
+	{Arg1: "b", Arg2: 2},
+}))
 ```
 
 The order of calls to different methods isn't recorded, and neither is the order across two fakes. `Invocations()` is keyed by method name, so it has the same limitation. To check that `DoThings` ran before `DoOtherThings`, give both a stub that appends to the same slice:

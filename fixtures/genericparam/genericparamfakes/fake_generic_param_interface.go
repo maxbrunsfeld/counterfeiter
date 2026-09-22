@@ -12,10 +12,8 @@ import (
 type FakeGenericParamInterface struct {
 	DoSomethingStub        func(genericparam.Generic[genericparamtype.T]) genericparam.Generic[genericreturntype.R]
 	doSomethingMutex       sync.RWMutex
-	doSomethingArgsForCall []struct {
-		arg1 genericparam.Generic[genericparamtype.T]
-	}
-	doSomethingReturns struct {
+	doSomethingArgsForCall []FakeGenericParamInterfaceDoSomethingArgs
+	doSomethingReturns     struct {
 		result1 genericparam.Generic[genericreturntype.R]
 	}
 	doSomethingReturnsOnCall map[int]struct {
@@ -25,12 +23,15 @@ type FakeGenericParamInterface struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeGenericParamInterfaceDoSomethingArgs holds the arguments of one call to DoSomething.
+type FakeGenericParamInterfaceDoSomethingArgs struct {
+	Arg1 genericparam.Generic[genericparamtype.T]
+}
+
 func (fake *FakeGenericParamInterface) DoSomething(arg1 genericparam.Generic[genericparamtype.T]) genericparam.Generic[genericreturntype.R] {
 	fake.doSomethingMutex.Lock()
 	ret, specificReturn := fake.doSomethingReturnsOnCall[len(fake.doSomethingArgsForCall)]
-	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct {
-		arg1 genericparam.Generic[genericparamtype.T]
-	}{arg1})
+	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, FakeGenericParamInterfaceDoSomethingArgs{arg1})
 	stub := fake.DoSomethingStub
 	fakeReturns := fake.doSomethingReturns
 	fake.recordInvocation("DoSomething", []interface{}{arg1})
@@ -60,7 +61,15 @@ func (fake *FakeGenericParamInterface) DoSomethingArgsForCall(i int) genericpara
 	fake.doSomethingMutex.RLock()
 	defer fake.doSomethingMutex.RUnlock()
 	argsForCall := fake.doSomethingArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeGenericParamInterface) DoSomethingArgs() []FakeGenericParamInterfaceDoSomethingArgs {
+	fake.doSomethingMutex.RLock()
+	defer fake.doSomethingMutex.RUnlock()
+	args := make([]FakeGenericParamInterfaceDoSomethingArgs, len(fake.doSomethingArgsForCall))
+	copy(args, fake.doSomethingArgsForCall)
+	return args
 }
 
 func (fake *FakeGenericParamInterface) DoSomethingReturns(result1 genericparam.Generic[genericreturntype.R]) {

@@ -10,10 +10,8 @@ import (
 type FakeSower struct {
 	SowStub        func(string) (int, error)
 	sowMutex       sync.RWMutex
-	sowArgsForCall []struct {
-		arg1 string
-	}
-	sowReturns struct {
+	sowArgsForCall []FakeSowerSowArgs
+	sowReturns     struct {
 		result1 int
 		result2 error
 	}
@@ -25,12 +23,15 @@ type FakeSower struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeSowerSowArgs holds the arguments of one call to Sow.
+type FakeSowerSowArgs struct {
+	Arg1 string
+}
+
 func (fake *FakeSower) Sow(arg1 string) (int, error) {
 	fake.sowMutex.Lock()
 	ret, specificReturn := fake.sowReturnsOnCall[len(fake.sowArgsForCall)]
-	fake.sowArgsForCall = append(fake.sowArgsForCall, struct {
-		arg1 string
-	}{arg1})
+	fake.sowArgsForCall = append(fake.sowArgsForCall, FakeSowerSowArgs{arg1})
 	stub := fake.SowStub
 	fakeReturns := fake.sowReturns
 	fake.recordInvocation("Sow", []interface{}{arg1})
@@ -60,7 +61,15 @@ func (fake *FakeSower) SowArgsForCall(i int) string {
 	fake.sowMutex.RLock()
 	defer fake.sowMutex.RUnlock()
 	argsForCall := fake.sowArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeSower) SowArgs() []FakeSowerSowArgs {
+	fake.sowMutex.RLock()
+	defer fake.sowMutex.RUnlock()
+	args := make([]FakeSowerSowArgs, len(fake.sowArgsForCall))
+	copy(args, fake.sowArgsForCall)
+	return args
 }
 
 func (fake *FakeSower) SowReturns(result1 int, result2 error) {

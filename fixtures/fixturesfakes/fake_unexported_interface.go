@@ -8,11 +8,8 @@ import (
 type FakeUnexportedInterface struct {
 	MethodStub        func(string, map[string]interface{}) string
 	methodMutex       sync.RWMutex
-	methodArgsForCall []struct {
-		arg1 string
-		arg2 map[string]interface{}
-	}
-	methodReturns struct {
+	methodArgsForCall []FakeUnexportedInterfaceMethodArgs
+	methodReturns     struct {
 		result1 string
 	}
 	methodReturnsOnCall map[int]struct {
@@ -22,13 +19,16 @@ type FakeUnexportedInterface struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeUnexportedInterfaceMethodArgs holds the arguments of one call to Method.
+type FakeUnexportedInterfaceMethodArgs struct {
+	Arg1 string
+	Arg2 map[string]interface{}
+}
+
 func (fake *FakeUnexportedInterface) Method(arg1 string, arg2 map[string]interface{}) string {
 	fake.methodMutex.Lock()
 	ret, specificReturn := fake.methodReturnsOnCall[len(fake.methodArgsForCall)]
-	fake.methodArgsForCall = append(fake.methodArgsForCall, struct {
-		arg1 string
-		arg2 map[string]interface{}
-	}{arg1, arg2})
+	fake.methodArgsForCall = append(fake.methodArgsForCall, FakeUnexportedInterfaceMethodArgs{arg1, arg2})
 	stub := fake.MethodStub
 	fakeReturns := fake.methodReturns
 	fake.recordInvocation("Method", []interface{}{arg1, arg2})
@@ -58,7 +58,15 @@ func (fake *FakeUnexportedInterface) MethodArgsForCall(i int) (string, map[strin
 	fake.methodMutex.RLock()
 	defer fake.methodMutex.RUnlock()
 	argsForCall := fake.methodArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeUnexportedInterface) MethodArgs() []FakeUnexportedInterfaceMethodArgs {
+	fake.methodMutex.RLock()
+	defer fake.methodMutex.RUnlock()
+	args := make([]FakeUnexportedInterfaceMethodArgs, len(fake.methodArgsForCall))
+	copy(args, fake.methodArgsForCall)
+	return args
 }
 
 func (fake *FakeUnexportedInterface) MethodReturns(result1 string) {

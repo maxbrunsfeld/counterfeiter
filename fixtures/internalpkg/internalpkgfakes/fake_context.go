@@ -10,16 +10,14 @@ import (
 type FakeContext struct {
 	DoSomethingStub        func()
 	doSomethingMutex       sync.RWMutex
-	doSomethingArgsForCall []struct {
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	doSomethingArgsForCall []struct{}
+	invocations            map[string][][]interface{}
+	invocationsMutex       sync.RWMutex
 }
 
 func (fake *FakeContext) DoSomething() {
 	fake.doSomethingMutex.Lock()
-	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct {
-	}{})
+	fake.doSomethingArgsForCall = append(fake.doSomethingArgsForCall, struct{}{})
 	stub := fake.DoSomethingStub
 	fake.recordInvocation("DoSomething", []interface{}{})
 	fake.doSomethingMutex.Unlock()
