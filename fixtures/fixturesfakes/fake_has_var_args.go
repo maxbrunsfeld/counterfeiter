@@ -10,12 +10,8 @@ import (
 type FakeHasVarArgs struct {
 	DoMoreThingsStub        func(int, int, ...string) int
 	doMoreThingsMutex       sync.RWMutex
-	doMoreThingsArgsForCall []struct {
-		arg1 int
-		arg2 int
-		arg3 []string
-	}
-	doMoreThingsReturns struct {
+	doMoreThingsArgsForCall []FakeHasVarArgsDoMoreThingsArgs
+	doMoreThingsReturns     struct {
 		result1 int
 	}
 	doMoreThingsReturnsOnCall map[int]struct {
@@ -23,11 +19,8 @@ type FakeHasVarArgs struct {
 	}
 	DoThingsStub        func(int, ...string) int
 	doThingsMutex       sync.RWMutex
-	doThingsArgsForCall []struct {
-		arg1 int
-		arg2 []string
-	}
-	doThingsReturns struct {
+	doThingsArgsForCall []FakeHasVarArgsDoThingsArgs
+	doThingsReturns     struct {
 		result1 int
 	}
 	doThingsReturnsOnCall map[int]struct {
@@ -35,6 +28,19 @@ type FakeHasVarArgs struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+// FakeHasVarArgsDoMoreThingsArgs holds the arguments of one call to DoMoreThings.
+type FakeHasVarArgsDoMoreThingsArgs struct {
+	Arg1 int
+	Arg2 int
+	Arg3 []string
+}
+
+// FakeHasVarArgsDoThingsArgs holds the arguments of one call to DoThings.
+type FakeHasVarArgsDoThingsArgs struct {
+	Arg1 int
+	Arg2 []string
 }
 
 func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int {
@@ -45,11 +51,7 @@ func (fake *FakeHasVarArgs) DoMoreThings(arg1 int, arg2 int, arg3 ...string) int
 	}
 	fake.doMoreThingsMutex.Lock()
 	ret, specificReturn := fake.doMoreThingsReturnsOnCall[len(fake.doMoreThingsArgsForCall)]
-	fake.doMoreThingsArgsForCall = append(fake.doMoreThingsArgsForCall, struct {
-		arg1 int
-		arg2 int
-		arg3 []string
-	}{arg1, arg2, arg3Copy})
+	fake.doMoreThingsArgsForCall = append(fake.doMoreThingsArgsForCall, FakeHasVarArgsDoMoreThingsArgs{arg1, arg2, arg3Copy})
 	stub := fake.DoMoreThingsStub
 	fakeReturns := fake.doMoreThingsReturns
 	fake.recordInvocation("DoMoreThings", []interface{}{arg1, arg2, arg3Copy})
@@ -79,7 +81,15 @@ func (fake *FakeHasVarArgs) DoMoreThingsArgsForCall(i int) (int, int, []string) 
 	fake.doMoreThingsMutex.RLock()
 	defer fake.doMoreThingsMutex.RUnlock()
 	argsForCall := fake.doMoreThingsArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeHasVarArgs) DoMoreThingsArgs() []FakeHasVarArgsDoMoreThingsArgs {
+	fake.doMoreThingsMutex.RLock()
+	defer fake.doMoreThingsMutex.RUnlock()
+	args := make([]FakeHasVarArgsDoMoreThingsArgs, len(fake.doMoreThingsArgsForCall))
+	copy(args, fake.doMoreThingsArgsForCall)
+	return args
 }
 
 func (fake *FakeHasVarArgs) DoMoreThingsReturns(result1 int) {
@@ -113,10 +123,7 @@ func (fake *FakeHasVarArgs) DoThings(arg1 int, arg2 ...string) int {
 	}
 	fake.doThingsMutex.Lock()
 	ret, specificReturn := fake.doThingsReturnsOnCall[len(fake.doThingsArgsForCall)]
-	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
-		arg1 int
-		arg2 []string
-	}{arg1, arg2Copy})
+	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, FakeHasVarArgsDoThingsArgs{arg1, arg2Copy})
 	stub := fake.DoThingsStub
 	fakeReturns := fake.doThingsReturns
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2Copy})
@@ -146,7 +153,15 @@ func (fake *FakeHasVarArgs) DoThingsArgsForCall(i int) (int, []string) {
 	fake.doThingsMutex.RLock()
 	defer fake.doThingsMutex.RUnlock()
 	argsForCall := fake.doThingsArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeHasVarArgs) DoThingsArgs() []FakeHasVarArgsDoThingsArgs {
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
+	args := make([]FakeHasVarArgsDoThingsArgs, len(fake.doThingsArgsForCall))
+	copy(args, fake.doThingsArgsForCall)
+	return args
 }
 
 func (fake *FakeHasVarArgs) DoThingsReturns(result1 int) {

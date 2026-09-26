@@ -8,9 +8,8 @@ import (
 type FakeHyphenated struct {
 	HyphenStub        func() string
 	hyphenMutex       sync.RWMutex
-	hyphenArgsForCall []struct {
-	}
-	hyphenReturns struct {
+	hyphenArgsForCall []struct{}
+	hyphenReturns     struct {
 		result1 string
 	}
 	hyphenReturnsOnCall map[int]struct {
@@ -23,8 +22,7 @@ type FakeHyphenated struct {
 func (fake *FakeHyphenated) Hyphen() string {
 	fake.hyphenMutex.Lock()
 	ret, specificReturn := fake.hyphenReturnsOnCall[len(fake.hyphenArgsForCall)]
-	fake.hyphenArgsForCall = append(fake.hyphenArgsForCall, struct {
-	}{})
+	fake.hyphenArgsForCall = append(fake.hyphenArgsForCall, struct{}{})
 	stub := fake.HyphenStub
 	fakeReturns := fake.hyphenReturns
 	fake.recordInvocation("Hyphen", []interface{}{})

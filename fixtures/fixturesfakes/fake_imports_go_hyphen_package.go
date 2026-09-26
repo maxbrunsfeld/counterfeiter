@@ -11,18 +11,19 @@ import (
 type FakeImportsGoHyphenPackage struct {
 	UseHyphenTypeStub        func(hyphenpackage.HyphenType)
 	useHyphenTypeMutex       sync.RWMutex
-	useHyphenTypeArgsForCall []struct {
-		arg1 hyphenpackage.HyphenType
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	useHyphenTypeArgsForCall []FakeImportsGoHyphenPackageUseHyphenTypeArgs
+	invocations              map[string][][]interface{}
+	invocationsMutex         sync.RWMutex
+}
+
+// FakeImportsGoHyphenPackageUseHyphenTypeArgs holds the arguments of one call to UseHyphenType.
+type FakeImportsGoHyphenPackageUseHyphenTypeArgs struct {
+	Arg1 hyphenpackage.HyphenType
 }
 
 func (fake *FakeImportsGoHyphenPackage) UseHyphenType(arg1 hyphenpackage.HyphenType) {
 	fake.useHyphenTypeMutex.Lock()
-	fake.useHyphenTypeArgsForCall = append(fake.useHyphenTypeArgsForCall, struct {
-		arg1 hyphenpackage.HyphenType
-	}{arg1})
+	fake.useHyphenTypeArgsForCall = append(fake.useHyphenTypeArgsForCall, FakeImportsGoHyphenPackageUseHyphenTypeArgs{arg1})
 	stub := fake.UseHyphenTypeStub
 	fake.recordInvocation("UseHyphenType", []interface{}{arg1})
 	fake.useHyphenTypeMutex.Unlock()
@@ -47,7 +48,15 @@ func (fake *FakeImportsGoHyphenPackage) UseHyphenTypeArgsForCall(i int) hyphenpa
 	fake.useHyphenTypeMutex.RLock()
 	defer fake.useHyphenTypeMutex.RUnlock()
 	argsForCall := fake.useHyphenTypeArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeImportsGoHyphenPackage) UseHyphenTypeArgs() []FakeImportsGoHyphenPackageUseHyphenTypeArgs {
+	fake.useHyphenTypeMutex.RLock()
+	defer fake.useHyphenTypeMutex.RUnlock()
+	args := make([]FakeImportsGoHyphenPackageUseHyphenTypeArgs, len(fake.useHyphenTypeArgsForCall))
+	copy(args, fake.useHyphenTypeArgsForCall)
+	return args
 }
 
 func (fake *FakeImportsGoHyphenPackage) Invocations() map[string][][]interface{} {

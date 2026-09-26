@@ -8,11 +8,8 @@ import (
 type FakeUnexportedFunc struct {
 	Stub        func(string, map[string]interface{}) string
 	mutex       sync.RWMutex
-	argsForCall []struct {
-		arg1 string
-		arg2 map[string]interface{}
-	}
-	returns struct {
+	argsForCall []FakeUnexportedFuncArgs
+	returns     struct {
 		result1 string
 	}
 	returnsOnCall map[int]struct {
@@ -22,13 +19,16 @@ type FakeUnexportedFunc struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeUnexportedFuncArgs holds the arguments of one call to the fake.
+type FakeUnexportedFuncArgs struct {
+	Arg1 string
+	Arg2 map[string]interface{}
+}
+
 func (fake *FakeUnexportedFunc) Spy(arg1 string, arg2 map[string]interface{}) string {
 	fake.mutex.Lock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
-	fake.argsForCall = append(fake.argsForCall, struct {
-		arg1 string
-		arg2 map[string]interface{}
-	}{arg1, arg2})
+	fake.argsForCall = append(fake.argsForCall, FakeUnexportedFuncArgs{arg1, arg2})
 	stub := fake.Stub
 	returns := fake.returns
 	fake.recordInvocation("unexportedFunc", []interface{}{arg1, arg2})
@@ -57,7 +57,15 @@ func (fake *FakeUnexportedFunc) Calls(stub func(string, map[string]interface{}) 
 func (fake *FakeUnexportedFunc) ArgsForCall(i int) (string, map[string]interface{}) {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
-	return fake.argsForCall[i].arg1, fake.argsForCall[i].arg2
+	return fake.argsForCall[i].Arg1, fake.argsForCall[i].Arg2
+}
+
+func (fake *FakeUnexportedFunc) Args() []FakeUnexportedFuncArgs {
+	fake.mutex.RLock()
+	defer fake.mutex.RUnlock()
+	args := make([]FakeUnexportedFuncArgs, len(fake.argsForCall))
+	copy(args, fake.argsForCall)
+	return args
 }
 
 func (fake *FakeUnexportedFunc) Returns(result1 string) {

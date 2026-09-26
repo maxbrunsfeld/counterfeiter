@@ -10,24 +10,16 @@ import (
 )
 
 type FakeEmbedsInterfaces struct {
-	AnotherMethodStub        func([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType, chan another_package.SomeType)
-	anotherMethodMutex       sync.RWMutex
-	anotherMethodArgsForCall []struct {
-		arg1 []another_package.SomeType
-		arg2 map[another_package.SomeType]another_package.SomeType
-		arg3 *another_package.SomeType
-		arg4 another_package.SomeType
-		arg5 chan another_package.SomeType
-	}
-	DoThingsStub        func()
-	doThingsMutex       sync.RWMutex
-	doThingsArgsForCall []struct {
-	}
+	AnotherMethodStub         func([]another_package.SomeType, map[another_package.SomeType]another_package.SomeType, *another_package.SomeType, another_package.SomeType, chan another_package.SomeType)
+	anotherMethodMutex        sync.RWMutex
+	anotherMethodArgsForCall  []FakeEmbedsInterfacesAnotherMethodArgs
+	DoThingsStub              func()
+	doThingsMutex             sync.RWMutex
+	doThingsArgsForCall       []struct{}
 	EmbeddedMethodStub        func() string
 	embeddedMethodMutex       sync.RWMutex
-	embeddedMethodArgsForCall []struct {
-	}
-	embeddedMethodReturns struct {
+	embeddedMethodArgsForCall []struct{}
+	embeddedMethodReturns     struct {
 		result1 string
 	}
 	embeddedMethodReturnsOnCall map[int]struct {
@@ -35,12 +27,24 @@ type FakeEmbedsInterfaces struct {
 	}
 	ServeHTTPStub        func(http.ResponseWriter, *http.Request)
 	serveHTTPMutex       sync.RWMutex
-	serveHTTPArgsForCall []struct {
-		arg1 http.ResponseWriter
-		arg2 *http.Request
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	serveHTTPArgsForCall []FakeEmbedsInterfacesServeHTTPArgs
+	invocations          map[string][][]interface{}
+	invocationsMutex     sync.RWMutex
+}
+
+// FakeEmbedsInterfacesAnotherMethodArgs holds the arguments of one call to AnotherMethod.
+type FakeEmbedsInterfacesAnotherMethodArgs struct {
+	Arg1 []another_package.SomeType
+	Arg2 map[another_package.SomeType]another_package.SomeType
+	Arg3 *another_package.SomeType
+	Arg4 another_package.SomeType
+	Arg5 chan another_package.SomeType
+}
+
+// FakeEmbedsInterfacesServeHTTPArgs holds the arguments of one call to ServeHTTP.
+type FakeEmbedsInterfacesServeHTTPArgs struct {
+	Arg1 http.ResponseWriter
+	Arg2 *http.Request
 }
 
 func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType, arg2 map[another_package.SomeType]another_package.SomeType, arg3 *another_package.SomeType, arg4 another_package.SomeType, arg5 chan another_package.SomeType) {
@@ -50,13 +54,7 @@ func (fake *FakeEmbedsInterfaces) AnotherMethod(arg1 []another_package.SomeType,
 		copy(arg1Copy, arg1)
 	}
 	fake.anotherMethodMutex.Lock()
-	fake.anotherMethodArgsForCall = append(fake.anotherMethodArgsForCall, struct {
-		arg1 []another_package.SomeType
-		arg2 map[another_package.SomeType]another_package.SomeType
-		arg3 *another_package.SomeType
-		arg4 another_package.SomeType
-		arg5 chan another_package.SomeType
-	}{arg1Copy, arg2, arg3, arg4, arg5})
+	fake.anotherMethodArgsForCall = append(fake.anotherMethodArgsForCall, FakeEmbedsInterfacesAnotherMethodArgs{arg1Copy, arg2, arg3, arg4, arg5})
 	stub := fake.AnotherMethodStub
 	fake.recordInvocation("AnotherMethod", []interface{}{arg1Copy, arg2, arg3, arg4, arg5})
 	fake.anotherMethodMutex.Unlock()
@@ -81,13 +79,20 @@ func (fake *FakeEmbedsInterfaces) AnotherMethodArgsForCall(i int) ([]another_pac
 	fake.anotherMethodMutex.RLock()
 	defer fake.anotherMethodMutex.RUnlock()
 	argsForCall := fake.anotherMethodArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3, argsForCall.Arg4, argsForCall.Arg5
+}
+
+func (fake *FakeEmbedsInterfaces) AnotherMethodArgs() []FakeEmbedsInterfacesAnotherMethodArgs {
+	fake.anotherMethodMutex.RLock()
+	defer fake.anotherMethodMutex.RUnlock()
+	args := make([]FakeEmbedsInterfacesAnotherMethodArgs, len(fake.anotherMethodArgsForCall))
+	copy(args, fake.anotherMethodArgsForCall)
+	return args
 }
 
 func (fake *FakeEmbedsInterfaces) DoThings() {
 	fake.doThingsMutex.Lock()
-	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
-	}{})
+	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct{}{})
 	stub := fake.DoThingsStub
 	fake.recordInvocation("DoThings", []interface{}{})
 	fake.doThingsMutex.Unlock()
@@ -111,8 +116,7 @@ func (fake *FakeEmbedsInterfaces) DoThingsCalls(stub func()) {
 func (fake *FakeEmbedsInterfaces) EmbeddedMethod() string {
 	fake.embeddedMethodMutex.Lock()
 	ret, specificReturn := fake.embeddedMethodReturnsOnCall[len(fake.embeddedMethodArgsForCall)]
-	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct {
-	}{})
+	fake.embeddedMethodArgsForCall = append(fake.embeddedMethodArgsForCall, struct{}{})
 	stub := fake.EmbeddedMethodStub
 	fakeReturns := fake.embeddedMethodReturns
 	fake.recordInvocation("EmbeddedMethod", []interface{}{})
@@ -163,10 +167,7 @@ func (fake *FakeEmbedsInterfaces) EmbeddedMethodReturnsOnCall(i int, result1 str
 
 func (fake *FakeEmbedsInterfaces) ServeHTTP(arg1 http.ResponseWriter, arg2 *http.Request) {
 	fake.serveHTTPMutex.Lock()
-	fake.serveHTTPArgsForCall = append(fake.serveHTTPArgsForCall, struct {
-		arg1 http.ResponseWriter
-		arg2 *http.Request
-	}{arg1, arg2})
+	fake.serveHTTPArgsForCall = append(fake.serveHTTPArgsForCall, FakeEmbedsInterfacesServeHTTPArgs{arg1, arg2})
 	stub := fake.ServeHTTPStub
 	fake.recordInvocation("ServeHTTP", []interface{}{arg1, arg2})
 	fake.serveHTTPMutex.Unlock()
@@ -191,7 +192,15 @@ func (fake *FakeEmbedsInterfaces) ServeHTTPArgsForCall(i int) (http.ResponseWrit
 	fake.serveHTTPMutex.RLock()
 	defer fake.serveHTTPMutex.RUnlock()
 	argsForCall := fake.serveHTTPArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeEmbedsInterfaces) ServeHTTPArgs() []FakeEmbedsInterfacesServeHTTPArgs {
+	fake.serveHTTPMutex.RLock()
+	defer fake.serveHTTPMutex.RUnlock()
+	args := make([]FakeEmbedsInterfacesServeHTTPArgs, len(fake.serveHTTPArgsForCall))
+	copy(args, fake.serveHTTPArgsForCall)
+	return args
 }
 
 func (fake *FakeEmbedsInterfaces) Invocations() map[string][][]interface{} {

@@ -11,11 +11,8 @@ import (
 type FakeDB struct {
 	ExecStub        func(string, ...interface{}) (sqla.Result, error)
 	execMutex       sync.RWMutex
-	execArgsForCall []struct {
-		arg1 string
-		arg2 []interface{}
-	}
-	execReturns struct {
+	execArgsForCall []FakeDBExecArgs
+	execReturns     struct {
 		result1 sqla.Result
 		result2 error
 	}
@@ -27,6 +24,12 @@ type FakeDB struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeDBExecArgs holds the arguments of one call to Exec.
+type FakeDBExecArgs struct {
+	Arg1 string
+	Arg2 []interface{}
+}
+
 func (fake *FakeDB) Exec(arg1 string, arg2 ...interface{}) (sqla.Result, error) {
 	var arg2Copy []interface{}
 	if arg2 != nil {
@@ -35,10 +38,7 @@ func (fake *FakeDB) Exec(arg1 string, arg2 ...interface{}) (sqla.Result, error) 
 	}
 	fake.execMutex.Lock()
 	ret, specificReturn := fake.execReturnsOnCall[len(fake.execArgsForCall)]
-	fake.execArgsForCall = append(fake.execArgsForCall, struct {
-		arg1 string
-		arg2 []interface{}
-	}{arg1, arg2Copy})
+	fake.execArgsForCall = append(fake.execArgsForCall, FakeDBExecArgs{arg1, arg2Copy})
 	stub := fake.ExecStub
 	fakeReturns := fake.execReturns
 	fake.recordInvocation("Exec", []interface{}{arg1, arg2Copy})
@@ -68,7 +68,15 @@ func (fake *FakeDB) ExecArgsForCall(i int) (string, []interface{}) {
 	fake.execMutex.RLock()
 	defer fake.execMutex.RUnlock()
 	argsForCall := fake.execArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeDB) ExecArgs() []FakeDBExecArgs {
+	fake.execMutex.RLock()
+	defer fake.execMutex.RUnlock()
+	args := make([]FakeDBExecArgs, len(fake.execArgsForCall))
+	copy(args, fake.execArgsForCall)
+	return args
 }
 
 func (fake *FakeDB) ExecReturns(result1 sqla.Result, result2 error) {

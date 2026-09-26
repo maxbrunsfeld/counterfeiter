@@ -10,9 +10,8 @@ import (
 type NotTheRealSong struct {
 	SongStub        func() string
 	songMutex       sync.RWMutex
-	songArgsForCall []struct {
-	}
-	songReturns struct {
+	songArgsForCall []struct{}
+	songReturns     struct {
 		result1 string
 	}
 	songReturnsOnCall map[int]struct {
@@ -25,8 +24,7 @@ type NotTheRealSong struct {
 func (fake *NotTheRealSong) Song() string {
 	fake.songMutex.Lock()
 	ret, specificReturn := fake.songReturnsOnCall[len(fake.songArgsForCall)]
-	fake.songArgsForCall = append(fake.songArgsForCall, struct {
-	}{})
+	fake.songArgsForCall = append(fake.songArgsForCall, struct{}{})
 	stub := fake.SongStub
 	fakeReturns := fake.songReturns
 	fake.recordInvocation("Song", []interface{}{})

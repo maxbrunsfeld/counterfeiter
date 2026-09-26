@@ -10,9 +10,8 @@ import (
 type Ponger struct {
 	PongStub        func() string
 	pongMutex       sync.RWMutex
-	pongArgsForCall []struct {
-	}
-	pongReturns struct {
+	pongArgsForCall []struct{}
+	pongReturns     struct {
 		result1 string
 	}
 	pongReturnsOnCall map[int]struct {
@@ -25,8 +24,7 @@ type Ponger struct {
 func (fake *Ponger) Pong() string {
 	fake.pongMutex.Lock()
 	ret, specificReturn := fake.pongReturnsOnCall[len(fake.pongArgsForCall)]
-	fake.pongArgsForCall = append(fake.pongArgsForCall, struct {
-	}{})
+	fake.pongArgsForCall = append(fake.pongArgsForCall, struct{}{})
 	stub := fake.PongStub
 	fakeReturns := fake.pongReturns
 	fake.recordInvocation("Pong", []interface{}{})

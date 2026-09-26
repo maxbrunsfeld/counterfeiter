@@ -10,9 +10,8 @@ import (
 type FakeSomethingElse struct {
 	ReturnStuffStub        func() (int, int)
 	returnStuffMutex       sync.RWMutex
-	returnStuffArgsForCall []struct {
-	}
-	returnStuffReturns struct {
+	returnStuffArgsForCall []struct{}
+	returnStuffReturns     struct {
 		result1 int
 		result2 int
 	}
@@ -27,8 +26,7 @@ type FakeSomethingElse struct {
 func (fake *FakeSomethingElse) ReturnStuff() (int, int) {
 	fake.returnStuffMutex.Lock()
 	ret, specificReturn := fake.returnStuffReturnsOnCall[len(fake.returnStuffArgsForCall)]
-	fake.returnStuffArgsForCall = append(fake.returnStuffArgsForCall, struct {
-	}{})
+	fake.returnStuffArgsForCall = append(fake.returnStuffArgsForCall, struct{}{})
 	stub := fake.ReturnStuffStub
 	fakeReturns := fake.returnStuffReturns
 	fake.recordInvocation("ReturnStuff", []interface{}{})

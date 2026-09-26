@@ -10,11 +10,8 @@ import (
 type FakeSomethingFactory struct {
 	Stub        func(string, map[string]interface{}) string
 	mutex       sync.RWMutex
-	argsForCall []struct {
-		arg1 string
-		arg2 map[string]interface{}
-	}
-	returns struct {
+	argsForCall []FakeSomethingFactoryArgs
+	returns     struct {
 		result1 string
 	}
 	returnsOnCall map[int]struct {
@@ -24,13 +21,16 @@ type FakeSomethingFactory struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeSomethingFactoryArgs holds the arguments of one call to the fake.
+type FakeSomethingFactoryArgs struct {
+	Arg1 string
+	Arg2 map[string]interface{}
+}
+
 func (fake *FakeSomethingFactory) Spy(arg1 string, arg2 map[string]interface{}) string {
 	fake.mutex.Lock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
-	fake.argsForCall = append(fake.argsForCall, struct {
-		arg1 string
-		arg2 map[string]interface{}
-	}{arg1, arg2})
+	fake.argsForCall = append(fake.argsForCall, FakeSomethingFactoryArgs{arg1, arg2})
 	stub := fake.Stub
 	returns := fake.returns
 	fake.recordInvocation("SomethingFactory", []interface{}{arg1, arg2})
@@ -59,7 +59,15 @@ func (fake *FakeSomethingFactory) Calls(stub func(string, map[string]interface{}
 func (fake *FakeSomethingFactory) ArgsForCall(i int) (string, map[string]interface{}) {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
-	return fake.argsForCall[i].arg1, fake.argsForCall[i].arg2
+	return fake.argsForCall[i].Arg1, fake.argsForCall[i].Arg2
+}
+
+func (fake *FakeSomethingFactory) Args() []FakeSomethingFactoryArgs {
+	fake.mutex.RLock()
+	defer fake.mutex.RUnlock()
+	args := make([]FakeSomethingFactoryArgs, len(fake.argsForCall))
+	copy(args, fake.argsForCall)
+	return args
 }
 
 func (fake *FakeSomethingFactory) Returns(result1 string) {

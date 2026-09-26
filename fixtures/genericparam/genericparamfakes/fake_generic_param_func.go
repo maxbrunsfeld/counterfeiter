@@ -12,10 +12,8 @@ import (
 type FakeGenericParamFunc struct {
 	Stub        func(genericparam.Generic[genericparamtype.T]) genericparam.Generic[genericreturntype.R]
 	mutex       sync.RWMutex
-	argsForCall []struct {
-		arg1 genericparam.Generic[genericparamtype.T]
-	}
-	returns struct {
+	argsForCall []FakeGenericParamFuncArgs
+	returns     struct {
 		result1 genericparam.Generic[genericreturntype.R]
 	}
 	returnsOnCall map[int]struct {
@@ -25,12 +23,15 @@ type FakeGenericParamFunc struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeGenericParamFuncArgs holds the arguments of one call to the fake.
+type FakeGenericParamFuncArgs struct {
+	Arg1 genericparam.Generic[genericparamtype.T]
+}
+
 func (fake *FakeGenericParamFunc) Spy(arg1 genericparam.Generic[genericparamtype.T]) genericparam.Generic[genericreturntype.R] {
 	fake.mutex.Lock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
-	fake.argsForCall = append(fake.argsForCall, struct {
-		arg1 genericparam.Generic[genericparamtype.T]
-	}{arg1})
+	fake.argsForCall = append(fake.argsForCall, FakeGenericParamFuncArgs{arg1})
 	stub := fake.Stub
 	returns := fake.returns
 	fake.recordInvocation("GenericParamFunc", []interface{}{arg1})
@@ -59,7 +60,15 @@ func (fake *FakeGenericParamFunc) Calls(stub func(genericparam.Generic[genericpa
 func (fake *FakeGenericParamFunc) ArgsForCall(i int) genericparam.Generic[genericparamtype.T] {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
-	return fake.argsForCall[i].arg1
+	return fake.argsForCall[i].Arg1
+}
+
+func (fake *FakeGenericParamFunc) Args() []FakeGenericParamFuncArgs {
+	fake.mutex.RLock()
+	defer fake.mutex.RUnlock()
+	args := make([]FakeGenericParamFuncArgs, len(fake.argsForCall))
+	copy(args, fake.argsForCall)
+	return args
 }
 
 func (fake *FakeGenericParamFunc) Returns(result1 genericparam.Generic[genericreturntype.R]) {

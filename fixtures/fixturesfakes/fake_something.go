@@ -8,27 +8,19 @@ import (
 )
 
 type FakeSomething struct {
-	DoASliceStub        func([]byte)
-	doASliceMutex       sync.RWMutex
-	doASliceArgsForCall []struct {
-		arg1 []byte
-	}
+	DoASliceStub         func([]byte)
+	doASliceMutex        sync.RWMutex
+	doASliceArgsForCall  []FakeSomethingDoASliceArgs
 	DoAnArrayStub        func([4]byte)
 	doAnArrayMutex       sync.RWMutex
-	doAnArrayArgsForCall []struct {
-		arg1 [4]byte
-	}
+	doAnArrayArgsForCall []FakeSomethingDoAnArrayArgs
 	DoNothingStub        func()
 	doNothingMutex       sync.RWMutex
-	doNothingArgsForCall []struct {
-	}
-	DoThingsStub        func(string, uint64) (int, error)
-	doThingsMutex       sync.RWMutex
-	doThingsArgsForCall []struct {
-		arg1 string
-		arg2 uint64
-	}
-	doThingsReturns struct {
+	doNothingArgsForCall []struct{}
+	DoThingsStub         func(string, uint64) (int, error)
+	doThingsMutex        sync.RWMutex
+	doThingsArgsForCall  []FakeSomethingDoThingsArgs
+	doThingsReturns      struct {
 		result1 int
 		result2 error
 	}
@@ -40,6 +32,22 @@ type FakeSomething struct {
 	invocationsMutex sync.RWMutex
 }
 
+// FakeSomethingDoASliceArgs holds the arguments of one call to DoASlice.
+type FakeSomethingDoASliceArgs struct {
+	Arg1 []byte
+}
+
+// FakeSomethingDoAnArrayArgs holds the arguments of one call to DoAnArray.
+type FakeSomethingDoAnArrayArgs struct {
+	Arg1 [4]byte
+}
+
+// FakeSomethingDoThingsArgs holds the arguments of one call to DoThings.
+type FakeSomethingDoThingsArgs struct {
+	Arg1 string
+	Arg2 uint64
+}
+
 func (fake *FakeSomething) DoASlice(arg1 []byte) {
 	var arg1Copy []byte
 	if arg1 != nil {
@@ -47,9 +55,7 @@ func (fake *FakeSomething) DoASlice(arg1 []byte) {
 		copy(arg1Copy, arg1)
 	}
 	fake.doASliceMutex.Lock()
-	fake.doASliceArgsForCall = append(fake.doASliceArgsForCall, struct {
-		arg1 []byte
-	}{arg1Copy})
+	fake.doASliceArgsForCall = append(fake.doASliceArgsForCall, FakeSomethingDoASliceArgs{arg1Copy})
 	stub := fake.DoASliceStub
 	fake.recordInvocation("DoASlice", []interface{}{arg1Copy})
 	fake.doASliceMutex.Unlock()
@@ -74,14 +80,20 @@ func (fake *FakeSomething) DoASliceArgsForCall(i int) []byte {
 	fake.doASliceMutex.RLock()
 	defer fake.doASliceMutex.RUnlock()
 	argsForCall := fake.doASliceArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeSomething) DoASliceArgs() []FakeSomethingDoASliceArgs {
+	fake.doASliceMutex.RLock()
+	defer fake.doASliceMutex.RUnlock()
+	args := make([]FakeSomethingDoASliceArgs, len(fake.doASliceArgsForCall))
+	copy(args, fake.doASliceArgsForCall)
+	return args
 }
 
 func (fake *FakeSomething) DoAnArray(arg1 [4]byte) {
 	fake.doAnArrayMutex.Lock()
-	fake.doAnArrayArgsForCall = append(fake.doAnArrayArgsForCall, struct {
-		arg1 [4]byte
-	}{arg1})
+	fake.doAnArrayArgsForCall = append(fake.doAnArrayArgsForCall, FakeSomethingDoAnArrayArgs{arg1})
 	stub := fake.DoAnArrayStub
 	fake.recordInvocation("DoAnArray", []interface{}{arg1})
 	fake.doAnArrayMutex.Unlock()
@@ -106,13 +118,20 @@ func (fake *FakeSomething) DoAnArrayArgsForCall(i int) [4]byte {
 	fake.doAnArrayMutex.RLock()
 	defer fake.doAnArrayMutex.RUnlock()
 	argsForCall := fake.doAnArrayArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeSomething) DoAnArrayArgs() []FakeSomethingDoAnArrayArgs {
+	fake.doAnArrayMutex.RLock()
+	defer fake.doAnArrayMutex.RUnlock()
+	args := make([]FakeSomethingDoAnArrayArgs, len(fake.doAnArrayArgsForCall))
+	copy(args, fake.doAnArrayArgsForCall)
+	return args
 }
 
 func (fake *FakeSomething) DoNothing() {
 	fake.doNothingMutex.Lock()
-	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct {
-	}{})
+	fake.doNothingArgsForCall = append(fake.doNothingArgsForCall, struct{}{})
 	stub := fake.DoNothingStub
 	fake.recordInvocation("DoNothing", []interface{}{})
 	fake.doNothingMutex.Unlock()
@@ -136,10 +155,7 @@ func (fake *FakeSomething) DoNothingCalls(stub func()) {
 func (fake *FakeSomething) DoThings(arg1 string, arg2 uint64) (int, error) {
 	fake.doThingsMutex.Lock()
 	ret, specificReturn := fake.doThingsReturnsOnCall[len(fake.doThingsArgsForCall)]
-	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
-		arg1 string
-		arg2 uint64
-	}{arg1, arg2})
+	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, FakeSomethingDoThingsArgs{arg1, arg2})
 	stub := fake.DoThingsStub
 	fakeReturns := fake.doThingsReturns
 	fake.recordInvocation("DoThings", []interface{}{arg1, arg2})
@@ -169,7 +185,15 @@ func (fake *FakeSomething) DoThingsArgsForCall(i int) (string, uint64) {
 	fake.doThingsMutex.RLock()
 	defer fake.doThingsMutex.RUnlock()
 	argsForCall := fake.doThingsArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeSomething) DoThingsArgs() []FakeSomethingDoThingsArgs {
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
+	args := make([]FakeSomethingDoThingsArgs, len(fake.doThingsArgsForCall))
+	copy(args, fake.doThingsArgsForCall)
+	return args
 }
 
 func (fake *FakeSomething) DoThingsReturns(result1 int, result2 error) {

@@ -10,11 +10,14 @@ import (
 type FakeHasVarArgsWithLocalTypes struct {
 	DoThingsStub        func(...fixtures.LocalType)
 	doThingsMutex       sync.RWMutex
-	doThingsArgsForCall []struct {
-		arg1 []fixtures.LocalType
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	doThingsArgsForCall []FakeHasVarArgsWithLocalTypesDoThingsArgs
+	invocations         map[string][][]interface{}
+	invocationsMutex    sync.RWMutex
+}
+
+// FakeHasVarArgsWithLocalTypesDoThingsArgs holds the arguments of one call to DoThings.
+type FakeHasVarArgsWithLocalTypesDoThingsArgs struct {
+	Arg1 []fixtures.LocalType
 }
 
 func (fake *FakeHasVarArgsWithLocalTypes) DoThings(arg1 ...fixtures.LocalType) {
@@ -24,9 +27,7 @@ func (fake *FakeHasVarArgsWithLocalTypes) DoThings(arg1 ...fixtures.LocalType) {
 		copy(arg1Copy, arg1)
 	}
 	fake.doThingsMutex.Lock()
-	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, struct {
-		arg1 []fixtures.LocalType
-	}{arg1Copy})
+	fake.doThingsArgsForCall = append(fake.doThingsArgsForCall, FakeHasVarArgsWithLocalTypesDoThingsArgs{arg1Copy})
 	stub := fake.DoThingsStub
 	fake.recordInvocation("DoThings", []interface{}{arg1Copy})
 	fake.doThingsMutex.Unlock()
@@ -51,7 +52,15 @@ func (fake *FakeHasVarArgsWithLocalTypes) DoThingsArgsForCall(i int) []fixtures.
 	fake.doThingsMutex.RLock()
 	defer fake.doThingsMutex.RUnlock()
 	argsForCall := fake.doThingsArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeHasVarArgsWithLocalTypes) DoThingsArgs() []FakeHasVarArgsWithLocalTypesDoThingsArgs {
+	fake.doThingsMutex.RLock()
+	defer fake.doThingsMutex.RUnlock()
+	args := make([]FakeHasVarArgsWithLocalTypesDoThingsArgs, len(fake.doThingsArgsForCall))
+	copy(args, fake.doThingsArgsForCall)
+	return args
 }
 
 func (fake *FakeHasVarArgsWithLocalTypes) Invocations() map[string][][]interface{} {
