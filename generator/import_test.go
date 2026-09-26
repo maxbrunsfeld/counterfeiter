@@ -3,36 +3,29 @@ package generator
 import (
 	"testing"
 
-	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-func TestImport_String(t *testing.T) {
-	var testcases = []struct {
-		name     string
-		imp      Import
-		expected string
-	}{
-		{
-			name:     "stdlib package",
-			imp:      Import{Alias: "os", PkgPath: "os"},
-			expected: `"os"`,
-		},
-		{
-			name:     "alias matches base name",
-			imp:      Import{Alias: "foo", PkgPath: "example.com/goo/foo"},
-			expected: `"example.com/goo/foo"`,
-		},
-		{
-			name:     "custom package alias",
-			imp:      Import{Alias: "thinga", PkgPath: "example.com/go-thing"},
-			expected: `thinga "example.com/go-thing"`,
-		},
-	}
+func TestImport(t *testing.T) {
+	spec.Run(t, "Import", testImport, spec.Report(report.Terminal{}))
+}
 
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			o := gomega.NewGomegaWithT(t)
-			o.Expect(tc.imp.String()).To(gomega.Equal(tc.expected))
+func testImport(t *testing.T, when spec.G, it spec.S) {
+	g := NewWithT(t)
+
+	when("printing an import", func() {
+		it("leaves out the alias for a stdlib package", func() {
+			g.Expect(Import{Alias: "os", PkgPath: "os"}.String()).To(Equal(`"os"`))
 		})
-	}
+
+		it("leaves out the alias when it matches the base name", func() {
+			g.Expect(Import{Alias: "foo", PkgPath: "example.com/goo/foo"}.String()).To(Equal(`"example.com/goo/foo"`))
+		})
+
+		it("prints a custom alias", func() {
+			g.Expect(Import{Alias: "thinga", PkgPath: "example.com/go-thing"}.String()).To(Equal(`thinga "example.com/go-thing"`))
+		})
+	})
 }
