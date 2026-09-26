@@ -121,7 +121,16 @@ Expect(fake.DoThingsArgs()).To(Equal([]foofakes.FakeMySpecialInterfaceDoThingsAr
 }))
 ```
 
-The order of calls to different methods isn't recorded, and neither is the order across two fakes. `Invocations()` is keyed by method name, so it has the same limitation. To check that `DoThings` ran before `DoOtherThings`, give both a stub that appends to the same slice:
+`CallOrder()` has the order across the methods of one fake, as method names:
+
+```go
+fake.DoThings("a", 1)
+fake.DoNothing()
+
+Expect(fake.CallOrder()).To(Equal([]string{"DoThings", "DoNothing"}))
+```
+
+The order across two fakes isn't recorded. To check that `DoThings` on one fake ran before `DoOtherThings` on another, give both a stub that appends to the same slice:
 
 ```go
 var order []string

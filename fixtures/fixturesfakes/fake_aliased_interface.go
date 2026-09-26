@@ -13,6 +13,7 @@ type FakeAliasedInterface struct {
 	anotherMethodMutex       sync.RWMutex
 	anotherMethodArgsForCall []FakeAliasedInterfaceAnotherMethodArgs
 	invocations              map[string][][]interface{}
+	callOrder                []string
 	invocationsMutex         sync.RWMutex
 }
 
@@ -78,9 +79,18 @@ func (fake *FakeAliasedInterface) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
+func (fake *FakeAliasedInterface) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeAliasedInterface) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}

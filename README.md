@@ -308,6 +308,8 @@ Expect(fake.DoThingsArgs()).To(Equal([]foofakes.FakeMySpecialInterfaceDoThingsAr
 }))
 ```
 
+`CallOrder()` returns the names of a fake's methods in the order they were called, for when that order is part of the contract, like a write that has to land before the commit: `Expect(tx.CallOrder()).To(Equal([]string{"Write", "Commit"}))`.
+
 Slice and array arguments are recorded as copies, so a caller that reuses its buffer does not change what the fake recorded; a stub function still receives the original. `fake.Invocations()` returns every recorded call of every method, keyed by method name. Fakes are safe to use from several goroutines at once.
 
 For more examples of using the `counterfeiter` API, look at [some of the provided examples](generated_fakes_test.go). If you are moving from gomock, [docs/migrating-from-gomock.md](docs/migrating-from-gomock.md) goes through the differences.

@@ -33,6 +33,7 @@ type FakeGenericInterfaceCustomTypeConstraintT[T genericinterface.CustomTypeCons
 	takeTMutex       sync.RWMutex
 	takeTArgsForCall []FakeGenericInterfaceCustomTypeConstraintTTakeTArgs[T]
 	invocations      map[string][][]interface{}
+	callOrder        []string
 	invocationsMutex sync.RWMutex
 }
 
@@ -236,9 +237,18 @@ func (fake *FakeGenericInterfaceCustomTypeConstraintT[T]) Invocations() map[stri
 	return copiedInvocations
 }
 
+func (fake *FakeGenericInterfaceCustomTypeConstraintT[T]) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeGenericInterfaceCustomTypeConstraintT[T]) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}

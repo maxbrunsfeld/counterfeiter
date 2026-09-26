@@ -12,6 +12,7 @@ import (
 
 type FakeHeaderSpecific struct {
 	invocations      map[string][][]interface{}
+	callOrder        []string
 	invocationsMutex sync.RWMutex
 }
 
@@ -25,9 +26,18 @@ func (fake *FakeHeaderSpecific) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
+func (fake *FakeHeaderSpecific) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeHeaderSpecific) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}
