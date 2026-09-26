@@ -22,6 +22,7 @@ type FakeGenericImportedConstraint[T hyphenpackage.Hyphenated] struct {
 		result1 T
 	}
 	invocations      map[string][][]interface{}
+	callOrder        []string
 	invocationsMutex sync.RWMutex
 }
 
@@ -110,9 +111,18 @@ func (fake *FakeGenericImportedConstraint[T]) Invocations() map[string][][]inter
 	return copiedInvocations
 }
 
+func (fake *FakeGenericImportedConstraint[T]) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeGenericImportedConstraint[T]) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}

@@ -20,6 +20,7 @@ type FakeGenericParamInterface struct {
 		result1 genericparam.Generic[genericreturntype.R]
 	}
 	invocations      map[string][][]interface{}
+	callOrder        []string
 	invocationsMutex sync.RWMutex
 }
 
@@ -105,9 +106,18 @@ func (fake *FakeGenericParamInterface) Invocations() map[string][][]interface{} 
 	return copiedInvocations
 }
 
+func (fake *FakeGenericParamInterface) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeGenericParamInterface) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}

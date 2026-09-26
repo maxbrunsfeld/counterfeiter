@@ -88,6 +88,7 @@ type FakeGenericInterfaceMultipleTypes[T genericinterface.CustomTypeT, U generic
 	takeUMutex           sync.RWMutex
 	takeUArgsForCall     []FakeGenericInterfaceMultipleTypesTakeUArgs[T, U]
 	invocations          map[string][][]interface{}
+	callOrder            []string
 	invocationsMutex     sync.RWMutex
 }
 
@@ -705,9 +706,18 @@ func (fake *FakeGenericInterfaceMultipleTypes[T, U]) Invocations() map[string][]
 	return copiedInvocations
 }
 
+func (fake *FakeGenericInterfaceMultipleTypes[T, U]) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeGenericInterfaceMultipleTypes[T, U]) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}

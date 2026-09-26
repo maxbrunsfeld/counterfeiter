@@ -175,6 +175,25 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 		Eventually(fake.DoNothingCallCount, 1.0).Should(Equal(1))
 	})
 
+	it("records the order in which its methods were called", func() {
+		Expect(fake.CallOrder()).To(BeEmpty())
+
+		_, _ = fake.DoThings("stuff", 5)
+		fake.DoNothing()
+		_, _ = fake.DoThings("more", 6)
+
+		Expect(fake.CallOrder()).To(Equal([]string{"DoThings", "DoNothing", "DoThings"}))
+	})
+
+	it("returns a copy of the call order", func() {
+		fake.DoNothing()
+
+		order := fake.CallOrder()
+		order[0] = "changed"
+
+		Expect(fake.CallOrder()).To(Equal([]string{"DoNothing"}))
+	})
+
 	when("implementing an interface to show recorded methoded invocations", func() {
 		it.Before(func() {
 			var ifake interface{} = fake
@@ -430,6 +449,17 @@ func testFakes(t *testing.T, when spec.G, it spec.S) {
 			done := hammer(calls, func() { fake.Spy("", nil) }, func() { fake.Invocations() })
 			Eventually(done, 5.0).Should(BeClosed())
 			Expect(fake.CallCount()).To(Equal(calls))
+		})
+	})
+
+	when("reading the call order while the fake is being called", func() {
+		const calls = 5000
+
+		it("does not race", func() {
+			fake := new(fixturesfakes.FakeSomething)
+			done := hammer(calls, fake.DoNothing, func() { fake.CallOrder() })
+			Eventually(done, 5.0).Should(BeClosed())
+			Expect(fake.CallOrder()).To(HaveLen(calls))
 		})
 	})
 
