@@ -5,7 +5,7 @@ require (
 	github.com/onsi/gomega v1.44.0
 	github.com/sclevine/spec v1.4.0
 	golang.org/x/text v0.42.0
-	golang.org/x/tools v0.50.0
+	golang.org/x/tools v0.51.0
 )
 
 require (
