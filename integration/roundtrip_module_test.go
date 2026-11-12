@@ -10,6 +10,7 @@ import (
 func TestIntegration(t *testing.T) {
 	suite := spec.New("integration", spec.Report(report.Terminal{}), spec.Parallel())
 	suite("round trip as module", testRoundTripAsModule)
+	suite("mockery template", testMockeryTemplate)
 	suite.Run(t)
 }
 

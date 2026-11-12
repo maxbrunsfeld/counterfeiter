@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "counterfeiter",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "boilerplate-file": {
+      "type": "string",
+      "description": "Path to a file whose contents are written at the top of each generated file, like counterfeiter's -header flag."
+    }
+  }
+}

@@ -236,6 +236,10 @@ $ go tool counterfeiter . MySpecialInterface -
 
 `-q` drops the `Writing ...` lines, which is useful in a `-generate` line for a package with many fakes.
 
+### Generating fakes with mockery
+
+If you already use [mockery](https://vektra.github.io/mockery/), it can generate counterfeiter fakes for interfaces through the template in [`mockery/`](mockery/README.md). The fakes have the same API and, with the recommended configuration, the same file layout, so tests written against counterfeiter fakes keep working.
+
 ## Using Test Doubles In Your Tests
 
 Instantiate fakes:
