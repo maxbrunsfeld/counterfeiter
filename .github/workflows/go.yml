@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: ${{ matrix.go }}
+      - name: Install mockery (for the mockery template tests)
+        run: go install github.com/vektra/mockery/v3@v3.7.0
         # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
